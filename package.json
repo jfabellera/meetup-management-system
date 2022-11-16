@@ -1,0 +1,18 @@
+{
+  "name": "meetup-management-system",
+  "author": "Jan-Felix Abellera",
+  "version": "0.0.0",
+  "description": "A way to manage large-scale meetups for Tex Mechs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jfabellera/meetup-management-system.git"
+  },
+  "scripts": {
+    "install:backend": "cd ./backend/api && npm install && cd ../../",
+    "install:frontend": "cd ./frontend && npm install && cd ../",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "build:backend": "cd ./backend/api && npm run build && cd ../../",
+    "build:frontend": "cd ./frontend && npm run build && cd ../",
+    "build:all": "npm run build:backend && npm run build:frontend"
+  }
+}

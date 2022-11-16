@@ -1,0 +1,17 @@
+{
+  "name": "api",
+  "version": "0.0.0",
+  "main": "build/Server.js",
+  "scripts": {
+    "start": "tsc && node build/Server.js",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "prettier": "^2.7.1",
+    "typescript": "^4.9.3"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.2"
+  }
+}
