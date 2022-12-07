@@ -6,7 +6,7 @@ const getMeetups = () => {
       if (error) {
         reject(error)
       }
-      resolve(results.rows);
+      resolve(results.rows)
     })
   })
 }
@@ -17,7 +17,7 @@ const getAttendees = () => {
       if (error) {
         reject(error)
       }
-      resolve(results.rows);
+      resolve(results.rows)
     })
   })
 }
@@ -28,25 +28,29 @@ module.exports = {
 }
 
 class Attendee {
-  id: number;
-  name: string;
-  order_id: string;
-  checked_in: boolean;
-  raffle_number: number;
-  meetup_name: string;
+  id: number
+  name: string
+  order_id: string
+  checked_in: boolean
+  raffle_number: number
+  raffle_winner: boolean
+  meetup_name: string
 
   constructor(
     id: number,
     name: string,
     order_id: string,
     checked_in: boolean,
+    raffle_number: number,
+    raffle_winner: boolean,
     meetup_name: string
   ) {
-    this.id = id;
-    this.name = name;
-    this.checked_in = checked_in;
-    this.order_id = order_id;
-    this.raffle_number = -1;
-    this.meetup_name = meetup_name;
+    this.id = id
+    this.name = name
+    this.order_id = order_id
+    this.checked_in = checked_in
+    this.raffle_number = raffle_number
+    this.raffle_winner = raffle_winner
+    this.meetup_name = meetup_name
   }
 }
