@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react'
 import {
   Box,
   BoxProps,
@@ -14,7 +14,7 @@ import {
   Text,
   useColorModeValue,
   useDisclosure,
-} from '@chakra-ui/react';
+} from '@chakra-ui/react'
 import {
   FiAward,
   FiDatabase,
@@ -23,17 +23,18 @@ import {
   FiList,
   FiMenu,
   FiUserCheck,
-} from 'react-icons/fi';
-import { IconType } from 'react-icons';
+} from 'react-icons/fi'
+import { IconType } from 'react-icons'
+import MeetupDropdown from './MeetupDropdown'
 
 /**
  * Adapted from https://chakra-templates.dev/navigation/sidebar
  */
 
 interface LinkItemProps {
-  name: string;
-  url: string;
-  icon: IconType;
+  name: string
+  url: string
+  icon: IconType
 }
 const LinkItems: Array<LinkItemProps> = [
   { name: 'Home', url: '.', icon: FiHome },
@@ -42,10 +43,10 @@ const LinkItems: Array<LinkItemProps> = [
   { name: 'Typing Test', url: './typing_test', icon: FiAward },
   { name: 'View Attendees', url: './attendees', icon: FiList },
   { name: 'Import Attendees', url: './import', icon: FiDatabase },
-];
+]
 
 export default function Sidebar({ children }: { children: ReactNode }) {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, onOpen, onClose } = useDisclosure()
 
   return (
     <Box minH="100vh" width='100%' bg={useColorModeValue('gray.100', 'gray.900')}>
@@ -73,40 +74,14 @@ export default function Sidebar({ children }: { children: ReactNode }) {
         {children}
       </Box>
     </Box>
-  );
+  )
 }
 
 interface SidebarProps extends BoxProps {
-  onClose: () => void;
-}
-
-interface Meetup {
-  meetup_name: string;
+  onClose: () => void
 }
 
 const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
-  const [meetupData, setMeetupData] = useState<Meetup[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    getMeetups();
-  }, []);
-
-  function getMeetups() {
-    fetch(`${import.meta.env.VITE_API_URL}/getMeetups`)
-      .then(response => {
-        return response.json();
-      })
-      .then(data => {
-        if (data) {
-          setMeetupData(data);
-        }
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }
-
   return (
     <Box
       bg={useColorModeValue('white', 'gray.900')}
@@ -127,27 +102,15 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
           {link.name}
         </NavItem>
       ))}
-      <Box height="100%" verticalAlign="middle" p="2">
-        {
-          meetupData ? 
-            <Select variant="filled" placeholder={ loading ? 'Loading...' : 'Select a meetup' }>
-              {meetupData.map((meetup, i) => {
-                return <option value={meetup.meetup_name} key={i}>{meetup.meetup_name}</option>;
-              })}
-            </Select>
-            : 
-            <Select variant="filled" placeholder={ loading ? 'Loading...' : 'No available meetups.' }></Select>
-        }
-
-      </Box>
+      <MeetupDropdown />
     </Box>
-  );
-};
+  )
+}
 
 interface NavItemProps extends FlexProps {
-  icon: IconType;
-  url: string;
-  children: ReactNode;
+  icon: IconType
+  url: string
+  children: ReactNode
 }
 const NavItem = ({ icon, url, children, ...rest }: NavItemProps) => {
   return (
@@ -177,11 +140,11 @@ const NavItem = ({ icon, url, children, ...rest }: NavItemProps) => {
         {children}
       </Flex>
     </Link>
-  );
-};
+  )
+}
 
 interface MobileProps extends FlexProps {
-  onOpen: () => void;
+  onOpen: () => void
 }
 const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
   return (
@@ -206,5 +169,5 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
         {import.meta.env.VITE_APP_TITLE}
       </Text>
     </Flex>
-  );
-};
+  )
+}
