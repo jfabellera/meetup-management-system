@@ -1,7 +1,6 @@
 import * as express from 'express'
-const attendee = require('./model/attendee')
-
-const DEFAULT_API_SERVER_PORT = '3000'
+const attendee = require('./controllers/attendee')
+const raffle_history = require('./controllers/raffle_history')
 
 class Server {
   private express: express.Application
@@ -28,7 +27,11 @@ class Server {
       res.send("Meetup Management System API")
     })
 
+<<<<<<< HEAD
     this.express.get('/api/getAttendees', (req, res, next) => {
+=======
+    this.express.get('/api/getAttendees', (req, res) => {
+>>>>>>> 76fd230 (Add basic db functionality)
       attendee.getAttendees()
         .then((response: any) => {
           res.status(200).send(response)
@@ -38,12 +41,71 @@ class Server {
         })
     })
 
+<<<<<<< HEAD
     this.express.get('/api/getMeetups', (req, res, next) => {
+=======
+    this.express.get('/api/getMeetups', (req, res) => {
+>>>>>>> 76fd230 (Add basic db functionality)
       attendee.getMeetups()
         .then((response: any) => {
           res.status(200).send(response)
         })
+<<<<<<< HEAD
         .catch((error:any) => {
+=======
+        .catch((error: any) => {
+          res.status(500).send(error)
+        })
+    })
+
+    this.express.post('/api/updateAttendee/:id', (req, res) => {
+      attendee.updateAttendee(
+        req.params.id,
+        req.body.name,
+        req.body.checked_in,
+        req.body.raffle_number,
+        req.body.raffle_winner
+      )
+        .then((response: any) => {
+          res.status(200).send(response)
+        })
+        .catch((error: any) => {
+          res.status(500).send(error)
+        })
+    })
+
+    this.express.get('/api/getLatestRaffleWin', (req, res) => {
+      raffle_history.getLatestRaffleWin()
+        .then((response: any) => {
+          res.status(200).send(response)
+        })
+        .catch((error: any) => {
+          res.status(500).send(error)
+        })
+    })
+
+    this.express.post('/api/createRaffleWin', (req, res) => {
+      raffle_history.createRaffleWin(
+        req.body.attendee_id,
+      )
+        .then((response: any) => {
+          res.status(200).send(response)
+        })
+        .catch((error: any) => {
+          res.status(500).send(error)
+        })
+    })
+
+    this.express.post('/api/updateRaffleWin/:id', (req, res) => {
+      raffle_history.updateRaffleWin(
+        req.params.id,
+        req.body.claimed,
+      )
+        .then((response: any) => {
+          res.status(200).send(response)
+        })
+        .catch((error: any) => {
+>>>>>>> 76fd230 (Add basic db functionality)
           res.status(500).send(error)
         })
     })
@@ -62,7 +124,11 @@ class Server {
   }
 }
 
+<<<<<<< HEAD
 const port = parseInt(process.env.MMS_API_SERVER_PORT || DEFAULT_API_SERVER_PORT)
+=======
+const port = parseInt(process.env.MMS_API_SERVER_PORT || '3000')
+>>>>>>> 76fd230 (Add basic db functionality)
 const server = new Server().start(port)
   .then(port => console.log(`Running on port ${port}`))
   .catch(error => {
