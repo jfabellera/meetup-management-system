@@ -1,5 +1,6 @@
 import * as express from 'express'
-const attendee = require('./model/attendee')
+const attendee = require('./controllers/attendee')
+const raffle_history = require('./controllers/raffle_history')
 
 const DEFAULT_API_SERVER_PORT = '3000'
 
@@ -28,7 +29,7 @@ class Server {
       res.send("Meetup Management System API")
     })
 
-    this.express.get('/api/getAttendees', (req, res, next) => {
+    this.express.get('/api/getAttendees', (req, res) => {
       attendee.getAttendees()
         .then((response: any) => {
           res.status(200).send(response)
@@ -38,12 +39,63 @@ class Server {
         })
     })
 
-    this.express.get('/api/getMeetups', (req, res, next) => {
+    this.express.get('/api/getMeetups', (req, res) => {
       attendee.getMeetups()
         .then((response: any) => {
           res.status(200).send(response)
         })
-        .catch((error:any) => {
+        .catch((error: any) => {
+          res.status(500).send(error)
+        })
+    })
+
+    this.express.post('/api/updateAttendee/:id', (req, res) => {
+      attendee.updateAttendee(
+        req.params.id,
+        req.body.name,
+        req.body.checked_in,
+        req.body.raffle_number,
+        req.body.raffle_winner
+      )
+        .then((response: any) => {
+          res.status(200).send(response)
+        })
+        .catch((error: any) => {
+          res.status(500).send(error)
+        })
+    })
+
+    this.express.get('/api/getLatestRaffleWin', (req, res) => {
+      raffle_history.getLatestRaffleWin()
+        .then((response: any) => {
+          res.status(200).send(response)
+        })
+        .catch((error: any) => {
+          res.status(500).send(error)
+        })
+    })
+
+    this.express.post('/api/createRaffleWin', (req, res) => {
+      raffle_history.createRaffleWin(
+        req.body.attendee_id,
+      )
+        .then((response: any) => {
+          res.status(200).send(response)
+        })
+        .catch((error: any) => {
+          res.status(500).send(error)
+        })
+    })
+
+    this.express.post('/api/updateRaffleWin/:id', (req, res) => {
+      raffle_history.updateRaffleWin(
+        req.params.id,
+        req.body.claimed,
+      )
+        .then((response: any) => {
+          res.status(200).send(response)
+        })
+        .catch((error: any) => {
           res.status(500).send(error)
         })
     })
