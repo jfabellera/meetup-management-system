@@ -2,6 +2,8 @@ import * as express from 'express'
 const attendee = require('./controllers/attendee')
 const raffle_history = require('./controllers/raffle_history')
 
+const DEFAULT_API_SERVER_PORT = '3000'
+
 class Server {
   private express: express.Application
 
@@ -27,11 +29,7 @@ class Server {
       res.send("Meetup Management System API")
     })
 
-<<<<<<< HEAD
-    this.express.get('/api/getAttendees', (req, res, next) => {
-=======
     this.express.get('/api/getAttendees', (req, res) => {
->>>>>>> 76fd230 (Add basic db functionality)
       attendee.getAttendees()
         .then((response: any) => {
           res.status(200).send(response)
@@ -41,18 +39,11 @@ class Server {
         })
     })
 
-<<<<<<< HEAD
-    this.express.get('/api/getMeetups', (req, res, next) => {
-=======
     this.express.get('/api/getMeetups', (req, res) => {
->>>>>>> 76fd230 (Add basic db functionality)
       attendee.getMeetups()
         .then((response: any) => {
           res.status(200).send(response)
         })
-<<<<<<< HEAD
-        .catch((error:any) => {
-=======
         .catch((error: any) => {
           res.status(500).send(error)
         })
@@ -105,7 +96,6 @@ class Server {
           res.status(200).send(response)
         })
         .catch((error: any) => {
->>>>>>> 76fd230 (Add basic db functionality)
           res.status(500).send(error)
         })
     })
@@ -124,11 +114,7 @@ class Server {
   }
 }
 
-<<<<<<< HEAD
 const port = parseInt(process.env.MMS_API_SERVER_PORT || DEFAULT_API_SERVER_PORT)
-=======
-const port = parseInt(process.env.MMS_API_SERVER_PORT || '3000')
->>>>>>> 76fd230 (Add basic db functionality)
 const server = new Server().start(port)
   .then(port => console.log(`Running on port ${port}`))
   .catch(error => {
