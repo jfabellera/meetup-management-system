@@ -70,7 +70,7 @@ export default function Sidebar({ children }: { children: ReactNode }) {
       <MobileNav
         display={{ base: 'flex', md: 'none' }}
         onOpen={onOpen} />
-      <Box w='100%' ml={{ base: 'full', md: 60 }} p="6">
+      <Box w='auto' ml={{ base: 'full', md: 60 }} p="6">
         {children}
       </Box>
     </Box>
