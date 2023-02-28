@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "main": "build/Server.js",
   "scripts": {
-    "start": "tsc && node build/Server.js",
+    "start": "tsc && node -r dotenv/config build/Server.js",
     "build": "tsc"
   },
   "devDependencies": {
