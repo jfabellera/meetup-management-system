@@ -38,7 +38,6 @@ export function updateAttendee(attendee: Attendee) {
 }
 
 export function createRaffleWin(attendee: Attendee) {
-  console.log(attendee)
   const request = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
