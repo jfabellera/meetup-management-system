@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { FiCheck, FiPlus } from 'react-icons/fi'
 import {
+  Button,
   Input,
   Radio,
   RadioGroup,
@@ -12,23 +14,105 @@ import {
   Th,
   Td,
   Text,
-  VStack
+  VStack,
+  Modal,
+  ModalBody,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalFooter,
+  NumberInput,
+  NumberInputField,
 } from '@chakra-ui/react'
 import Page from '../components/Page/Page'
-import CheckInButton from '../components/CheckInButton/CheckInButton'
 import Attendee from '../util/Attendee'
 
 const SELECTED_MEETUP_STORAGE_KEY = 'selectedMeetup'
+const initAttendee: Attendee = {
+  id: '',
+  name: '',
+  order_id: '',
+  checked_in: false,
+  raffle_number: -1,
+  raffle_winner: false,
+  meetup_name: '',
+  email: ''
+}
 
 export default function CheckIn() {
   const [searchType, setSearchType] = useState('name')
   const [searchText, setSearchText] = useState('')
   const [attendeeData, setAttendeeData] = useState<Attendee[] | null>(null)
   const [filteredAttendeeData, setFilteredAttendeeData] = useState<Attendee[] | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [raffleNumber, setRaffleNumber] = useState(-1)
+  const [currentAttendee, setCurrentAttendee] = useState<Attendee>(initAttendee)
+  const [isButtonDisabled, setIsButtonDisabled] = useState(Number.isNaN(raffleNumber))
+  const [validationMessage, setValidationMessage] = useState('')
+
+  function updateUser() {
+    if (currentAttendee) {
+      const request = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: currentAttendee.id,
+          name: currentAttendee.name,
+          raffle_number: currentAttendee.checked_in ? raffleNumber : -1,
+          raffle_winner: currentAttendee.raffle_winner,
+          checked_in: currentAttendee.checked_in,
+          meetup_name: currentAttendee.meetup_name,
+          email: currentAttendee.email
+        })
+      }
+
+      fetch(`${import.meta.env.VITE_API_URL}/updateAttendee/${currentAttendee.id}`, request)
+        .then(response => {
+          return response
+        })
+        .then(data => {
+          getAttendees()
+        })
+    }
+  }
+
+  function validateInput(value: string) {
+    if (Number.isNaN(parseInt(value))) {
+      setValidationMessage('The input value is not a number.')
+      setIsButtonDisabled(true)
+    } else {
+      setValidationMessage('')
+      setIsButtonDisabled(false)
+      setRaffleNumber(parseInt(value))
+    }
+  }
+
+  function openModal(attendee: Attendee)
+  {
+    setCurrentAttendee(attendee)
+    setShowModal(true)
+  }
+
+  function checkIn() {
+    if (currentAttendee) {
+      currentAttendee.checked_in = true
+      updateUser()
+    }
+    setShowModal(false)
+  }
+
+  function undoCheckIn() {
+    if (currentAttendee) {
+      currentAttendee.checked_in = false
+      updateUser()
+    }
+    setShowModal(false)
+  }
 
   useEffect(() => {
     getAttendees()
-  }, [searchType, searchText, filteredAttendeeData])
+  }, [searchType, searchText])
 
   function getAttendees() {
     fetch(`${import.meta.env.VITE_API_URL}/getAttendees`)
@@ -83,7 +167,6 @@ export default function CheckIn() {
         <VStack spacing="12px" alignItems="left">
           <Text># of Checked In Attendees: {getNumberCheckedIn()}</Text>
 
-          {/* TODO: Temporarily commenting out due to check-in button and filtering bug.
           <RadioGroup defaultValue={searchType} value={searchType} onChange={(value) => {
             setSearchType(value)
             filterAttendees(attendeeData)
@@ -103,7 +186,6 @@ export default function CheckIn() {
                 filterAttendees(attendeeData)
               }
             } />
-          */}
 
           <TableContainer>
             <Table variant="simple" bg="whiteAlpha.600">
@@ -134,7 +216,17 @@ export default function CheckIn() {
                         <Td>{attendee.name}</Td>
                         <Td>{attendee.order_id}</Td>
                         <Td>{attendee.raffle_number < 0 ? "Not assigned" : attendee.raffle_number }</Td>
-                        <Td><CheckInButton attendee={attendee} /></Td>
+                        <Td>
+                          <Button
+                            onClick={() => openModal(attendee) }
+                            leftIcon={ attendee.checked_in ? <FiCheck /> : <FiPlus /> }
+                            colorScheme={ attendee.checked_in ? 'green' : 'gray' }>
+                            {attendee.checked_in
+                              ? 'Checked In'
+                              : 'Not Checked In'
+                            }
+                          </Button>
+                        </Td>
                       </Tr>
                     })
                   : <Tr>
@@ -148,6 +240,45 @@ export default function CheckIn() {
             </Table>
           </TableContainer>
         </VStack>
+        <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{ currentAttendee.checked_in ? "Editing Check-in Details" : "Check-in Confirmation" }</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <NumberInput 
+              name="input-raffle-number"
+              placeholder="Enter raffle ticket number"
+              defaultValue={currentAttendee ? currentAttendee.raffle_number : -1}
+              onChange={(value) => validateInput(value)}>
+              <NumberInputField />
+            </NumberInput>
+            <Text color='red'>{validationMessage}</Text>
+          </ModalBody>
+
+          <ModalFooter>
+            {
+              currentAttendee.checked_in
+                ? <Button
+                    height={12}
+                    colorScheme="red"
+                    mr={60}
+                    onClick={undoCheckIn}>
+                    Undo<br/>Check-in
+                  </Button>
+                : <></>
+            }
+            <Button
+              isDisabled={isButtonDisabled}
+              type="submit"
+              height={12}
+              colorScheme="green"
+              onClick={checkIn}>
+              Confirm
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Page> 
   )
 }
