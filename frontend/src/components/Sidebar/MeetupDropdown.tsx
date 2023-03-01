@@ -3,6 +3,7 @@ import {
   Box,
   Select,
 } from '@chakra-ui/react'
+import { getMeetups } from '../../api/MMSDataAPIService'
 
 const SELECTED_MEETUP_STORAGE_KEY = 'selectedMeetup'
 
@@ -19,22 +20,13 @@ export default function MeetupDropdown() {
     const [loading, setLoading] = useState(true)
     
     useEffect(() => {
-      getMeetups()
-    }, [])
+      getMeetupsData()
+    }, [loading])
   
-    function getMeetups() {
-      fetch(`${import.meta.env.VITE_API_URL}/getMeetups`)
-        .then(response => {
-          return response.json()
-        })
-        .then(data => {
-          if (data) {
-            setMeetupData(data)
-          }
-        })
-        .finally(() => {
-          setLoading(false)
-        })
+    async function getMeetupsData() {
+      const meetupData = await getMeetups()
+      setMeetupData(meetupData)
+      setLoading(false)
     }
   
     return (
