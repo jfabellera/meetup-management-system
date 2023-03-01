@@ -1,4 +1,4 @@
-export interface Attendee {
+export default interface Attendee {
     id: string
     name: string
     order_id: string

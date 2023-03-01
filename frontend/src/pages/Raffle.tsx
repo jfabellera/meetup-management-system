@@ -15,7 +15,7 @@ import {
   VStack
 } from '@chakra-ui/react'
 import Page from '../components/Page/Page'
-import { Attendee } from '../util/Attendee'
+import Attendee from '../util/Attendee'
 
 const SELECTED_MEETUP_STORAGE_KEY = 'selectedMeetup'
 
