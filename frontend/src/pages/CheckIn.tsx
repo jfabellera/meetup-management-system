@@ -3,30 +3,31 @@ import { FiCheck, FiPlus } from 'react-icons/fi'
 import {
   Button,
   Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  NumberInput,
+  NumberInputField,
   Radio,
   RadioGroup,
   Stack,
   Table,
   TableContainer,
-  Thead,
   Tbody,
-  Tr,
-  Th,
   Td,
   Text,
+  Th,
+  Thead,
+  Tr,
   VStack,
-  Modal,
-  ModalBody,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalFooter,
-  NumberInput,
-  NumberInputField,
 } from '@chakra-ui/react'
-import Page from '../components/Page/Page'
+import { getAttendees, updateAttendee } from '../api/MMSDataAPIService'
 import Attendee from '../util/Attendee'
+import Page from '../components/Page/Page'
 
 const SELECTED_MEETUP_STORAGE_KEY = 'selectedMeetup'
 const initAttendee: Attendee = {
@@ -41,90 +42,37 @@ const initAttendee: Attendee = {
 }
 
 export default function CheckIn() {
+  const [attendeeData, setAttendeeData] = useState<Attendee[]>([initAttendee])
+  const [filteredAttendeeData, setFilteredAttendeeData] = useState<Attendee[]>([initAttendee])
+  const [currentAttendee, setCurrentAttendee] = useState<Attendee>(initAttendee)
+  const [raffleNumber, setRaffleNumber] = useState(-1)
+
+  const [loading, setLoading] = useState(true)
+
   const [searchType, setSearchType] = useState('name')
   const [searchText, setSearchText] = useState('')
-  const [attendeeData, setAttendeeData] = useState<Attendee[] | null>(null)
-  const [filteredAttendeeData, setFilteredAttendeeData] = useState<Attendee[] | null>(null)
+
   const [showModal, setShowModal] = useState(false)
-  const [raffleNumber, setRaffleNumber] = useState(-1)
-  const [currentAttendee, setCurrentAttendee] = useState<Attendee>(initAttendee)
   const [isButtonDisabled, setIsButtonDisabled] = useState(Number.isNaN(raffleNumber))
   const [validationMessage, setValidationMessage] = useState('')
 
-  function updateUser() {
-    if (currentAttendee) {
-      const request = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: currentAttendee.id,
-          name: currentAttendee.name,
-          raffle_number: currentAttendee.checked_in ? raffleNumber : -1,
-          raffle_winner: currentAttendee.raffle_winner,
-          checked_in: currentAttendee.checked_in,
-          meetup_name: currentAttendee.meetup_name,
-          email: currentAttendee.email
-        })
-      }
-
-      fetch(`${import.meta.env.VITE_API_URL}/updateAttendee/${currentAttendee.id}`, request)
-        .then(response => {
-          return response
-        })
-        .then(data => {
-          getAttendees()
-        })
-    }
-  }
-
-  function validateInput(value: string) {
-    if (Number.isNaN(parseInt(value))) {
-      setValidationMessage('The input value is not a number.')
-      setIsButtonDisabled(true)
-    } else {
-      setValidationMessage('')
-      setIsButtonDisabled(false)
-      setRaffleNumber(parseInt(value))
-    }
-  }
-
-  function openModal(attendee: Attendee)
-  {
-    setCurrentAttendee(attendee)
-    setShowModal(true)
-  }
-
-  function checkIn() {
-    if (currentAttendee) {
-      currentAttendee.checked_in = true
-      updateUser()
-    }
-    setShowModal(false)
-  }
-
-  function undoCheckIn() {
-    if (currentAttendee) {
-      currentAttendee.checked_in = false
-      updateUser()
-    }
-    setShowModal(false)
-  }
+  useEffect(() => {
+    filterAttendees(attendeeData)
+  }, [searchType, searchText, attendeeData])
 
   useEffect(() => {
-    getAttendees()
-  }, [searchType, searchText])
+    getAttendeesData()
+    filterAttendees(attendeeData)
+  }, [loading])
 
-  function getAttendees() {
-    fetch(`${import.meta.env.VITE_API_URL}/getAttendees`)
-      .then(response => {
-        return response.json()
-      })
-      .then(data => {
-        if (data) {
-          setAttendeeData(data)
-          filterAttendees(data)
-        }
-      })
+  async function getAttendeesData() {
+    try {
+      const getAttendeeResponseData = await getAttendees()
+      setAttendeeData(getAttendeeResponseData)
+      setLoading(false)
+    } catch(error) {
+      console.log(error)
+    }
   }
 
   function filterAttendees(attendees: Attendee[] | null) {
@@ -158,6 +106,36 @@ export default function CheckIn() {
       return attendeeData.filter((attendee) => attendee.meetup_name == selectedMeetup && attendee.checked_in).length
     }
     return "-"
+  }
+
+  function openModal(attendee: Attendee) {
+    setCurrentAttendee(attendee)
+    setShowModal(true)
+  }
+
+  async function onModalSubmit(checkInStatus: boolean) {
+    currentAttendee.checked_in = checkInStatus
+    currentAttendee.raffle_number = currentAttendee.checked_in ? raffleNumber : -1
+
+    try {
+      await updateAttendee(currentAttendee)
+      getAttendeesData()
+    } catch(error) {
+      console.log(error)
+    }
+
+    setShowModal(false)
+  }
+
+  function validateInput(value: string) {
+    if (Number.isNaN(parseInt(value))) {
+      setValidationMessage('The input value is not a number.')
+      setIsButtonDisabled(true)
+    } else {
+      setValidationMessage('')
+      setIsButtonDisabled(false)
+      setRaffleNumber(parseInt(value))
+    }
   }
 
   return (
@@ -199,7 +177,7 @@ export default function CheckIn() {
               </Thead>
               <Tbody>
                 {
-                  filteredAttendeeData ?
+                  !loading ?
                   filteredAttendeeData.map((attendeeData, i) => {
                       const attendee: Attendee = {
                         id: attendeeData.id,
@@ -263,7 +241,7 @@ export default function CheckIn() {
                     height={12}
                     colorScheme="red"
                     mr={60}
-                    onClick={undoCheckIn}>
+                    onClick={() => onModalSubmit(false)}>
                     Undo<br/>Check-in
                   </Button>
                 : <></>
@@ -273,7 +251,7 @@ export default function CheckIn() {
               type="submit"
               height={12}
               colorScheme="green"
-              onClick={checkIn}>
+              onClick={() => onModalSubmit(true)}>
               Confirm
             </Button>
           </ModalFooter>

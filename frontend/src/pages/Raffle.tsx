@@ -16,41 +16,64 @@ import {
 } from '@chakra-ui/react'
 import Page from '../components/Page/Page'
 import Attendee from '../util/Attendee'
+import { createRaffleWin, getAttendees, updateAttendee, updateRaffleWin } from '../api/MMSDataAPIService'
 
 const SELECTED_MEETUP_STORAGE_KEY = 'selectedMeetup'
+const initAttendee: Attendee = {
+  id: '',
+  name: '',
+  order_id: '',
+  checked_in: false,
+  raffle_number: -1,
+  raffle_winner: false,
+  meetup_name: '',
+  email: ''
+}
 
 export default function Raffle() {
+  const [attendeeData, setAttendeeData] = useState<Attendee[]>([initAttendee])
+  const [filteredAttendeeData, setFilteredAttendeeData] = useState<Attendee[]>([initAttendee])
+
+  const [loading, setLoading] = useState(true)
+
   const [raffleNumber, setRaffleNumber] = useState(-1)
   const [raffleWinner, setRaffleWinner] = useState('')
+  const [raffleWinnerSaved, setRaffleWinnerSaved] = useState(false)
   const [attendeeWinner, setAttendeeWinner] = useState<Attendee | null>(null)
-  const [attendeeData, setAttendeeData] = useState<Attendee[] | null>(null)
-  const [raffleEntrants, setRaffleEntrants] = useState<Attendee[] | null>(null)
-  const [filteredAttendeeData, setFilteredAttendeeData] = useState<Attendee[] | null>(null)
+  const [raffleEntrants, setRaffleEntrants] = useState<Attendee[]>([initAttendee])
   const [isPrizeClaimed, setIsPrizeClaimed] = useState(false)
   const [removeWinnersFromRolls, setRemoveWinnersFromRolls] = useState(true)
 
   useEffect(() => {
-    if (!attendeeData) {
-      getAttendees()
-    } else {
-      setFilteredAttendeeData(filterAttendeeData(attendeeData))
+    if (attendeeData) {
+      filterAttendees(attendeeData)
       setRaffleEntrants(generateRaffleEntrantPool(attendeeData))
     }
-  }, [raffleNumber, raffleWinner, attendeeData, removeWinnersFromRolls])
+  }, [attendeeData])
 
-  function getAttendees() {
-    fetch(`${import.meta.env.VITE_API_URL}/getAttendees`)
-      .then(response => {
-        return response.json()
-      })
-      .then(data => {
-        if (data) {
-          setAttendeeData(data)
-        }
-      })
+  useEffect(() => {
+    if (attendeeWinner && !raffleWinnerSaved) {
+      addToRaffleHistory()
+    }
+  }, [attendeeWinner])
+
+  useEffect(() => {
+    getAttendeesData()
+    filterAttendees(attendeeData)
+    setLoading(false)
+  }, [loading])
+
+  async function getAttendeesData() {
+    try {
+      const getAttendeesResponse = await getAttendees()
+      setAttendeeData(getAttendeesResponse)
+      filterAttendees(getAttendeesResponse)
+    } catch(error) {
+      console.log(error)
+    }
   }
 
-  function filterAttendeeData(attendees: any) {
+  function filterAttendees(attendees: Attendee[]) {
     const filteredAttendeeData = attendees.filter((attendee: Attendee) => {
       let selectedMeetup = localStorage.getItem(SELECTED_MEETUP_STORAGE_KEY)
       let isMeetupAttendee = attendee.meetup_name == selectedMeetup
@@ -58,7 +81,7 @@ export default function Raffle() {
 
       return isMeetupAttendee && isRaffleEntrant
     })
-    return filteredAttendeeData
+    setFilteredAttendeeData(filteredAttendeeData)
   }
 
   function generateRaffleEntrantPool(attendees: any) {
@@ -87,91 +110,39 @@ export default function Raffle() {
           hasWinnerBeenChosen = true
         }
       }
-      setAttendeeWinner(raffleEntrants[randomNumber])
+      setRaffleWinnerSaved(false)
       setRaffleWinner(raffleEntrants[randomNumber].name)
       setRaffleNumber(raffleEntrants[randomNumber].raffle_number)
-      addToRaffleHistory()
+      setAttendeeWinner(raffleEntrants[randomNumber])
     }
   }
 
-  function addToRaffleHistory() {
-    if (attendeeWinner) {
-      const request = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          attendee_id: attendeeWinner.id
-        })
+  async function addToRaffleHistory() {
+    try {
+      if (attendeeWinner) {
+        await createRaffleWin(attendeeWinner)
+        setRaffleWinnerSaved(true)
+        getAttendeesData()
       }
-
-      fetch(`${import.meta.env.VITE_API_URL}/createRaffleWin`, request)
-        .then(response => {
-          console.log(response)
-          return response
-        })
-        .then(data => {
-          getAttendees()
-        })
+    } catch(error) {
+      console.log(error)
     }
   }
 
-  function getLatestRaffleWinId() {
-
-  }
-
-  function claimRaffle() {
+  async function claimRaffle() {
     setIsPrizeClaimed(true)
     console.log("!claim")
 
     if (attendeeWinner) {
-      const request = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: attendeeWinner.id,
-          name: attendeeWinner.name,
-          raffle_number: attendeeWinner.raffle_number,
-          raffle_winner: true,
-          checked_in: attendeeWinner.checked_in,
-          meetup_name: attendeeWinner.meetup_name,
-          email: attendeeWinner.email
-        })
+      attendeeWinner.raffle_winner = true
+      try {
+        await updateAttendee(attendeeWinner)
+        await updateRaffleWin(attendeeWinner)
+        getAttendeesData()
+      } catch(error) {
+        console.log(error)
       }
-  
-      fetch(`${import.meta.env.VITE_API_URL}/updateAttendee/${attendeeWinner.id}`, request)
-        .then(response => {
-          return response
-        })
-        .then(data => {
-          getAttendees()
-          setRaffleEntrants(generateRaffleEntrantPool(attendeeData))
-        })
-
-      fetch(`${import.meta.env.VITE_API_URL}/getLatestRaffleWin`)
-        .then(response => {
-          return response.json()
-        })
-        .then(data => {
-          if (data) {
-            const raffle_history_request = {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                claimed: true
-              })
-            }
-
-            fetch(`${import.meta.env.VITE_API_URL}/updateRaffleWin/${data[0].id}`, raffle_history_request)
-              .then(response => {
-                return response
-              })
-              .then(data => {
-              })
-          }
-        })
-      
     }
-
   }
 
   return (
@@ -215,7 +186,7 @@ export default function Raffle() {
               </Thead>
               <Tbody>
                 {
-                  filteredAttendeeData ?
+                  !loading ?
                     filteredAttendeeData.map((attendee, i) => {
                       return <Tr _hover= {{ bg: '#ccc' }} key={i}>
                         <Td>{attendee.name}</Td>

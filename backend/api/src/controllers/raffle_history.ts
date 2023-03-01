@@ -17,7 +17,7 @@ const createRaffleWin = (attendee_id: string) => {
       if (error) {
         reject(error)
       }
-      resolve(results.rows);
+      resolve(results);
     })
   })
 }
