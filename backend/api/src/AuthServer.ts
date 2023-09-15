@@ -1,4 +1,5 @@
 import * as express from 'express'
+import jwt from 'jsonwebtoken'
 
 const DEFAULT_AUTH_SERVER_PORT = '3001'
 
@@ -25,6 +26,21 @@ class AuthServer {
   private routes(): void {
     this.express.get('/', (req, res, next) => {
       res.send("Meetup Management System Authentication")
+    })
+
+    this.express.get('/login', (req, res) => {
+      // TODO(jan): Once new database schema is setup, add actual password hash comparison and user info population
+      // TODO(jan): Add field validation (express-validator)
+      if (true) {
+        // Authorized
+        const userInfo = { username: '',  isAdmin: false, isOrganizer: false }
+        const accessToken = jwt.sign({ userInfo }, process.env.JWT_ACCESS_SECRET || '')
+
+        res.json({ accessToken: accessToken })
+      } else {
+        // Unauthorized
+        res.status(401).json({ message: "Authentication failed" })
+      }
     })
 
     this.express.use("*", (req, res, next) => {
