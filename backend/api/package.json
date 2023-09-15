@@ -4,6 +4,7 @@
   "main": "build/Server.js",
   "scripts": {
     "start": "tsc && node -r dotenv/config build/Server.js",
+    "startAuth": "tsc && node -r dotenv/config build/AuthServer.js",
     "build": "tsc"
   },
   "devDependencies": {
