@@ -25,6 +25,8 @@ class Server {
   }
 
   private routes(): void {
+    this.express.use('/users', userRoutes);
+
     this.express.use("*", (req, res, next) => {
       res.send("Not a valid endpoint.")
     })
