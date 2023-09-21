@@ -10,3 +10,6 @@ CREATE SEQUENCE  IF NOT EXISTS "users_id_seq" AS bigint START WITH 1 INCREMENT B
 ALTER TABLE "users" ADD CONSTRAINT "email_unique" UNIQUE ("email");
 ALTER TABLE "tickets" ADD CONSTRAINT "meetup_id_fkey" FOREIGN KEY ("meetup_id") REFERENCES "meetups" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
 ALTER TABLE "tickets" ADD CONSTRAINT "user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+-- changeset jan:2
+ALTER TABLE "meetups" ALTER COLUMN "id" TYPE BIGINT;
