@@ -30,6 +30,7 @@ export const createTicket = async (req: Request, res: Response) => {
         return res.status(400).json(error.details);
     }
 
+    // TODO(jan): Check if a ticket with the same meetup_id and user_id combination already exists
     const newTicket = Ticket.create(value);
     await newTicket.save();
 
@@ -48,6 +49,7 @@ export const updateTicket = async (req: Request, res: Response) => {
         return res.status(404).json({ message: 'Invalid ticket ID.' });
     }
 
+    // TODO(jan): Do we want to throw an error when meetup_id or user_id is found in req.body?
     ticket.is_checked_in = is_checked_in ?? ticket.is_checked_in;
     ticket.raffle_entries = raffle_entries ?? ticket.raffle_entries;
     ticket.raffle_wins = raffle_wins ?? ticket.raffle_wins;

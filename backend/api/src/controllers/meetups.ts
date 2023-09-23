@@ -30,6 +30,7 @@ export const createMeetup = async (req: Request, res: Response) => {
         return res.status(400).json(error.details);
     }
 
+    // TODO(jan): Check if meetup with same name already exists
     const newMeetup = Meetup.create(value);
     await newMeetup.save();
 
@@ -48,6 +49,7 @@ export const updateMeetup = async (req: Request, res: Response) => {
         return res.status(404).json({ message: 'Invalid meetup ID.' });
     }
 
+    // TODO(jan): Check if meetup with same name already exists
     meetup.name = name ?? meetup.name;
     meetup.date = date ?? meetup.date;
     meetup.organizer_ids = organizer_ids ?? meetup.organizer_ids;
