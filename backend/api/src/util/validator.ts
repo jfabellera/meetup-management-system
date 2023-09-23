@@ -3,6 +3,16 @@ import Joi from "joi";
 const validator = (schema: Joi.Schema) => (payload: any) =>
     schema.validate(payload, { abortEarly: false });
 
+const userSchema = Joi.object({
+    id: Joi.number(),
+    email: Joi.string().email().required(),
+    first_name: Joi.string().required(),
+    last_name: Joi.string().required(),
+    nick_name: Joi.string().required(),
+    is_organizer: Joi.boolean().default(false),
+    is_admin: Joi.boolean().default(false)
+});
+
 const meetupSchema = Joi.object({
     id: Joi.number(),
     name: Joi.string().required(),
@@ -20,5 +30,6 @@ const ticketSchema = Joi.object({
     raffle_wins: Joi.number().min(0).default(0).max(Joi.ref('raffle_entries'))
 });
 
+export const validateUser = validator(userSchema);
 export const validateMeetup = validator(meetupSchema);
 export const validateTicket = validator(ticketSchema);
