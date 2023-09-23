@@ -1,5 +1,6 @@
 import * as express from 'express'
 import userRoutes from './routes/users'
+import meetupRoutes from './routes/meetups'
 import { AppDataSource } from './datasource'
 
 AppDataSource.initialize();
@@ -26,6 +27,7 @@ class Server {
 
   private routes(): void {
     this.express.use('/users', userRoutes);
+    this.express.use('/meetups', meetupRoutes);
 
     this.express.use("*", (req, res, next) => {
       res.send("Not a valid endpoint.")
