@@ -30,7 +30,16 @@ export const createTicket = async (req: Request, res: Response) => {
         return res.status(400).json(error.details);
     }
 
-    // TODO(jan): Check if a ticket with the same meetup_id and user_id combination already exists
+    // Check if ticket already exists
+    const existingTicket = await Ticket.findOneBy({
+        meetup_id: value.meetup_id,
+        user_id: value.user_id
+    });
+
+    if (existingTicket) {
+        return res.status(409).json({ message: 'Ticket already exists.' });
+    }
+
     const newTicket = Ticket.create(value);
     await newTicket.save();
 

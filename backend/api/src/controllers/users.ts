@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { ILike } from 'typeorm';
 import { User } from '../entity/User'
 import { validateUser } from '../util/validator'
 
@@ -30,7 +31,17 @@ export const createUser = async (req: Request, res: Response) => {
         return res.status(400).json(error.details);
     }
 
-    // TODO(jan): Check if a user with the same email already exists
+    // Check if email is taken
+    const existingUser = await User.findOne({
+        where: {
+            email:  ILike(value.email)
+        }
+    });
+
+    if (existingUser) {
+        return res.status(409).json({ message: 'Email is taken.' });
+    }
+
     const newUser = User.create(value);
     await newUser.save();
 
@@ -49,7 +60,17 @@ export const updateUser = async (req: Request, res: Response) => {
         return res.status(404).json({ message: 'Invalid user ID.' });
     }
 
-    // TODO(jan): Check if a user with the same email already exists
+    // Check if email is taken
+    const existingUser = await User.findOne({
+        where: {
+            email:  ILike(email)
+        }
+    });
+
+    if (existingUser) {
+        return res.status(409).json({ message: 'Email is taken.' });
+    }
+
     user.email = email ?? user.email;
     user.first_name = first_name ?? user.first_name;
     user.last_name = last_name ?? user.last_name;

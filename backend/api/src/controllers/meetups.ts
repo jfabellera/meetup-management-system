@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { Meetup } from '../entity/Meetup'
 import { validateMeetup } from '../util/validator'
+import { ILike } from 'typeorm'
 
 
 export const getAllMeetups = async (req: Request, res: Response) => {
@@ -30,7 +31,17 @@ export const createMeetup = async (req: Request, res: Response) => {
         return res.status(400).json(error.details);
     }
 
-    // TODO(jan): Check if meetup with same name already exists
+    // Check if meetup name is taken
+    const existingMeetup = await Meetup.findOne({
+        where: {
+            name:  ILike(value.name)
+        }
+    });
+
+    if (existingMeetup) {
+        return res.status(409).json({ message: 'Meetup name is taken.' });
+    }
+
     const newMeetup = Meetup.create(value);
     await newMeetup.save();
 
@@ -48,8 +59,18 @@ export const updateMeetup = async (req: Request, res: Response) => {
     if (!meetup) {
         return res.status(404).json({ message: 'Invalid meetup ID.' });
     }
+    
+    // Check if meetup name is taken
+    const existingMeetup = await Meetup.findOne({
+        where: {
+            name:  ILike(name)
+        }
+    });
 
-    // TODO(jan): Check if meetup with same name already exists
+    if (existingMeetup) {
+        return res.status(409).json({ message: 'Meetup name is taken.' });
+    }
+
     meetup.name = name ?? meetup.name;
     meetup.date = date ?? meetup.date;
     meetup.organizer_ids = organizer_ids ?? meetup.organizer_ids;
