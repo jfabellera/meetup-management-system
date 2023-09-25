@@ -17,7 +17,7 @@ export const getTicket = async (req: Request, res: Response) => {
     });
 
     if (!ticket) {
-        return res.status(404).json({ message: 'Invalid ticket ID.'});
+        return res.status(404).json({ message: 'Invalid ticket ID.' });
     }
 
     return res.json(ticket);
