@@ -18,7 +18,7 @@ export const getUser = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-        return res.status(404).json({ message: 'Invalid user ID.'});
+        return res.status(404).json({ message: 'Invalid user ID.' });
     }
 
     return res.json(user);
