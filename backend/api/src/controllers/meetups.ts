@@ -50,7 +50,7 @@ export const createMeetup = async (req: Request, res: Response) => {
 
 export const updateMeetup = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, date, organizer_ids, has_raffle} = req.body;
+    const { name, date, organizer_ids, has_raffle } = req.body;
 
     const meetup = await Meetup.findOneBy({
         id: parseInt(id)
