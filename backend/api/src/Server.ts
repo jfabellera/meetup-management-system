@@ -1,8 +1,10 @@
 import * as express from 'express'
-const attendee = require('./controllers/attendee')
-const raffle_history = require('./controllers/raffle_history')
+import userRoutes from './routes/users'
+import meetupRoutes from './routes/meetups'
+import ticketRoutes from './routes/tickets'
+import { AppDataSource } from './datasource'
 
-const DEFAULT_API_SERVER_PORT = '3000'
+AppDataSource.initialize();
 
 class Server {
   private express: express.Application
@@ -25,80 +27,9 @@ class Server {
   }
 
   private routes(): void {
-    this.express.get('/', (req, res, next) => {
-      res.send("Meetup Management System API")
-    })
-
-    this.express.get('/api/getAttendees', (req, res) => {
-      attendee.getAttendees()
-        .then((response: any) => {
-          res.status(200).send(response)
-        })
-        .catch((error: any) => {
-          res.status(500).send(error)
-        })
-    })
-
-    this.express.get('/api/getMeetups', (req, res) => {
-      attendee.getMeetups()
-        .then((response: any) => {
-          res.status(200).send(response)
-        })
-        .catch((error: any) => {
-          res.status(500).send(error)
-        })
-    })
-
-    this.express.post('/api/updateAttendee/:id', (req, res) => {
-      attendee.updateAttendee(
-        req.params.id,
-        req.body.name,
-        req.body.checked_in,
-        req.body.raffle_number,
-        req.body.raffle_winner
-      )
-        .then((response: any) => {
-          res.status(200).send(response)
-        })
-        .catch((error: any) => {
-          res.status(500).send(error)
-        })
-    })
-
-    this.express.get('/api/getLatestRaffleWin', (req, res) => {
-      raffle_history.getLatestRaffleWin()
-        .then((response: any) => {
-          res.status(200).send(response)
-        })
-        .catch((error: any) => {
-          res.status(500).send(error)
-        })
-    })
-
-    this.express.post('/api/createRaffleWin', (req, res) => {
-      raffle_history.createRaffleWin(
-        req.body.attendee_id,
-      )
-        .then((response: any) => {
-          res.status(200).send(response)
-        })
-        .catch((error: any) => {
-          res.status(500).send(error)
-        })
-    })
-
-    this.express.post('/api/updateRaffleWin/:id', (req, res) => {
-      raffle_history.updateRaffleWin(
-        req.params.id,
-        req.body.claimed,
-      )
-        .then((response: any) => {
-          res.status(200).send(response)
-        })
-        .catch((error: any) => {
-          res.status(500).send(error)
-        })
-    })
+    this.express.use('/users', userRoutes);
+    this.express.use('/meetups', meetupRoutes);
+    this.express.use('/tickets', ticketRoutes);
 
     this.express.use("*", (req, res, next) => {
       res.send("Not a valid endpoint.")
@@ -114,7 +45,7 @@ class Server {
   }
 }
 
-const port = parseInt(process.env.MMS_API_SERVER_PORT || DEFAULT_API_SERVER_PORT)
+const port = parseInt(process.env.MMS_API_SERVER_PORT || '3000')
 const server = new Server().start(port)
   .then(port => console.log(`Running on port ${port}`))
   .catch(error => {
