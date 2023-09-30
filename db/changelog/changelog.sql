@@ -13,3 +13,6 @@ ALTER TABLE "tickets" ADD CONSTRAINT "user_id_fkey" FOREIGN KEY ("user_id") REFE
 
 -- changeset jan:2
 ALTER TABLE "meetups" ALTER COLUMN "id" TYPE BIGINT;
+
+-- changeset jan:3
+ALTER TABLE "users" ADD COLUMN "password_hash" VARCHAR(60) NOT NULL;
