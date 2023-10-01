@@ -11,10 +11,10 @@ export const getAllMeetups = async (req: Request, res: Response) => {
 }
 
 export const getMeetup = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { meetup_id } = req.params;
 
     const meetup = await Meetup.findOneBy({
-        id: parseInt(id)
+        id: parseInt(meetup_id)
     });
 
     if (!meetup) {
@@ -49,11 +49,11 @@ export const createMeetup = async (req: Request, res: Response) => {
 }
 
 export const updateMeetup = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { meetup_id } = req.params;
     const { name, date, organizer_ids, has_raffle } = req.body;
 
     const meetup = await Meetup.findOneBy({
-        id: parseInt(id)
+        id: parseInt(meetup_id)
     });
 
     if (!meetup) {
@@ -88,10 +88,10 @@ export const updateMeetup = async (req: Request, res: Response) => {
 }
 
 export const deleteMeetup = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { meetup_id } = req.params;
 
     const meetup = await Meetup.findOneBy({
-        id: parseInt(id)
+        id: parseInt(meetup_id)
     });
 
     if (!meetup) {

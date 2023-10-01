@@ -26,8 +26,8 @@ class AuthServer {
 
   private routes(): void {
     this.express.post('/', createUser);
-    this.express.put('/:id', updateUser);
-    this.express.delete('/:id', deleteUser);
+    this.express.put('/:user_id', updateUser);
+    this.express.delete('/:user_id', deleteUser);
 
     this.express.post('/login', login);
 

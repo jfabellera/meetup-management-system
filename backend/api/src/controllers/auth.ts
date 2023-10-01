@@ -52,11 +52,11 @@ export const createUser = async (req: Request, res: Response) => {
 }
 
 export const updateUser = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { user_id } = req.params;
     const { email, first_name, last_name, nick_name, is_organizer, is_admin, password } = req.body;
 
     const user = await User.findOneBy({
-        id: parseInt(id)
+        id: parseInt(user_id)
     });
 
     if (!user) {
@@ -102,10 +102,10 @@ export const updateUser = async (req: Request, res: Response) => {
 }
 
 export const deleteUser = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { user_id } = req.params;
 
     const user = await User.findOneBy({
-        id: parseInt(id)
+        id: parseInt(user_id)
     });
 
     if (!user) {

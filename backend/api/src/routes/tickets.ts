@@ -4,9 +4,9 @@ import { getAllTickets, getTicket, createTicket, updateTicket, deleteTicket } fr
 const router = express.Router();
 
 router.get('/', getAllTickets);
-router.get('/:id', getTicket);
+router.get('/:ticket_id', getTicket);
 router.post('/', createTicket);
-router.put('/:id', updateTicket);
-router.delete('/:id', deleteTicket);
+router.put('/:ticket_id', updateTicket);
+router.delete('/:ticket_id', deleteTicket);
 
 export default router;

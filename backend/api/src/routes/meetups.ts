@@ -4,9 +4,9 @@ import { getAllMeetups, getMeetup, createMeetup, updateMeetup, deleteMeetup } fr
 const router = express.Router();
 
 router.get('/', getAllMeetups);
-router.get('/:id', getMeetup);
+router.get('/:meetup_id', getMeetup);
 router.post('/', createMeetup);
-router.put('/:id', updateMeetup);
-router.delete('/:id', deleteMeetup);
+router.put('/:meetup_id', updateMeetup);
+router.delete('/:meetup_id', deleteMeetup);
 
 export default router;
