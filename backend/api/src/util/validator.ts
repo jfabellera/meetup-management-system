@@ -10,7 +10,8 @@ const userSchema = Joi.object({
     last_name: Joi.string().required(),
     nick_name: Joi.string().required(),
     is_organizer: Joi.boolean().default(false),
-    is_admin: Joi.boolean().default(false)
+    is_admin: Joi.boolean().default(false),
+    password_hash: Joi.string().default('')
 });
 
 const meetupSchema = Joi.object({

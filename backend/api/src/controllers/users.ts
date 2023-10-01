@@ -50,7 +50,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { email, first_name, last_name, nick_name, is_organizer, is_admin } = req.body;
+    const { email, first_name, last_name, nick_name, is_organizer, is_admin, password_hash } = req.body;
 
     const user = await User.findOneBy({
         id: parseInt(id)
@@ -77,6 +77,7 @@ export const updateUser = async (req: Request, res: Response) => {
     user.nick_name = nick_name ?? user.nick_name;
     user.is_organizer = is_organizer ?? user.is_organizer;
     user.is_admin = is_admin ?? user.is_admin;
+    user.password_hash = password_hash ?? user.password_hash;
 
     const { error, value } = validateUser(user);
     

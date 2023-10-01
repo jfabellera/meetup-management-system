@@ -22,4 +22,7 @@ export class User extends BaseEntity {
 
   @Column({ type: 'boolean' })
   is_admin: boolean;
+
+  @Column({ type: 'varchar', length: 60 })
+  password_hash: string;
 }
