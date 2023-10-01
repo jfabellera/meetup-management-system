@@ -1,7 +1,8 @@
 import * as express from 'express'
-import jwt from 'jsonwebtoken'
+import { createUser, updateUser, deleteUser, login } from './controllers/auth'
+import { AppDataSource } from './datasource'
 
-const DEFAULT_AUTH_SERVER_PORT = '3001'
+AppDataSource.initialize();
 
 class AuthServer {
   private express: express.Application
@@ -24,24 +25,11 @@ class AuthServer {
   }
 
   private routes(): void {
-    this.express.get('/', (req, res, next) => {
-      res.send("Meetup Management System Authentication")
-    })
+    this.express.post('/', createUser);
+    this.express.put('/:id', updateUser);
+    this.express.delete('/:id', deleteUser);
 
-    this.express.get('/login', (req, res) => {
-      // TODO(jan): Once new database schema is setup, add actual password hash comparison and user info population
-      // TODO(jan): Add field validation (express-validator)
-      if (true) {
-        // Authorized
-        const userInfo = { username: '',  isAdmin: false, isOrganizer: false }
-        const accessToken = jwt.sign({ userInfo }, process.env.JWT_ACCESS_SECRET || '')
-
-        res.json({ accessToken: accessToken })
-      } else {
-        // Unauthorized
-        res.status(401).json({ message: "Authentication failed" })
-      }
-    })
+    this.express.post('/login', login);
 
     this.express.use("*", (req, res, next) => {
       res.send("Not a valid endpoint.")
@@ -57,7 +45,7 @@ class AuthServer {
   }
 }
 
-const port = parseInt(process.env.MMS_AUTH_SERVER_PORT || DEFAULT_AUTH_SERVER_PORT)
+const port = parseInt(process.env.MMS_AUTH_SERVER_PORT || '3001')
 const server = new AuthServer().start(port)
   .then(port => console.log(`Running on port ${port}`))
   .catch(error => {
