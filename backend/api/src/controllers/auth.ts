@@ -118,16 +118,28 @@ export const deleteUser = async (req: Request, res: Response) => {
 }
 
 export const login = async ( req: Request, res: Response ) => {
-    // TODO(jan): Once new database schema is setup, add actual password hash comparison and user info population
-    // TODO(jan): Add field validation (express-validator)
-    if (true) {
-        // Authorized
-        const userInfo = { username: '',  isAdmin: false, isOrganizer: false }
-        const accessToken = jwt.sign({ userInfo }, process.env.JWT_ACCESS_SECRET || '')
+    const { email, password } = req.body;
 
-        res.json({ accessToken: accessToken })
-    } else {
-        // Unauthorized
-        res.status(401).json({ message: "Authentication failed" })
+    const existingUser = await User.findOne({
+        where: {
+            email:  ILike(email)
+        }
+    });
+
+    if (existingUser) {
+        const isAuthenticated = await bcrypt.compare(password, existingUser.password_hash);
+
+        if (isAuthenticated) {
+            const token = jwt.sign({
+                id: existingUser.id,
+                nick_name: existingUser.nick_name,
+                is_organizer: existingUser.is_organizer,
+                is_admin: existingUser.is_admin
+            }, process.env.JWT_ACCESS_SECRET || 'secret');
+
+            return res.status(201).json({token});
+        }
     }
+
+    return res.status(401).json({ message: 'Invalid email or password.' });
 }
