@@ -1,4 +1,5 @@
 import Joi from "joi";
+import passwordComplexity from 'joi-password-complexity'
 
 const validator = (schema: Joi.Schema) => (payload: any) =>
     schema.validate(payload, { abortEarly: false });
@@ -30,6 +31,20 @@ const ticketSchema = Joi.object({
     raffle_entries: Joi.number().min(0).default(0),
     raffle_wins: Joi.number().min(0).default(0).max(Joi.ref('raffle_entries'))
 });
+
+const passwordComplexityOptions = {
+    min: 3,
+    max: 30,
+    lowerCase: 1,
+    upperCase: 1,
+    numeric: 1,
+    symbol: 1,
+    requirementCount: 4
+};
+
+export const validatePassword = (password: string) => {
+    return passwordComplexity(passwordComplexityOptions, '\"password\"').validate(password);
+}
 
 export const validateUser = validator(userSchema);
 export const validateMeetup = validator(meetupSchema);

@@ -1,14 +1,34 @@
 import { Request, Response } from 'express'
 import { ILike } from 'typeorm';
 import { User } from '../entity/User'
-import { validateUser } from '../util/validator';
+import { validateUser, validatePassword } from '../util/validator';
 import jwt from 'jsonwebtoken'
+import bcrypt from 'bcrypt'
+
+const hashPassword = async (password: string) => {
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+    return passwordHash;
+}
 
 export const createUser = async (req: Request, res: Response) => {
-    const { error, value } = validateUser(req.body);
+    const { email, first_name, last_name, nick_name, is_organizer, is_admin, password } = req.body;
+
+    // TODO(jan): Make this cleaner (schema validation + password validation)
+    // Validate all of schema except password_hash (not yet generated)
+    const { error, value } = validateUser({
+        email, first_name, last_name, nick_name, is_organizer, is_admin
+    });
 
     if (error) {
         return res.status(400).json(error.details);
+    }
+
+    // Validate password
+    const passwordValidationResult = validatePassword(password);
+
+    if (passwordValidationResult.error) {
+        return res.status(400).json(passwordValidationResult.error.details);
     }
 
     // Check if email is taken
@@ -22,6 +42,9 @@ export const createUser = async (req: Request, res: Response) => {
         return res.status(409).json({ message: 'Email is taken.' });
     }
 
+    // Hash password and create
+    value.password_hash = await hashPassword(password);
+    
     const newUser = User.create(value);
     await newUser.save();
 
@@ -30,7 +53,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { email, first_name, last_name, nick_name, is_organizer, is_admin, password_hash } = req.body;
+    const { email, first_name, last_name, nick_name, is_organizer, is_admin, password } = req.body;
 
     const user = await User.findOneBy({
         id: parseInt(id)
@@ -57,7 +80,15 @@ export const updateUser = async (req: Request, res: Response) => {
     user.nick_name = nick_name ?? user.nick_name;
     user.is_organizer = is_organizer ?? user.is_organizer;
     user.is_admin = is_admin ?? user.is_admin;
-    user.password_hash = password_hash ?? user.password_hash;
+
+    if (password) {
+        const passwordValidationResult = validatePassword(password);
+        if (passwordValidationResult.error) {
+            return res.status(400).json(passwordValidationResult.error.details);
+        }
+        
+        user.password_hash = await hashPassword(password);
+    }
 
     const { error, value } = validateUser(user);
     
