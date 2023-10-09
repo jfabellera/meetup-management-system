@@ -1,6 +1,7 @@
 import * as express from 'express'
 import { createUser, updateUser, deleteUser, login } from './controllers/auth'
 import { AppDataSource } from './datasource'
+import { authChecker, Rule } from './middleware/authChecker';
 
 AppDataSource.initialize();
 
@@ -26,8 +27,8 @@ class AuthServer {
 
   private routes(): void {
     this.express.post('/', createUser);
-    this.express.put('/:user_id', updateUser);
-    this.express.delete('/:user_id', deleteUser);
+    this.express.put('/:user_id', authChecker([Rule.overrideAdmin]), updateUser);
+    this.express.delete('/:user_id', authChecker([Rule.overrideAdmin]), deleteUser);
 
     this.express.post('/login', login);
 
