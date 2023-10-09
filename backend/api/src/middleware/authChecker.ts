@@ -4,7 +4,7 @@ import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { User } from '../entity/User';
 
-enum Rule {
+export enum Rule {
     requireOrganizer,
     requireAdmin,
     overrideOrganizer,
@@ -38,7 +38,7 @@ const checkMeetupOrganizer = async (meetupId: number, userId: number): Promise<b
 // TODO(jan): Make it so that there is only 1 next() at the end of the function.
 // so that if there is any data transfer from auth middleware to next function,
 // that is handled.
-export const authChecker = (rules: Rule[]) => async (req: Request, res: Response, next: NextFunction) => {
+export const authChecker = (rules?: Rule[]) => async (req: Request, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.header('Authorization');
         // const prefix = authHeader?.split(' ')[0]
@@ -59,8 +59,8 @@ export const authChecker = (rules: Rule[]) => async (req: Request, res: Response
 
         if (rules) {
             // Account type overrides
-            if (rules.includes(Rule.overrideOrganizer) && user.is_organizer) next();
-            if (rules.includes(Rule.overrideAdmin) && user.is_admin) next();
+            if (rules.includes(Rule.overrideOrganizer) && user.is_organizer) return next();
+            if (rules.includes(Rule.overrideAdmin) && user.is_admin) return next();
 
             // Account type requires
             if (rules.includes(Rule.requireOrganizer) && !user.is_organizer) return reject(res);
@@ -85,8 +85,8 @@ export const authChecker = (rules: Rule[]) => async (req: Request, res: Response
             if (!ticket) return res.status(404).json({ message: 'Invalid ticket ID.'});
             // TODO(jan): Pass ticket to next function
 
-            if (rules.includes(Rule.overrideMeetupOrganizer) && await checkMeetupOrganizer(ticket.id, user.id)) {
-                next();
+            if (rules?.includes(Rule.overrideMeetupOrganizer) && await checkMeetupOrganizer(ticket.id, user.id)) {
+                return next();
             }
 
             if (user.id != ticket.user_id) {
@@ -108,7 +108,7 @@ export const authChecker = (rules: Rule[]) => async (req: Request, res: Response
             }
         }
 
-        next();
+        return next();
     } catch (error) {
         return res.status(500).json({ message: 'Oopsie woopsie!!!' });
     }
