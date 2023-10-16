@@ -7,19 +7,27 @@ import Home from './pages/Home'
 import ImportAttendees from './pages/ImportAttendees';
 import Raffle from './pages/Raffle';
 import TypingTest from './pages/TypingTest';
+import Homepage from './pages/Homepage'
+
+import {store} from './store/store';
+import { Provider } from "react-redux";
+
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home/>} />
-        <Route path="/checkin" element={<CheckIn/>} />
-        <Route path="/raffle" element={<Raffle/>} />
-        <Route path="/typing_test" element={<TypingTest/>} />
-        <Route path="/attendees" element={<AttendeeList/>} />
-        <Route path="/import" element={<ImportAttendees/>} />
-      </Routes>
-    </Router>
+    <Provider store={store}>
+      <Router>
+        <Routes>
+          <Route path="/home" element={<Home/>} />
+          <Route path="/checkin" element={<CheckIn/>} />
+          <Route path="/raffle" element={<Raffle/>} />
+          <Route path="/typing_test" element={<TypingTest/>} />
+          <Route path="/attendees" element={<AttendeeList/>} />
+          <Route path="/import" element={<ImportAttendees/>} />
+          <Route path="/" element={<Homepage/>} />
+        </Routes>
+      </Router>
+    </Provider>
   );
 }
 export default App
