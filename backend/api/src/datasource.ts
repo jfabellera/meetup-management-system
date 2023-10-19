@@ -12,6 +12,6 @@ export const AppDataSource = new DataSource({
     password: process.env.MMS_DATABASE_PASSWORD || 'password',
     database: process.env.MMS_DATABASE_NAME || 'mms-dev',
     entities: [User, Meetup, Ticket],
-    synchronize: true,
+    synchronize: false,
     logging: false,
 })
