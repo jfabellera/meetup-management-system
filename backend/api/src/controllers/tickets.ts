@@ -10,10 +10,10 @@ export const getAllTickets = async (req: Request, res: Response) => {
 }
 
 export const getTicket = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { ticket_id } = req.params;
 
     const ticket = await Ticket.findOneBy({
-        id: parseInt(id)
+        id: parseInt(ticket_id)
     });
 
     if (!ticket) {
@@ -47,11 +47,11 @@ export const createTicket = async (req: Request, res: Response) => {
 }
 
 export const updateTicket = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { ticket_id } = req.params;
     const { is_checked_in, raffle_entries, raffle_wins } = req.body;
 
     const ticket = await Ticket.findOneBy({
-        id: parseInt(id)
+        id: parseInt(ticket_id)
     });
 
     if (!ticket) {
@@ -75,10 +75,10 @@ export const updateTicket = async (req: Request, res: Response) => {
 }
 
 export const deleteTicket = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { ticket_id } = req.params;
 
     const ticket = await Ticket.findOneBy({
-        id: parseInt(id)
+        id: parseInt(ticket_id)
     });
 
     if (!ticket) {
