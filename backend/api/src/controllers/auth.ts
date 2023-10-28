@@ -78,8 +78,12 @@ export const updateUser = async (req: Request, res: Response) => {
     user.first_name = first_name ?? user.first_name;
     user.last_name = last_name ?? user.last_name;
     user.nick_name = nick_name ?? user.nick_name;
-    user.is_organizer = is_organizer ?? user.is_organizer;
-    user.is_admin = is_admin ?? user.is_admin;
+
+    // Require admin
+    if (res.locals.requestor.is_admin) {
+        user.is_organizer = is_organizer ?? user.is_organizer;
+        user.is_admin = is_admin ?? user.is_admin;
+    }
 
     if (password) {
         const passwordValidationResult = validatePassword(password);
