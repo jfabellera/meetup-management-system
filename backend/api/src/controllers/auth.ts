@@ -12,12 +12,12 @@ const hashPassword = async (password: string) => {
 }
 
 export const createUser = async (req: Request, res: Response) => {
-    const { email, first_name, last_name, nick_name, is_organizer, is_admin, password } = req.body;
+    const { email, first_name, last_name, nick_name, password } = req.body;
 
     // TODO(jan): Make this cleaner (schema validation + password validation)
     // Validate all of schema except password_hash (not yet generated)
     const { error, value } = validateUser({
-        email, first_name, last_name, nick_name, is_organizer, is_admin
+        email, first_name, last_name, nick_name
     });
 
     if (error) {
