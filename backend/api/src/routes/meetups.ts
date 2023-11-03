@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get('/', getAllMeetups);
 router.get('/:meetup_id', getMeetup);
-router.post('/', authChecker([Rule.requireOrganizer]),createMeetup);
+router.post('/', authChecker([Rule.requireOrganizer]), createMeetup);
 router.put('/:meetup_id', authChecker([Rule.requireOrganizer]), updateMeetup);
 router.delete('/:meetup_id', authChecker([Rule.requireOrganizer]), deleteMeetup);
 
