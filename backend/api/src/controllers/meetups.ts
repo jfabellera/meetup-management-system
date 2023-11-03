@@ -81,8 +81,23 @@ export const updateMeetup = async (req: Request, res: Response) => {
 
     meetup.name = name ?? meetup.name;
     meetup.date = date ?? meetup.date;
-    meetup.organizer_ids = organizer_ids ?? meetup.organizer_ids;
     meetup.has_raffle = has_raffle ?? meetup.has_raffle;
+
+    // Only allow "head" organizer to update organizer list
+    if (meetup.organizer_ids[0] == parseInt(res.locals.requestor.id) && organizer_ids) {
+        meetup.organizer_ids = organizer_ids;
+
+        // Cast as number[]
+        meetup.organizer_ids = meetup.organizer_ids.map((value) => Number(value));
+
+        // Add requestor to front of organizer list (prevent head organizer from removing themselves)
+        meetup.organizer_ids.unshift(parseInt(res.locals.requestor.id));
+
+        // Remove duplicates 
+        meetup.organizer_ids = Array.from(new Set(meetup.organizer_ids));
+    } else if (organizer_ids) {
+        return res.status(401).json({ message: 'Only the head organizer can edit the organizer list.' });
+    }
 
     const { error, value } = validateMeetup(meetup);
     
