@@ -19,7 +19,7 @@ const meetupSchema = Joi.object({
     id: Joi.number(),
     name: Joi.string().required(),
     date: Joi.date().required(),
-    organizer_ids: Joi.array().items(Joi.number()).min(1),
+    organizer_ids: Joi.array().items(Joi.number()).default(<number[]>[]),
     has_raffle: Joi.boolean().default(false)
 });
 

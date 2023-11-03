@@ -31,12 +31,20 @@ export const createMeetup = async (req: Request, res: Response) => {
         return res.status(400).json(error.details);
     }
 
+    // Add requestor to front of organizer list
+    value.organizer_ids.unshift(parseInt(res.locals.requestor.id));
+
+    // Remove duplicates 
+    value.organizer_ids = Array.from(new Set(value.organizer_ids));
+
     // Check if meetup name is taken
     const existingMeetup = await Meetup.findOne({
         where: {
             name:  ILike(value.name)
         }
     });
+
+    // TODO(jan): Check if organizers are organizers?
 
     if (existingMeetup) {
         return res.status(409).json({ message: 'Meetup name is taken.' });
