@@ -121,6 +121,10 @@ export const deleteMeetup = async (req: Request, res: Response) => {
         return res.status(404).json({ message: 'Invalid meetup ID.' });
     }
 
+    if (meetup.organizer_ids[0] != parseInt(res.locals.requestor.id)) {
+        return res.status(401).json({ message: 'Only the head organizer is authorized to delete this meetup.' });
+    }
+
     meetup.remove();
 
     return res.status(204).end();
