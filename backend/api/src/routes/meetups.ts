@@ -10,6 +10,6 @@ router.get('/:meetup_id', getMeetup);
 router.post('/', authChecker([Rule.requireOrganizer]), createMeetup);
 router.put('/:meetup_id', authChecker([Rule.requireOrganizer]), updateMeetup);
 router.delete('/:meetup_id', authChecker([Rule.requireOrganizer]), deleteMeetup);
-router.post('/:meetup_id/rsvp', authChecker(), createTicket);
+router.post('/:meetup_id/rsvp', authChecker([Rule.ignoreMeetupOrganizer]), createTicket);
 
 export default router;

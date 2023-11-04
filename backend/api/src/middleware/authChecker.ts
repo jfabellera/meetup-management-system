@@ -9,7 +9,8 @@ export enum Rule {
     requireAdmin,
     overrideOrganizer,
     overrideAdmin,
-    overrideMeetupOrganizer // Organizer of meetup
+    overrideMeetupOrganizer, // Organizer of meetup
+    ignoreMeetupOrganizer,
 }
 
 interface TokenInterface {
@@ -102,7 +103,7 @@ export const authChecker = (rules?: Rule[]) => async (req: Request, res: Respons
         }
 
         // If accessing a meetup, check that the requestor is an organizer of the meetup
-        if (req.params.meetup_id) {
+        if (req.params.meetup_id && !rules?.includes(Rule.ignoreMeetupOrganizer)) {
             const meetup = await Meetup.findOneBy({
                 id: parseInt(req.params.meetup_id)
             });
