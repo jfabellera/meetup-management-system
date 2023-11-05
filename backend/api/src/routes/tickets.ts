@@ -6,7 +6,6 @@ const router = express.Router();
 
 router.get('/', authChecker([Rule.requireAdmin]), getAllTickets);
 router.get('/:ticket_id', authChecker([Rule.overrideMeetupOrganizer]), getTicket);
-router.post('/', authChecker(), createTicket);
 router.put('/:ticket_id', authChecker(), updateTicket);
 router.delete('/:ticket_id', authChecker(), deleteTicket);
 

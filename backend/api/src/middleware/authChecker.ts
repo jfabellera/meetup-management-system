@@ -9,7 +9,8 @@ export enum Rule {
     requireAdmin,
     overrideOrganizer,
     overrideAdmin,
-    overrideMeetupOrganizer // Organizer of meetup
+    overrideMeetupOrganizer, // Organizer of meetup
+    ignoreMeetupOrganizer,
 }
 
 interface TokenInterface {
@@ -57,6 +58,9 @@ export const authChecker = (rules?: Rule[]) => async (req: Request, res: Respons
         // Reject if user does not exist
         if (!user) return res.status(404).json({ message: 'Invalid user ID.'});
 
+        // Pass requestor to next function
+        res.locals.requestor = user;
+
         if (rules) {
             // Account type overrides
             if (rules.includes(Rule.overrideOrganizer) && user.is_organizer) return next();
@@ -73,7 +77,9 @@ export const authChecker = (rules?: Rule[]) => async (req: Request, res: Respons
                 return reject(res);
             }
 
-            // TODO(jan): Pass user to next function
+            // Pass user to next function
+            // TODO(jan): validate
+            res.locals.user = user;
         }
 
         // If accessing a ticket, check that the requestor is the owner of the ticket
@@ -83,7 +89,9 @@ export const authChecker = (rules?: Rule[]) => async (req: Request, res: Respons
             });
 
             if (!ticket) return res.status(404).json({ message: 'Invalid ticket ID.'});
-            // TODO(jan): Pass ticket to next function
+
+            // Pass ticket to next function
+            res.locals.ticket = ticket;
 
             if (rules?.includes(Rule.overrideMeetupOrganizer) && await checkMeetupOrganizer(ticket.id, user.id)) {
                 return next();
@@ -95,13 +103,15 @@ export const authChecker = (rules?: Rule[]) => async (req: Request, res: Respons
         }
 
         // If accessing a meetup, check that the requestor is an organizer of the meetup
-        if (req.params.meetup_id) {
+        if (req.params.meetup_id && !rules?.includes(Rule.ignoreMeetupOrganizer)) {
             const meetup = await Meetup.findOneBy({
                 id: parseInt(req.params.meetup_id)
             });
 
             if (!meetup) return res.status(404).json({ message: 'Invalid meetup ID.'});
-            // TODO(jan): Pass meetup to next function
+
+            // Pass meetup to next function
+            res.locals.meetup = meetup;
 
             if (!meetup.organizer_ids.includes(user.id)) {
                 return reject(res);

@@ -24,7 +24,13 @@ export const getTicket = async (req: Request, res: Response) => {
 }
 
 export const createTicket = async (req: Request, res: Response) => {
-    const { error, value } = validateTicket(req.body);
+    const meetup_id = parseInt(req.params.meetup_id);
+    const user_id = parseInt(res.locals.requestor.id);
+
+    const { error, value } = validateTicket({
+        meetup_id,
+        user_id
+    });
 
     if (error) {
         return res.status(400).json(error.details);
