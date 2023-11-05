@@ -35,7 +35,6 @@ import {
 } from 'react-icons/fi'
 import { IconType } from 'react-icons'
 // import { MoonIcon, SunIcon } from '@chakra-ui/icons'
-import MeetupDropdown from '../Sidebar/MeetupDropdown'
 
 interface Props {
   children: React.ReactNode
@@ -52,11 +51,6 @@ interface LinkItemProps {
 }
 const LinkItems: Array<LinkItemProps> = [
   // { name: 'Home', url: '.', icon: FiHome },
-  { name: 'Check-In', url: './checkin', icon: FiUserCheck },
-  { name: 'Raffle', url: './raffle', icon: FiGift },
-  { name: 'Typing Test', url: './typing_test', icon: FiAward },
-  { name: 'View Attendees', url: './attendees', icon: FiList },
-  { name: 'Import Attendees', url: './import', icon: FiDatabase },
 ]
 
 const NavLink = (props: Props) => {
