@@ -9,14 +9,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^1.9.5",
     "@chakra-ui/react": "^2.4.2",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "framer-motion": "^7.6.19",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-query": "^3.39.3",
+    "react-redux": "^8.1.1",
     "react-icons": "^4.7.1",
-    "react-router-dom": "^6.4.4"
+    "react-router-dom": "^6.4.4",
+    "react-scripts": "5.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.0.24",
