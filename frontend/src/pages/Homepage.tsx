@@ -91,11 +91,7 @@ export default function Homepage() {
 
   if (isLoading) return <div>loading...</div>;
   return (
-    <Page
-      pageTitle="Meetup Management System"
-      pageDescription="This app aims to help streamline activites related to mechanical keyboard
-      meetups for the Texas Mechanical Keyboards community."
-    >
+    <Page>
       <Text fontSize="3xl" as="b">
         Upcoming Meetups
       </Text>
