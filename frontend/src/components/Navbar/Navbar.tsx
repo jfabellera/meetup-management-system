@@ -90,7 +90,8 @@ export default function Nav({ children }: { children: ReactNode }) {
           <Link href=".">
             <Box> {import.meta.env.VITE_APP_TITLE} </Box>
           </Link>
-          <NavbarDropdown/>
+          {/* TODO(jan): Make dependent on logged in state */}
+          {false ? <NavbarDropdown/> : <GuestButtons/>}
         </Flex>
 
         <Box w='auto' ml={{ base: 'full'}} p="6">
@@ -105,14 +106,37 @@ interface NavbarProps extends BoxProps {
   onClose: () => void
 }
 
+const GuestButtons = () => {
+  return (
+    <Stack
+    flex={{ base: 1, md: 0 }}
+    justify={'flex-end'}
+    direction={'row'}
+    spacing={6}>
+      <Button as={'a'} fontSize={'sm'} fontWeight={400} variant={'link'} href={'./login'}>
+        Sign In
+      </Button>
+      <Button
+        as={'a'}
+        display={{ base: 'none', md: 'inline-flex' }}
+        fontSize={'sm'}
+        fontWeight={600}
+        color={'white'}
+        bg={'pink.400'}
+        href={'./signup'}
+        _hover={{
+          bg: 'pink.300',
+        }}>
+        Sign Up
+      </Button>
+    </Stack>
+  );
+}
+
 const NavbarDropdown = ({ onClose, ...rest}: NavbarProps) => {
   return(
     <Flex alignItems={'center'}>
       <Stack direction={'row'} spacing={7}>
-        {/* <Button onClick={toggleColorMode}>
-          {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
-        </Button> */}
-
         <Menu>
           <MenuButton
             as={Button}
