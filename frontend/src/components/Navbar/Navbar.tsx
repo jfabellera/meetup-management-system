@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react';
 import {
   Box,
   BoxProps,
@@ -23,7 +23,7 @@ import {
   Stack,
   useColorMode,
   Center,
-} from '@chakra-ui/react'
+} from '@chakra-ui/react';
 import {
   FiAward,
   FiDatabase,
@@ -32,12 +32,12 @@ import {
   FiList,
   FiMenu,
   FiUserCheck,
-} from 'react-icons/fi'
-import { IconType } from 'react-icons'
+} from 'react-icons/fi';
+import { IconType } from 'react-icons';
 // import { MoonIcon, SunIcon } from '@chakra-ui/icons'
 
 interface Props {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 /**
@@ -45,16 +45,16 @@ interface Props {
  */
 
 interface LinkItemProps {
-  name: string
-  url: string
-  icon: IconType
+  name: string;
+  url: string;
+  icon: IconType;
 }
 const LinkItems: Array<LinkItemProps> = [
   // { name: 'Home', url: '.', icon: FiHome },
-]
+];
 
 const NavLink = (props: Props) => {
-  const { children } = props
+  const { children } = props;
 
   return (
     <Box
@@ -66,54 +66,67 @@ const NavLink = (props: Props) => {
         textDecoration: 'none',
         bg: useColorModeValue('gray.200', 'gray.700'),
       }}
-      href={'#'}>
+      href={'#'}
+    >
       {children}
     </Box>
-  )
-}
+  );
+};
 
 export default function Nav({ children }: { children: ReactNode }) {
   // const { colorMode, toggleColorMode } = useColorMode()
-  const { isOpen, onOpen, onClose } = useDisclosure()
+  const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <>
-      <Box minH="100vh" width='100%' bg={useColorModeValue('gray.100', 'gray.900')}>
+      <Box
+        minH="100vh"
+        width="100%"
+        bg={useColorModeValue('gray.100', 'gray.900')}
+      >
         <Flex
-        px={4}
-        h={16}
-        w="full"
-        alignItems={'center'}
-        justifyContent={'space-between'}
-        bg={useColorModeValue('white', 'gray.900')}
-        borderBottom="1px"
-        borderBottomColor={useColorModeValue('gray.200', 'gray.700')}>
+          px={4}
+          h={16}
+          w="full"
+          alignItems={'center'}
+          justifyContent={'space-between'}
+          bg={useColorModeValue('white', 'gray.900')}
+          borderBottom="1px"
+          borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
+        >
           <Link href=".">
             <Box> {import.meta.env.VITE_APP_TITLE} </Box>
           </Link>
           {/* TODO(jan): Make dependent on logged in state */}
-          {false ? <NavbarDropdown/> : <GuestButtons/>}
+          {false ? <NavbarDropdown /> : <GuestButtons />}
         </Flex>
 
-        <Box w='auto' ml={{ base: 'full'}} p="6">
-        {children}
+        <Box w="auto" ml={{ base: 'full' }} p="6">
+          {children}
         </Box>
       </Box>
     </>
-  )
+  );
 }
 
 interface NavbarProps extends BoxProps {
-  onClose: () => void
+  onClose: () => void;
 }
 
 const GuestButtons = () => {
   return (
     <Stack
-    flex={{ base: 1, md: 0 }}
-    justify={'flex-end'}
-    direction={'row'}
-    spacing={6}>
-      <Button as={'a'} fontSize={'sm'} fontWeight={400} variant={'link'} href={'./login'}>
+      flex={{ base: 1, md: 0 }}
+      justify={'flex-end'}
+      direction={'row'}
+      spacing={6}
+    >
+      <Button
+        as={'a'}
+        fontSize={'sm'}
+        fontWeight={400}
+        variant={'link'}
+        href={'./login'}
+      >
         Sign In
       </Button>
       <Button
@@ -126,15 +139,16 @@ const GuestButtons = () => {
         href={'./signup'}
         _hover={{
           bg: 'pink.300',
-        }}>
+        }}
+      >
         Sign Up
       </Button>
     </Stack>
   );
-}
+};
 
-const NavbarDropdown = ({ onClose, ...rest}: NavbarProps) => {
-  return(
+const NavbarDropdown = ({ onClose, ...rest }: NavbarProps) => {
+  return (
     <Flex alignItems={'center'}>
       <Stack direction={'row'} spacing={7}>
         <Menu>
@@ -143,7 +157,8 @@ const NavbarDropdown = ({ onClose, ...rest}: NavbarProps) => {
             rounded={'full'}
             variant={'link'}
             cursor={'pointer'}
-            minW={0}>
+            minW={0}
+          >
             <Avatar
               size={'sm'}
               src={'https://avatars.dicebear.com/api/male/username.svg'}
@@ -163,27 +178,30 @@ const NavbarDropdown = ({ onClose, ...rest}: NavbarProps) => {
             </Center>
             <br />
             <MenuDivider />
-              {LinkItems.map((link) => (
-                <NavItem key={link.name} icon={link.icon} url={link.url}>
-                  {link.name}
-                </NavItem>
-              ))}
+            {LinkItems.map((link) => (
+              <NavItem key={link.name} icon={link.icon} url={link.url}>
+                {link.name}
+              </NavItem>
+            ))}
           </MenuList>
         </Menu>
       </Stack>
     </Flex>
-  )
-}
-
+  );
+};
 
 interface NavItemProps extends FlexProps {
-  icon: IconType
-  url: string
-  children: ReactNode
+  icon: IconType;
+  url: string;
+  children: ReactNode;
 }
 const NavItem = ({ icon, url, children, ...rest }: NavItemProps) => {
   return (
-    <Link href={url} style={{ textDecoration: 'none' }} _focus={{ boxShadow: 'none' }}>
+    <Link
+      href={url}
+      style={{ textDecoration: 'none' }}
+      _focus={{ boxShadow: 'none' }}
+    >
       <Flex
         align="center"
         p="4"
@@ -195,7 +213,8 @@ const NavItem = ({ icon, url, children, ...rest }: NavItemProps) => {
           bg: 'cyan.400',
           color: 'white',
         }}
-        {...rest}>
+        {...rest}
+      >
         {icon && (
           <Icon
             mr="4"
@@ -209,11 +228,11 @@ const NavItem = ({ icon, url, children, ...rest }: NavItemProps) => {
         {children}
       </Flex>
     </Link>
-  )
-}
+  );
+};
 
 interface MobileProps extends FlexProps {
-  onOpen: () => void
+  onOpen: () => void;
 }
 const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
   return (
@@ -226,7 +245,8 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
       borderBottomWidth="1px"
       borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
       justifyContent="flex-start"
-      {...rest}>
+      {...rest}
+    >
       <IconButton
         variant="outline"
         onClick={onOpen}
@@ -238,5 +258,5 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
         {import.meta.env.VITE_APP_TITLE}
       </Text>
     </Flex>
-  )
-}
+  );
+};

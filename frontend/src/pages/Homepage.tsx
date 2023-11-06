@@ -25,10 +25,10 @@ import {
   ModalCloseButton,
   useDisclosure,
   Button,
-} from "@chakra-ui/react";
-import { useState } from "react";
-import Page from "../components/Page/Page";
-import { useGetMeetingsQuery } from "../store/databaseSlice";
+} from '@chakra-ui/react';
+import { useState } from 'react';
+import Page from '../components/Page/Page';
+import { useGetMeetingsQuery } from '../store/databaseSlice';
 
 interface MeetupCardProps {
   id: string;
@@ -39,12 +39,12 @@ interface MeetupCardProps {
 }
 const ExampleCards: Array<MeetupCardProps> = [
   {
-    id: "1",
-    name: "Test Meeting",
-    location: "location, TX",
-    date: "11/11/1111",
+    id: '1',
+    name: 'Test Meeting',
+    location: 'location, TX',
+    date: '11/11/1111',
     image_url:
-      "https://cdn.discordapp.com/attachments/1089785393014112278/1158544783527129169/image.png?ex=651d4b29&is=651bf9a9&hm=c95e6cf90f1996ed9626799d43cfb55f693a8f55a2be58ddf14dd0a7c95c5324&",
+      'https://cdn.discordapp.com/attachments/1089785393014112278/1158544783527129169/image.png?ex=651d4b29&is=651bf9a9&hm=c95e6cf90f1996ed9626799d43cfb55f693a8f55a2be58ddf14dd0a7c95c5324&',
   },
   // {
   //   name: "Test Meeting",
@@ -82,9 +82,9 @@ export default function Homepage() {
   const [modalInfo, setModalInfo] = useState({});
 
   if (isLoading) {
-    console.log("loading");
+    console.log('loading');
   } else {
-    console.log("loaded:");
+    console.log('loaded:');
     console.log(meetings);
     console.log(modalInfo);
   }
@@ -160,7 +160,7 @@ const MeetupCard = ({ name, location, date, image_url }: MeetupCardProps) => {
         </Flex>
 
         <Heading size="lg" py={2}>
-          {" "}
+          {' '}
           {name}
         </Heading>
         <Flex>
