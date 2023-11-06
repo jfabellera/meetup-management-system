@@ -1,22 +1,22 @@
-import { Request, Response } from 'express'
-import { User } from '../entity/User'
+import { Request, Response } from 'express';
+import { User } from '../entity/User';
 
 export const getAllUsers = async (req: Request, res: Response) => {
-    const users = await User.find();
+  const users = await User.find();
 
-    return res.json(users);
-}
+  return res.json(users);
+};
 
 export const getUser = async (req: Request, res: Response) => {
-    const { user_id } = req.params;
+  const { user_id } = req.params;
 
-    const user = await User.findOneBy({
-        id: parseInt(user_id)
-    });
+  const user = await User.findOneBy({
+    id: parseInt(user_id),
+  });
 
-    if (!user) {
-        return res.status(404).json({ message: 'Invalid user ID.' });
-    }
+  if (!user) {
+    return res.status(404).json({ message: 'Invalid user ID.' });
+  }
 
-    return res.json(user);
-}
+  return res.json(user);
+};
