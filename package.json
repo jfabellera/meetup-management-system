@@ -14,5 +14,8 @@
     "build:backend": "cd ./backend/api && npm run build && cd ../../",
     "build:frontend": "cd ./frontend && npm run build && cd ../",
     "build:all": "npm run build:backend && npm run build:frontend"
+  },
+  "devDependencies": {
+    "prettier": "3.0.3"
   }
 }
