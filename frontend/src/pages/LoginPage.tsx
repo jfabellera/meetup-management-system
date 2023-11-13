@@ -9,19 +9,18 @@ import {
   Stack,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Page from '../components/Page/Page';
-
-interface Login {
-  email: string;
-  password: string;
-}
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { loginRequest, type LoginPayload } from '../store/userSlice';
 
 const LoginPage = (): JSX.Element => {
-  const [login, setLogin] = useState<Login>({
+  const [login, setLogin] = useState<LoginPayload>({
     email: '',
     password: '',
   });
+  const { loading, data, error } = useAppSelector((state) => state.user);
+  const dispatch = useAppDispatch();
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setLogin({
@@ -33,7 +32,7 @@ const LoginPage = (): JSX.Element => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    // TODO(jan): add login api call or dispatch something something redux here
+    dispatch(loginRequest(login));
   };
 
   return (
@@ -67,6 +66,7 @@ const LoginPage = (): JSX.Element => {
                   type="submit"
                   bg={'blue.400'}
                   color={'white'}
+                  isLoading={loading}
                   _hover={{
                     bg: 'blue.500',
                   }}
