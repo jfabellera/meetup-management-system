@@ -30,11 +30,14 @@ import {
   FiGift,
   FiHome,
   FiList,
+  FiLogOut,
   FiMenu,
   FiUserCheck,
 } from 'react-icons/fi';
 import { IconType } from 'react-icons';
 // import { MoonIcon, SunIcon } from '@chakra-ui/icons'
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { logout } from '../../store/userSlice';
 
 interface Props {
   children: React.ReactNode;
@@ -75,6 +78,7 @@ const NavLink = (props: Props) => {
 
 export default function Nav({ children }: { children: ReactNode }) {
   // const { colorMode, toggleColorMode } = useColorMode()
+  const { isLoggedIn } = useAppSelector((state) => state.user);
   const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <>
@@ -97,7 +101,7 @@ export default function Nav({ children }: { children: ReactNode }) {
             <Box> {import.meta.env.VITE_APP_TITLE} </Box>
           </Link>
           {/* TODO(jan): Make dependent on logged in state */}
-          {false ? <NavbarDropdown /> : <GuestButtons />}
+          {isLoggedIn ? <NavbarDropdown /> : <GuestButtons />}
         </Flex>
 
         <Box w="auto" ml={{ base: 'full' }} p="6">
@@ -148,6 +152,7 @@ const GuestButtons = () => {
 };
 
 const NavbarDropdown = ({ onClose, ...rest }: NavbarProps) => {
+  const dispatch = useAppDispatch();
   return (
     <Flex alignItems={'center'}>
       <Stack direction={'row'} spacing={7}>
@@ -183,6 +188,15 @@ const NavbarDropdown = ({ onClose, ...rest }: NavbarProps) => {
                 {link.name}
               </NavItem>
             ))}
+            <NavItem
+              key="logout"
+              icon={FiLogOut}
+              onClick={() => {
+                dispatch(logout());
+              }}
+            >
+              Logout
+            </NavItem>
           </MenuList>
         </Menu>
       </Stack>
