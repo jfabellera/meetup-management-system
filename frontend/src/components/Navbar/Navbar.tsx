@@ -1,44 +1,25 @@
-import { ReactNode, useEffect, useState } from 'react';
 import {
-  Box,
-  BoxProps,
-  CloseButton,
-  Drawer,
-  DrawerContent,
-  Flex,
-  FlexProps,
-  Icon,
-  IconButton,
   Avatar,
-  Text,
+  Box,
   Button,
+  Center,
+  Flex,
+  Icon,
   Link,
   Menu,
   MenuButton,
-  MenuList,
-  MenuItem,
   MenuDivider,
-  useDisclosure,
-  useColorModeValue,
+  MenuList,
   Stack,
-  useColorMode,
-  Center,
+  useColorModeValue,
+  type BoxProps,
+  type FlexProps,
 } from '@chakra-ui/react';
-import {
-  FiAward,
-  FiDatabase,
-  FiGift,
-  FiHome,
-  FiList,
-  FiMenu,
-  FiUserCheck,
-} from 'react-icons/fi';
-import { IconType } from 'react-icons';
-// import { MoonIcon, SunIcon } from '@chakra-ui/icons'
-
-interface Props {
-  children: React.ReactNode;
-}
+import { type ReactNode } from 'react';
+import { type IconType } from 'react-icons';
+import { FiLogOut } from 'react-icons/fi';
+import { logout } from '../../store/authSlice';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 
 /**
  * Adapted from https://chakra-templates.dev/navigation/navbar
@@ -49,33 +30,16 @@ interface LinkItemProps {
   url: string;
   icon: IconType;
 }
-const LinkItems: Array<LinkItemProps> = [
+
+/**
+ * Items to be placed in the navbar dropdown.
+ */
+const LinkItems: LinkItemProps[] = [
   // { name: 'Home', url: '.', icon: FiHome },
 ];
 
-const NavLink = (props: Props) => {
-  const { children } = props;
-
-  return (
-    <Box
-      as="a"
-      px={2}
-      py={1}
-      rounded={'md'}
-      _hover={{
-        textDecoration: 'none',
-        bg: useColorModeValue('gray.200', 'gray.700'),
-      }}
-      href={'#'}
-    >
-      {children}
-    </Box>
-  );
-};
-
-export default function Nav({ children }: { children: ReactNode }) {
-  // const { colorMode, toggleColorMode } = useColorMode()
-  const { isOpen, onOpen, onClose } = useDisclosure();
+const Nav = ({ children }: { children: ReactNode }): JSX.Element => {
+  const { isLoggedIn, user } = useAppSelector((state) => state.user);
   return (
     <>
       <Box
@@ -96,7 +60,12 @@ export default function Nav({ children }: { children: ReactNode }) {
           <Link href=".">
             <Box> {import.meta.env.VITE_APP_TITLE} </Box>
           </Link>
-          <NavbarDropdown />
+          {/* TODO(jan): Make dependent on logged in state */}
+          {isLoggedIn ? (
+            <NavbarDropdown nickname={user.nick_name} />
+          ) : (
+            <GuestButtons />
+          )}
         </Flex>
 
         <Box w="auto" ml={{ base: 'full' }} p="6">
@@ -105,20 +74,57 @@ export default function Nav({ children }: { children: ReactNode }) {
       </Box>
     </>
   );
+};
+
+/**
+ * Sign in and sign up buttons for when a user is not logged in.
+ */
+const GuestButtons = (): JSX.Element => {
+  return (
+    <Stack
+      flex={{ base: 1, md: 0 }}
+      justify={'flex-end'}
+      direction={'row'}
+      spacing={6}
+    >
+      <Button
+        as={'a'}
+        fontSize={'sm'}
+        fontWeight={400}
+        variant={'link'}
+        href={'./login'}
+      >
+        Sign In
+      </Button>
+      <Button
+        as={'a'}
+        display={{ base: 'none', md: 'inline-flex' }}
+        fontSize={'sm'}
+        fontWeight={600}
+        color={'white'}
+        bg={'pink.400'}
+        href={'./signup'}
+        _hover={{
+          bg: 'pink.300',
+        }}
+      >
+        Sign Up
+      </Button>
+    </Stack>
+  );
+};
+
+interface NavbarDropdownProps extends BoxProps {
+  nickname: string;
 }
 
-interface NavbarProps extends BoxProps {
-  onClose: () => void;
-}
+const NavbarDropdown = (props: NavbarDropdownProps): JSX.Element => {
+  const { nickname } = props;
+  const dispatch = useAppDispatch();
 
-const NavbarDropdown = ({ onClose, ...rest }: NavbarProps) => {
   return (
     <Flex alignItems={'center'}>
       <Stack direction={'row'} spacing={7}>
-        {/* <Button onClick={toggleColorMode}>
-          {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
-        </Button> */}
-
         <Menu>
           <MenuButton
             as={Button}
@@ -142,7 +148,7 @@ const NavbarDropdown = ({ onClose, ...rest }: NavbarProps) => {
             </Center>
             <br />
             <Center>
-              <p>Username</p>
+              <p>{nickname}</p>
             </Center>
             <br />
             <MenuDivider />
@@ -151,6 +157,16 @@ const NavbarDropdown = ({ onClose, ...rest }: NavbarProps) => {
                 {link.name}
               </NavItem>
             ))}
+            <NavItem
+              key="logout"
+              icon={FiLogOut}
+              onClick={() => {
+                dispatch(logout());
+              }}
+              url=""
+            >
+              Logout
+            </NavItem>
           </MenuList>
         </Menu>
       </Stack>
@@ -163,7 +179,13 @@ interface NavItemProps extends FlexProps {
   url: string;
   children: ReactNode;
 }
-const NavItem = ({ icon, url, children, ...rest }: NavItemProps) => {
+
+const NavItem = ({
+  icon,
+  url,
+  children,
+  ...rest
+}: NavItemProps): JSX.Element => {
   return (
     <Link
       href={url}
@@ -183,48 +205,49 @@ const NavItem = ({ icon, url, children, ...rest }: NavItemProps) => {
         }}
         {...rest}
       >
-        {icon && (
-          <Icon
-            mr="4"
-            fontSize="16"
-            _groupHover={{
-              color: 'white',
-            }}
-            as={icon}
-          />
-        )}
+        <Icon
+          mr="4"
+          fontSize="16"
+          _groupHover={{
+            color: 'white',
+          }}
+          as={icon}
+        />
         {children}
       </Flex>
     </Link>
   );
 };
 
-interface MobileProps extends FlexProps {
-  onOpen: () => void;
-}
-const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
-  return (
-    <Flex
-      ml={{ base: 0, md: 60 }}
-      px={{ base: 4, md: 24 }}
-      height="20"
-      alignItems="center"
-      bg={useColorModeValue('white', 'gray.900')}
-      borderBottomWidth="1px"
-      borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
-      justifyContent="flex-start"
-      {...rest}
-    >
-      <IconButton
-        variant="outline"
-        onClick={onOpen}
-        aria-label="open menu"
-        icon={<FiMenu />}
-      />
+// interface MobileProps extends FlexProps {
+//   onOpen: () => void;
+// }
 
-      <Text fontSize="xl" ml="8" fontWeight="bold">
-        {import.meta.env.VITE_APP_TITLE}
-      </Text>
-    </Flex>
-  );
-};
+// const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
+//   return (
+//     <Flex
+//       ml={{ base: 0, md: 60 }}
+//       px={{ base: 4, md: 24 }}
+//       height="20"
+//       alignItems="center"
+//       bg={useColorModeValue('white', 'gray.900')}
+//       borderBottomWidth="1px"
+//       borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
+//       justifyContent="flex-start"
+//       {...rest}
+//     >
+//       <IconButton
+//         variant="outline"
+//         onClick={onOpen}
+//         aria-label="open menu"
+//         icon={<FiMenu />}
+//       />
+
+//       <Text fontSize="xl" ml="8" fontWeight="bold">
+//         {import.meta.env.VITE_APP_TITLE}
+//       </Text>
+//     </Flex>
+//   );
+// };
+
+export default Nav;
