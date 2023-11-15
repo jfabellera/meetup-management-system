@@ -30,6 +30,10 @@ interface LinkItemProps {
   url: string;
   icon: IconType;
 }
+
+/**
+ * Items to be placed in the navbar dropdown.
+ */
 const LinkItems: LinkItemProps[] = [
   // { name: 'Home', url: '.', icon: FiHome },
 ];
@@ -72,6 +76,9 @@ const Nav = ({ children }: { children: ReactNode }): JSX.Element => {
   );
 };
 
+/**
+ * Sign in and sign up buttons for when a user is not logged in.
+ */
 const GuestButtons = (): JSX.Element => {
   return (
     <Stack

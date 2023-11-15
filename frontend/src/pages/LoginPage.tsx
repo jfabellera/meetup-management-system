@@ -22,6 +22,11 @@ const LoginPage = (): JSX.Element => {
   const { loading } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
 
+  /**
+   * Handle form input changes. This updates the login payload to be dispatched.
+   *
+   * @param event
+   */
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setLoginPayload({
       ...loginPayload,
@@ -29,6 +34,12 @@ const LoginPage = (): JSX.Element => {
     });
   };
 
+  /**
+   * Handle form submit. This dispatches the login action using the login
+   * payload.
+   *
+   * @param event
+   */
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
