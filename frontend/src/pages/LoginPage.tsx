@@ -11,11 +11,11 @@ import {
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import Page from '../components/Page/Page';
+import { login, type LoginPayload } from '../store/authSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { loginRequest, type LoginPayload } from '../store/userSlice';
 
 const LoginPage = (): JSX.Element => {
-  const [login, setLogin] = useState<LoginPayload>({
+  const [loginPayload, setLoginPayload] = useState<LoginPayload>({
     email: '',
     password: '',
   });
@@ -23,8 +23,8 @@ const LoginPage = (): JSX.Element => {
   const dispatch = useAppDispatch();
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    setLogin({
-      ...login,
+    setLoginPayload({
+      ...loginPayload,
       [event.target.name]: event.target.value,
     });
   };
@@ -32,7 +32,7 @@ const LoginPage = (): JSX.Element => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    dispatch(loginRequest(login));
+    dispatch(login(loginPayload));
   };
 
   return (

@@ -18,8 +18,8 @@ import {
 import { type ReactNode } from 'react';
 import { type IconType } from 'react-icons';
 import { FiLogOut } from 'react-icons/fi';
+import { logout } from '../../store/authSlice';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { logout } from '../../store/userSlice';
 
 /**
  * Adapted from https://chakra-templates.dev/navigation/navbar

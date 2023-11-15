@@ -1,12 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
+import authSlice from './authSlice';
 import { databaseApi } from './databaseSlice';
-import userSlice from './userSlice';
 
 export const store = configureStore({
   reducer: {
     [databaseApi.reducerPath]: databaseApi.reducer,
-    user: userSlice,
+    user: authSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(databaseApi.middleware),
