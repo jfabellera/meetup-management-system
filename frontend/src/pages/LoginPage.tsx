@@ -7,6 +7,7 @@ import {
   Heading,
   Input,
   Stack,
+  Text,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { useState } from 'react';
@@ -20,6 +21,7 @@ const LoginPage = (): JSX.Element => {
     email: '',
     password: '',
   });
+  const [loginFailed, setLoginFailed] = useState<boolean>(false);
   const { loading } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -53,7 +55,7 @@ const LoginPage = (): JSX.Element => {
           navigate('/');
         } else if (login.rejected.match(action)) {
           // Failed to login, show an error message
-          // TODO(jan): handle invalid login
+          setLoginFailed(true);
         }
       })
       .catch(() => {});
@@ -75,7 +77,7 @@ const LoginPage = (): JSX.Element => {
             <form onSubmit={handleSubmit}>
               <Stack spacing={4}>
                 <FormControl id="email">
-                  <FormLabel>Email address</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <Input type="email" name="email" onChange={handleChange} />
                 </FormControl>
                 <FormControl id="password">
@@ -86,6 +88,14 @@ const LoginPage = (): JSX.Element => {
                     onChange={handleChange}
                   />
                 </FormControl>
+                <Text
+                  fontSize="sm"
+                  align={'center'}
+                  color="red"
+                  hidden={!loginFailed}
+                >
+                  Invalid email or password
+                </Text>
                 <Button
                   type="submit"
                   bg={'blue.400'}
