@@ -12,6 +12,7 @@ import {
   MenuList,
   Stack,
   useColorModeValue,
+  type BoxProps,
   type FlexProps,
 } from '@chakra-ui/react';
 import { type ReactNode } from 'react';
@@ -34,7 +35,7 @@ const LinkItems: LinkItemProps[] = [
 ];
 
 const Nav = ({ children }: { children: ReactNode }): JSX.Element => {
-  const { isLoggedIn } = useAppSelector((state) => state.user);
+  const { isLoggedIn, user } = useAppSelector((state) => state.user);
   return (
     <>
       <Box
@@ -56,7 +57,11 @@ const Nav = ({ children }: { children: ReactNode }): JSX.Element => {
             <Box> {import.meta.env.VITE_APP_TITLE} </Box>
           </Link>
           {/* TODO(jan): Make dependent on logged in state */}
-          {isLoggedIn ? <NavbarDropdown /> : <GuestButtons />}
+          {isLoggedIn ? (
+            <NavbarDropdown nickname={user.nick_name} />
+          ) : (
+            <GuestButtons />
+          )}
         </Flex>
 
         <Box w="auto" ml={{ base: 'full' }} p="6">
@@ -102,8 +107,14 @@ const GuestButtons = (): JSX.Element => {
   );
 };
 
-const NavbarDropdown = (): JSX.Element => {
+interface NavbarDropdownProps extends BoxProps {
+  nickname: string;
+}
+
+const NavbarDropdown = (props: NavbarDropdownProps): JSX.Element => {
+  const { nickname } = props;
   const dispatch = useAppDispatch();
+
   return (
     <Flex alignItems={'center'}>
       <Stack direction={'row'} spacing={7}>
@@ -130,7 +141,7 @@ const NavbarDropdown = (): JSX.Element => {
             </Center>
             <br />
             <Center>
-              <p>Username</p>
+              <p>{nickname}</p>
             </Center>
             <br />
             <MenuDivider />
