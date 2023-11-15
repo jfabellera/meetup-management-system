@@ -9,7 +9,7 @@ import {
   Stack,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Page from '../components/Page/Page';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loginRequest, type LoginPayload } from '../store/userSlice';
@@ -19,7 +19,7 @@ const LoginPage = (): JSX.Element => {
     email: '',
     password: '',
   });
-  const { loading, data, error } = useAppSelector((state) => state.user);
+  const { loading } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {

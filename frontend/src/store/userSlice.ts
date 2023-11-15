@@ -4,65 +4,90 @@ import {
   type PayloadAction,
 } from '@reduxjs/toolkit';
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
 
 export interface LoginPayload {
   email: string;
   password: string;
 }
 
+interface UserState {
+  isLoggedIn: boolean;
+  user: any | null;
+  loading: boolean;
+}
+
+/**
+ * Thunk for logging in.
+ *
+ * This will set the authentication token in local storage if successfully
+ * authenticated.
+ */
 export const loginRequest = createAsyncThunk(
   'user/loginRequest',
   async (payload: LoginPayload, { rejectWithValue }) => {
     try {
-      const response = await axios.post<{ token: string }>(
-        'http://localhost:3001/login',
-        payload,
-      );
+      const response = await axios.post('http://localhost:3001/login', payload);
       const { data } = response;
 
       localStorage.setItem('token', data.token);
 
-      return data;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+      return jwt.decode(data.token);
+    } catch (err) {
+      return rejectWithValue(err);
     }
   },
 );
 
-interface UserState {
-  loading: boolean;
-  data: any | null;
-  error: string | null;
-}
+/**
+ * Gets user object from local storage token. If there is no token in local
+ * storage, this function will return null.
+ *
+ * @returns User object if valid token
+ */
+const getUserFromLocalStorage = (): any => {
+  const token = localStorage.getItem('token');
+  if (token == null) return false;
+  try {
+    return jwt.decode(token);
+  } catch (err) {
+    return null;
+  }
+};
 
 const initialState: UserState = {
+  isLoggedIn: getUserFromLocalStorage(),
+  user: getUserFromLocalStorage(),
   loading: false,
-  data: null,
-  error: null,
 };
 
 const userSlice = createSlice({
   name: 'users',
   initialState,
-  reducers: {},
+  reducers: {
+    logout: (state) => {
+      state.isLoggedIn = false;
+      state.user = null;
+      localStorage.removeItem('token');
+    },
+  },
   extraReducers(builder) {
     builder
-      .addCase(loginRequest.pending, (state, action) => {
+      .addCase(loginRequest.pending, (state) => {
         state.loading = true;
       })
-      .addCase(
-        loginRequest.fulfilled,
-        (state, action: PayloadAction<{ token: string }>) => {
-          state.loading = false;
-          state.data = action.payload;
-        },
-      )
-      .addCase(loginRequest.rejected, (state, action: PayloadAction<any>) => {
+      .addCase(loginRequest.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading = false;
-        state.data = action.payload;
+        state.user = action.payload;
+        state.isLoggedIn = true;
+      })
+      .addCase(loginRequest.rejected, (state) => {
+        state.loading = false;
+        state.user = null;
+        state.isLoggedIn = false;
       });
   },
 });
 
-// export const { login, logout, register } = userSlice.actions;
+export const { logout } = userSlice.actions;
 export default userSlice.reducer;
