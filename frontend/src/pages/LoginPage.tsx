@@ -10,6 +10,7 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Page from '../components/Page/Page';
 import { login, type LoginPayload } from '../store/authSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -21,6 +22,7 @@ const LoginPage = (): JSX.Element => {
   });
   const { loading } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   /**
    * Handle form input changes. This updates the login payload to be dispatched.
@@ -43,7 +45,18 @@ const LoginPage = (): JSX.Element => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    dispatch(login(loginPayload));
+    dispatch(login(loginPayload))
+      .then((action) => {
+        // Get status of login
+        if (login.fulfilled.match(action)) {
+          // Successfully logged in, redirect user to homepage
+          navigate('/');
+        } else if (login.rejected.match(action)) {
+          // Failed to login, show an error message
+          // TODO(jan): handle invalid login
+        }
+      })
+      .catch(() => {});
   };
 
   return (
