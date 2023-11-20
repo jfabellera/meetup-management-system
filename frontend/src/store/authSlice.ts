@@ -11,6 +11,14 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface RegisterPayload {
+  email: string;
+  firstName: string;
+  lastName: string;
+  nickName: string;
+  password: string;
+}
+
 interface AuthState {
   isLoggedIn: boolean;
   user: any | null;
@@ -33,6 +41,26 @@ export const login = createAsyncThunk(
       localStorage.setItem('token', data.token);
 
       return jwt.decode(data.token);
+    } catch (err) {
+      return rejectWithValue(err);
+    }
+  },
+);
+
+/**
+ * Thunk for registering.
+ */
+export const register = createAsyncThunk(
+  'auth/register',
+  async (payload: RegisterPayload, { rejectWithValue }) => {
+    try {
+      await axios.post('http://localhost:3001/', {
+        email: payload.email,
+        first_name: payload.firstName,
+        last_name: payload.lastName,
+        nick_name: payload.nickName,
+        password: payload.password,
+      });
     } catch (err) {
       return rejectWithValue(err);
     }
@@ -85,6 +113,15 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = null;
         state.isLoggedIn = false;
+      })
+      .addCase(register.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(register.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(register.rejected, (state) => {
+        state.loading = false;
       });
   },
 });
