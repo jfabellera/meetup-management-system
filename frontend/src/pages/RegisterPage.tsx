@@ -22,12 +22,19 @@ import { register, type RegisterPayload } from '../store/authSlice';
 import { useAppDispatch } from '../store/hooks';
 
 const RegisterPage = (): JSX.Element => {
-  const [registerPayload, setRegisterPayload] = useState<RegisterPayload>();
+  const [registerPayload, setRegisterPayload] = useState<RegisterPayload>({
+    email: '',
+    firstName: '',
+    lastName: '',
+    nickName: '',
+    password: '',
+  });
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   /**
-   * Handle form input changes. This updates the login payload to be dispatched.
+   * Handle form input changes. This updates the register payload to be
+   * dispatched.
    *
    * @param event
    */
