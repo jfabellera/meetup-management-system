@@ -9,7 +9,6 @@ import {
   FormErrorMessage,
   FormLabel,
   Heading,
-  HStack,
   Input,
   Link,
   Stack,
@@ -29,7 +28,12 @@ const RegisterSchema = Yup.object().shape({
   firstName: Yup.string().required('Required'),
   lastName: Yup.string().required('Required'),
   nickName: Yup.string().required('Required'),
-  password: Yup.string().required('Required'),
+  password: Yup.string()
+    .required('Required')
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/,
+      'Must contain 8 characters, one uppercase, one lowercase, one number, and one special character',
+    ),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref('password')], 'Passwords must match')
     .required('Required'),
@@ -66,9 +70,7 @@ const RegisterPage = (): JSX.Element => {
 
   const ErrorMessage = ({ children }: BoxProps): JSX.Element => {
     return (
-      <FormErrorMessage position="absolute" right="0" margin="1">
-        {children}
-      </FormErrorMessage>
+      <FormErrorMessage justifyContent={'right'}>{children}</FormErrorMessage>
     );
   };
 
@@ -89,7 +91,7 @@ const RegisterPage = (): JSX.Element => {
           >
             <form onSubmit={formik.handleSubmit} noValidate>
               <Stack spacing={4}>
-                <HStack>
+                <Stack direction={'row'}>
                   <Box>
                     <FormControl
                       id="firstName"
@@ -128,7 +130,7 @@ const RegisterPage = (): JSX.Element => {
                       <ErrorMessage>{formik.errors.lastName}</ErrorMessage>
                     </FormControl>
                   </Box>
-                </HStack>
+                </Stack>
                 <FormControl
                   id="nickName"
                   isRequired
