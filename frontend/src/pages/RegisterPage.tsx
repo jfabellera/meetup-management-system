@@ -47,7 +47,7 @@ const RegisterSchema = Yup.object().shape({
 
 const RegisterPage = (): JSX.Element => {
   const dispatch = useAppDispatch();
-  const { error } = useAppSelector((state) => state.user);
+  const { loading, error } = useAppSelector((state) => state.user);
   const navigate = useNavigate();
   const formik = useFormik({
     initialValues: {
@@ -73,6 +73,7 @@ const RegisterPage = (): JSX.Element => {
         .catch(() => {});
     },
     validationSchema: RegisterSchema,
+    validateOnMount: true,
   });
 
   const ErrorMessage = ({ children }: BoxProps): JSX.Element => {
@@ -222,6 +223,8 @@ const RegisterPage = (): JSX.Element => {
                   <Button
                     type="submit"
                     loadingText="Submitting"
+                    isLoading={loading}
+                    disabled={!formik.isValid}
                     size="lg"
                     bg={'blue.400'}
                     color={'white'}
@@ -232,6 +235,14 @@ const RegisterPage = (): JSX.Element => {
                     Sign up
                   </Button>
                 </Stack>
+                <Text
+                  fontSize="sm"
+                  align={'center'}
+                  color="red"
+                  hidden={error == null}
+                >
+                  Registration failed
+                </Text>
                 <Stack pt={2}>
                   <Text align={'center'}>
                     Already a user?{' '}

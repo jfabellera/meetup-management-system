@@ -43,7 +43,7 @@ export const login = createAsyncThunk(
 
       return jwt.decode(data.token);
     } catch (err) {
-      if (err instanceof AxiosError) {
+      if (err instanceof AxiosError && err.response != null) {
         return rejectWithValue(err.response?.status);
       } else {
         return rejectWithValue(500);
@@ -67,7 +67,7 @@ export const register = createAsyncThunk(
         password: payload.password,
       });
     } catch (err: any) {
-      if (err instanceof AxiosError) {
+      if (err instanceof AxiosError && err.response != null) {
         return rejectWithValue(err.response?.status);
       } else {
         return rejectWithValue(500);
