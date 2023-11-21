@@ -21,10 +21,16 @@ import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
 import Page from '../components/Page/Page';
 import { register } from '../store/authSlice';
-import { useAppDispatch } from '../store/hooks';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 
 const RegisterSchema = Yup.object().shape({
-  email: Yup.string().email('Invalid email').required('Required'),
+  // Because Yup.string().email() sucks
+  email: Yup.string()
+    .matches(
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+      'Invalid email',
+    )
+    .required('Required'),
   firstName: Yup.string().required('Required'),
   lastName: Yup.string().required('Required'),
   nickName: Yup.string().required('Required'),
@@ -41,6 +47,7 @@ const RegisterSchema = Yup.object().shape({
 
 const RegisterPage = (): JSX.Element => {
   const dispatch = useAppDispatch();
+  const { error } = useAppSelector((state) => state.user);
   const navigate = useNavigate();
   const formik = useFormik({
     initialValues: {
@@ -151,7 +158,8 @@ const RegisterPage = (): JSX.Element => {
                   id="email"
                   isRequired
                   isInvalid={
-                    formik.errors.email != null && formik.touched.email
+                    error === 409 ||
+                    (formik.errors.email != null && formik.touched.email)
                   }
                 >
                   <FormLabel>Email address</FormLabel>
@@ -161,7 +169,11 @@ const RegisterPage = (): JSX.Element => {
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
                   />
-                  <ErrorMessage>{formik.errors.email}</ErrorMessage>
+                  <ErrorMessage>
+                    {error === 409
+                      ? 'Email is already in use'
+                      : formik.errors.email}
+                  </ErrorMessage>
                 </FormControl>
                 <FormControl
                   id="password"
