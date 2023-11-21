@@ -246,7 +246,12 @@ const RegisterPage = (): JSX.Element => {
                 <Stack pt={2}>
                   <Text align={'center'}>
                     Already a user?{' '}
-                    <Link href={'/login'} color={'blue.400'}>
+                    <Link
+                      onClick={() => {
+                        navigate('/login');
+                      }}
+                      color={'blue.400'}
+                    >
                       Login
                     </Link>
                   </Text>

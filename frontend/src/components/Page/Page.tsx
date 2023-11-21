@@ -1,14 +1,20 @@
-import { ReactNode } from 'react';
-import { Box, useColorModeValue } from '@chakra-ui/react';
+import { Box, Flex, useColorModeValue } from '@chakra-ui/react';
+import { type ReactNode } from 'react';
 import Navbar from '../Navbar/Navbar';
 
-export default function Page({ children }: { children: ReactNode }) {
+const Page = ({ children }: { children: ReactNode }): JSX.Element => {
   return (
-    <Box
-      display={{ base: 'flex' }}
+    <Flex
+      direction="column"
+      height="100vh"
       bg={useColorModeValue('gray.100', 'gray.900')}
     >
-      <Navbar>{children}</Navbar>
-    </Box>
+      <Navbar />
+      <Box w="auto" p="6" overflow="auto">
+        {children}
+      </Box>
+    </Flex>
   );
-}
+};
+
+export default Page;
