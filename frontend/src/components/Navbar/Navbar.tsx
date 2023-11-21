@@ -38,40 +38,30 @@ const LinkItems: LinkItemProps[] = [
   // { name: 'Home', url: '.', icon: FiHome },
 ];
 
-const Nav = ({ children }: { children: ReactNode }): JSX.Element => {
+const Nav = (): JSX.Element => {
   const { isLoggedIn, user } = useAppSelector((state) => state.user);
   return (
     <>
-      <Box
-        minH="100vh"
-        width="100%"
-        bg={useColorModeValue('gray.100', 'gray.900')}
+      <Flex
+        px={4}
+        h={16}
+        w="full"
+        alignItems={'center'}
+        justifyContent={'space-between'}
+        bg={useColorModeValue('white', 'gray.900')}
+        borderBottom="1px"
+        borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
       >
-        <Flex
-          px={4}
-          h={16}
-          w="full"
-          alignItems={'center'}
-          justifyContent={'space-between'}
-          bg={useColorModeValue('white', 'gray.900')}
-          borderBottom="1px"
-          borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
-        >
-          <Link href=".">
-            <Box> {import.meta.env.VITE_APP_TITLE} </Box>
-          </Link>
-          {/* TODO(jan): Make dependent on logged in state */}
-          {isLoggedIn ? (
-            <NavbarDropdown nickname={user.nick_name} />
-          ) : (
-            <GuestButtons />
-          )}
-        </Flex>
-
-        <Box w="auto" ml={{ base: 'full' }} p="6">
-          {children}
-        </Box>
-      </Box>
+        <Link href=".">
+          <Box> {import.meta.env.VITE_APP_TITLE} </Box>
+        </Link>
+        {/* TODO(jan): Make dependent on logged in state */}
+        {isLoggedIn ? (
+          <NavbarDropdown nickname={user.nick_name} />
+        ) : (
+          <GuestButtons />
+        )}
+      </Flex>
     </>
   );
 };
