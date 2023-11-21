@@ -18,6 +18,7 @@ import {
 import { type ReactNode } from 'react';
 import { type IconType } from 'react-icons';
 import { FiLogOut } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import { logout } from '../../store/authSlice';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 
@@ -40,6 +41,8 @@ const LinkItems: LinkItemProps[] = [
 
 const Nav = (): JSX.Element => {
   const { isLoggedIn, user } = useAppSelector((state) => state.user);
+  const navigate = useNavigate();
+
   return (
     <>
       <Flex
@@ -52,7 +55,11 @@ const Nav = (): JSX.Element => {
         borderBottom="1px"
         borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
       >
-        <Link href=".">
+        <Link
+          onClick={() => {
+            navigate('/');
+          }}
+        >
           <Box> {import.meta.env.VITE_APP_TITLE} </Box>
         </Link>
         {/* TODO(jan): Make dependent on logged in state */}
@@ -70,6 +77,7 @@ const Nav = (): JSX.Element => {
  * Sign in and sign up buttons for when a user is not logged in.
  */
 const GuestButtons = (): JSX.Element => {
+  const navigate = useNavigate();
   return (
     <Stack
       flex={{ base: 1, md: 0 }}
@@ -82,7 +90,9 @@ const GuestButtons = (): JSX.Element => {
         fontSize={'sm'}
         fontWeight={400}
         variant={'link'}
-        href={'./login'}
+        onClick={() => {
+          navigate('/login');
+        }}
       >
         Sign In
       </Button>
@@ -93,7 +103,9 @@ const GuestButtons = (): JSX.Element => {
         fontWeight={600}
         color={'white'}
         bg={'pink.400'}
-        href={'./register'}
+        onClick={() => {
+          navigate('/register');
+        }}
         _hover={{
           bg: 'pink.300',
         }}
@@ -176,9 +188,12 @@ const NavItem = ({
   children,
   ...rest
 }: NavItemProps): JSX.Element => {
+  const navigate = useNavigate();
   return (
     <Link
-      href={url}
+      onClick={() => {
+        navigate(url);
+      }}
       style={{ textDecoration: 'none' }}
       _focus={{ boxShadow: 'none' }}
     >

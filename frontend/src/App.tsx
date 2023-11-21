@@ -8,7 +8,7 @@ import RegisterPage from './pages/RegisterPage';
 import { Provider } from 'react-redux';
 import { store } from './store/store';
 
-function App() {
+const App = (): JSX.Element => {
   return (
     <Provider store={store}>
       <Router>
@@ -20,5 +20,6 @@ function App() {
       </Router>
     </Provider>
   );
-}
+};
+
 export default App;
