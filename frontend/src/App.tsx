@@ -3,9 +3,10 @@ import './App.css';
 
 import Homepage from './pages/Homepage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 
-import { store } from './store/store';
 import { Provider } from 'react-redux';
+import { store } from './store/store';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Routes>
       </Router>
     </Provider>

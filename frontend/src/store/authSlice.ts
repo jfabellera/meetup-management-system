@@ -3,7 +3,7 @@ import {
   createSlice,
   type PayloadAction,
 } from '@reduxjs/toolkit';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import jwt from 'jsonwebtoken';
 
 export interface LoginPayload {
@@ -11,10 +11,19 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface RegisterPayload {
+  email: string;
+  firstName: string;
+  lastName: string;
+  nickName: string;
+  password: string;
+}
+
 interface AuthState {
   isLoggedIn: boolean;
   user: any | null;
   loading: boolean;
+  error: number | null;
 }
 
 /**
@@ -34,7 +43,35 @@ export const login = createAsyncThunk(
 
       return jwt.decode(data.token);
     } catch (err) {
-      return rejectWithValue(err);
+      if (err instanceof AxiosError && err.response != null) {
+        return rejectWithValue(err.response?.status);
+      } else {
+        return rejectWithValue(500);
+      }
+    }
+  },
+);
+
+/**
+ * Thunk for registering.
+ */
+export const register = createAsyncThunk(
+  'auth/register',
+  async (payload: RegisterPayload, { rejectWithValue }) => {
+    try {
+      await axios.post('http://localhost:3001/', {
+        email: payload.email,
+        first_name: payload.firstName,
+        last_name: payload.lastName,
+        nick_name: payload.nickName,
+        password: payload.password,
+      });
+    } catch (err: any) {
+      if (err instanceof AxiosError && err.response != null) {
+        return rejectWithValue(err.response?.status);
+      } else {
+        return rejectWithValue(500);
+      }
     }
   },
 );
@@ -59,6 +96,7 @@ const initialState: AuthState = {
   isLoggedIn: getUserFromLocalStorage(),
   user: getUserFromLocalStorage(),
   loading: false,
+  error: null,
 };
 
 const authSlice = createSlice({
@@ -80,11 +118,24 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload;
         state.isLoggedIn = true;
+        state.error = null;
       })
-      .addCase(login.rejected, (state) => {
+      .addCase(login.rejected, (state, action: PayloadAction<any>) => {
         state.loading = false;
         state.user = null;
         state.isLoggedIn = false;
+        state.error = action.payload;
+      })
+      .addCase(register.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(register.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(register.rejected, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

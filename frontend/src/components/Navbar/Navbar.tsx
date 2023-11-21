@@ -103,7 +103,7 @@ const GuestButtons = (): JSX.Element => {
         fontWeight={600}
         color={'white'}
         bg={'pink.400'}
-        href={'./signup'}
+        href={'./register'}
         _hover={{
           bg: 'pink.300',
         }}

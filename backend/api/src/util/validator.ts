@@ -6,7 +6,9 @@ const validator = (schema: Joi.Schema) => (payload: any) =>
 
 const userSchema = Joi.object({
   id: Joi.number(),
-  email: Joi.string().email().required(),
+  email: Joi.string()
+    .email({ tlds: { allow: false } }) // Less strict, allow any TLD to match frontend validation
+    .required(),
   first_name: Joi.string().required(),
   last_name: Joi.string().required(),
   nick_name: Joi.string().required(),
@@ -46,7 +48,7 @@ const passwordComplexityOptions = {
 
 export const validatePassword = (password: string) => {
   return passwordComplexity(passwordComplexityOptions, '"password"').validate(
-    password,
+    password
   );
 };
 
