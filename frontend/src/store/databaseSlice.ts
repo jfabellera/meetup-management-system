@@ -1,18 +1,28 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
+export interface Meetup {
+  id: number;
+  name: string;
+  location: string;
+  date: string;
+  organizer_ids: number[];
+  imageUrl: string;
+}
+
 export const databaseApi = createApi({
   reducerPath: 'databaseApi',
+  tagTypes: ['Meetups', 'Meetup'],
   baseQuery: fetchBaseQuery({
     baseUrl: 'http://localhost:3000/',
   }),
   endpoints: (builder) => ({
-    getMeetings: builder.query({
+    getMeetups: builder.query<Meetup[], void>({
       query: () => ({
         url: `meetups/`,
       }),
       providesTags: ['Meetups'],
     }),
-    getMeeting: builder.query({
+    getMeetup: builder.query<Meetup, number>({
       query: (id) => ({
         url: `meetups/${id}`,
       }),
@@ -21,4 +31,4 @@ export const databaseApi = createApi({
   }),
 });
 
-export const { useGetMeetingsQuery, useGetMeetingQuery } = databaseApi;
+export const { useGetMeetupsQuery, useGetMeetupQuery } = databaseApi;

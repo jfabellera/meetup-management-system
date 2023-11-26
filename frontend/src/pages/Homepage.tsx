@@ -20,58 +20,12 @@ import {
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import Page from '../components/Page/Page';
-import { useGetMeetingsQuery } from '../store/databaseSlice';
-
-interface MeetupCardProps {
-  id: string;
-  name: string;
-  location: string;
-  date: string;
-  image_url: string;
-}
-const ExampleCards: Array<MeetupCardProps> = [
-  {
-    id: '1',
-    name: 'Test Meeting',
-    location: 'location, TX',
-    date: '11/11/1111',
-    image_url:
-      'https://cdn.discordapp.com/attachments/1089785393014112278/1158544783527129169/image.png?ex=651d4b29&is=651bf9a9&hm=c95e6cf90f1996ed9626799d43cfb55f693a8f55a2be58ddf14dd0a7c95c5324&',
-  },
-  // {
-  //   name: "Test Meeting",
-  //   location: "location, TX",
-  //   date: "11/11/1111",
-  //   image_url:
-  //   "https://cdn.discordapp.com/attachments/1089785393014112278/1158544783527129169/image.png?ex=651d4b29&is=651bf9a9&hm=c95e6cf90f1996ed9626799d43cfb55f693a8f55a2be58ddf14dd0a7c95c5324&",
-  // },
-  // {
-  //   name: "Test Meeting",
-  //   location: "location, TX",
-  //   date: "11/11/1111",
-  //   image_url:
-  //   "https://cdn.discordapp.com/attachments/1089785393014112278/1158544783527129169/image.png?ex=651d4b29&is=651bf9a9&hm=c95e6cf90f1996ed9626799d43cfb55f693a8f55a2be58ddf14dd0a7c95c5324&",
-  // },
-  // {
-  //   name: "Test Meeting",
-  //   location: "location, TX",
-  //   date: "11/11/1111",
-  //   image_url:
-  //   "https://cdn.discordapp.com/attachments/1089785393014112278/1158544783527129169/image.png?ex=651d4b29&is=651bf9a9&hm=c95e6cf90f1996ed9626799d43cfb55f693a8f55a2be58ddf14dd0a7c95c5324&",
-  // },
-  // {
-  //   name: "Test Meeting",
-  //   location: "location, TX",
-  //   date: "11/11/1111",
-  //   image_url:
-  //   "https://cdn.discordapp.com/attachments/1089785393014112278/1158544783527129169/image.png?ex=651d4b29&is=651bf9a9&hm=c95e6cf90f1996ed9626799d43cfb55f693a8f55a2be58ddf14dd0a7c95c5324&",
-  // },
-];
+import { useGetMeetupsQuery, type Meetup } from '../store/databaseSlice';
 
 const Homepage = (): JSX.Element => {
-  const { data: meetings, isLoading } = useGetMeetingsQuery();
+  const { data: meetups, isLoading } = useGetMeetupsQuery();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [modalInfo, setModalInfo] = useState({});
+  const [modalInfo, setModalInfo] = useState<Meetup | null>(null);
 
   return (
     <Page>
@@ -80,7 +34,7 @@ const Homepage = (): JSX.Element => {
       </Text>
       {!isLoading ? (
         <Grid templateColumns="repeat(4, 1fr)" gap={4}>
-          {meetings.map((card) => (
+          {meetups?.map((card) => (
             <GridItem
               key={card.id}
               onClick={() => {
@@ -90,10 +44,10 @@ const Homepage = (): JSX.Element => {
             >
               <MeetupCard
                 name={card.name}
-                location="{card.location}"
+                location={card.location}
                 date={card.date}
-                image_url="https://cdn.discordapp.com/attachments/1089785393014112278/1158544783527129169/image.png?ex=651d4b29&is=651bf9a9&hm=c95e6cf90f1996ed9626799d43cfb55f693a8f55a2be58ddf14dd0a7c95c5324&"
-              ></MeetupCard>
+                imageUrl="https://lh3.googleusercontent.com/pw/ADCreHesVU05iKeKXUrmmOBkySFqLJHmFCgBx_Y6WZhGzf3NVB_Th8o_kUo901MM_i805f-JQNbSBBgsT0Gzn25LuAHGhzX_7Q2OX_9hGEJ5C1W-bYxu8gaKsUgtVectOIcLn49TM80kmGsgggnSfzknPvATJQ=w2646-h1764-s-no-gm?authuser=0"
+              />
             </GridItem>
           ))}
         </Grid>
@@ -115,10 +69,10 @@ const Homepage = (): JSX.Element => {
                 objectFit="cover"
               />
             </Flex>
-            <Heading>{modalInfo.name}</Heading>
-            <Text>{modalInfo.date}</Text>
-            <Text>{modalInfo.location}</Text>
-            <Text>Organizers {modalInfo.organizer_ids}</Text>
+            <Heading>{modalInfo?.name}</Heading>
+            <Text>{modalInfo?.date}</Text>
+            <Text>{modalInfo?.location}</Text>
+            <Text>Organizers {modalInfo?.organizer_ids}</Text>
           </ModalBody>
 
           <ModalFooter>
@@ -132,14 +86,26 @@ const Homepage = (): JSX.Element => {
   );
 };
 
-const MeetupCard = ({ name, location, date, image_url }: MeetupCardProps) => {
+interface MeetupCardProps {
+  name: string;
+  location: string;
+  date: string;
+  imageUrl: string;
+}
+
+const MeetupCard = ({
+  name,
+  location,
+  date,
+  imageUrl,
+}: MeetupCardProps): JSX.Element => {
   return (
-    <Card>
+    <Card background={'white'}>
       <CardBody>
         <Flex h={32} w="full">
           <Image
             w="full"
-            src={image_url}
+            src={imageUrl}
             alt="testing this shit outs"
             borderRadius="lg"
             objectFit="cover"
