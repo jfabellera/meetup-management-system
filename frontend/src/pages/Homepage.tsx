@@ -20,7 +20,7 @@ import {
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import Page from '../components/Page/Page';
-import { useGetMeetupsQuery, type Meetup } from '../store/databaseSlice';
+import { useGetMeetupsQuery, type Meetup } from '../store/meetupSlice';
 
 const Homepage = (): JSX.Element => {
   const { data: meetups, isLoading } = useGetMeetupsQuery();

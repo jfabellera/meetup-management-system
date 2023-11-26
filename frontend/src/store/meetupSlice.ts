@@ -9,8 +9,8 @@ export interface Meetup {
   imageUrl: string;
 }
 
-export const databaseApi = createApi({
-  reducerPath: 'databaseApi',
+export const meetupSlice = createApi({
+  reducerPath: 'meetupSlice',
   tagTypes: ['Meetups', 'Meetup'],
   baseQuery: fetchBaseQuery({
     baseUrl: 'http://localhost:3000/',
@@ -31,4 +31,4 @@ export const databaseApi = createApi({
   }),
 });
 
-export const { useGetMeetupsQuery, useGetMeetupQuery } = databaseApi;
+export const { useGetMeetupsQuery, useGetMeetupQuery } = meetupSlice;
