@@ -1,15 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
 import authSlice from './authSlice';
-import { databaseApi } from './databaseSlice';
+import { meetupSlice } from './meetupSlice';
 
 export const store = configureStore({
   reducer: {
-    [databaseApi.reducerPath]: databaseApi.reducer,
+    [meetupSlice.reducerPath]: meetupSlice.reducer,
     user: authSlice,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(databaseApi.middleware),
+    getDefaultMiddleware().concat(meetupSlice.middleware),
 });
 
 setupListeners(store.dispatch);
