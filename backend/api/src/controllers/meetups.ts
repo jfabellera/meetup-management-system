@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
+import { ILike } from 'typeorm';
 import { Meetup } from '../entity/Meetup';
 import { validateMeetup } from '../util/validator';
-import { ILike } from 'typeorm';
 
 export const getAllMeetups = async (req: Request, res: Response) => {
   const meetups = await Meetup.find();
