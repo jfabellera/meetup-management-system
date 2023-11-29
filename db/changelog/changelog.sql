@@ -45,3 +45,11 @@ ALTER TABLE "meetups" ADD COLUMN "postal_code" VARCHAR(20) NOT NULL DEFAULT '';
 -- rollback ALTER TABLE "meetups" DROP COLUMN "duration_hours";
 -- rollback ALTER TABLE "meetups" DROP COLUMN "start_time";
 -- rollback ALTER TABLE "meetups" DROP COLUMN "capacity";
+
+-- changeset jan:5
+ALTER TABLE "meetups" DROP COLUMN "start_time";
+ALTER TABLE "meetups" ALTER COLUMN "date" TYPE TIMESTAMP WITH TIME ZONE;
+ALTER TABLE "meetups" ADD COLUMN "utc_offset" INT NOT NULL DEFAULT 0;
+-- rollback ALTER TABLE "meetups" DROP COLUMN "utc_offset";
+-- rollback ALTER TABLE "meetups" ALTER COLUMN "date" TYPE DATE;
+-- rollback ALTER TABLE "meetups" ADD COLUMN "start_time" TIME WITHOUT TIME ZONE NOT NULL DEFAULT '00:00:00';

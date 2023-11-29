@@ -8,7 +8,7 @@ export class Meetup extends BaseEntity {
   @Column({ type: 'varchar', length: 100 })
   name: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp with time zone' })
   date: string;
 
   @Column({ type: 'bigint', array: true })
@@ -19,9 +19,6 @@ export class Meetup extends BaseEntity {
 
   @Column({ type: 'int' })
   capacity: number;
-
-  @Column({ type: 'time without time zone' })
-  start_time: string;
 
   @Column({ type: 'int' })
   duration_hours: number;
@@ -43,4 +40,7 @@ export class Meetup extends BaseEntity {
 
   @Column({ type: 'varchar', length: 20 })
   postal_code: string;
+
+  @Column({ type: 'int' })
+  utc_offset: number;
 }
