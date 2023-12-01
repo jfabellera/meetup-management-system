@@ -15,13 +15,13 @@ dayjs.extend(utc);
 interface SimpleMeetupInfo {
   id: number;
   name: string;
-  date: Date;
+  date: string;
   location: {
     city: string;
     state: string;
     country: string;
   };
-  image_url: string;
+  // image_url: string;
 }
 
 /**
@@ -30,7 +30,7 @@ interface SimpleMeetupInfo {
 interface FullMeetupInfo {
   id: number;
   name: string;
-  date: Date;
+  date: string;
   location: {
     full_address: string;
     address_line_1: string;
@@ -45,11 +45,27 @@ interface FullMeetupInfo {
     total: number;
     available: number;
   };
-  image_url: string;
+  // image_url: string;
 }
 
 export const getAllMeetups = async (req: Request, res: Response) => {
-  const meetups = await Meetup.find();
+  const meetups: SimpleMeetupInfo[] = (await Meetup.find()).map(
+    (meetup: Meetup): SimpleMeetupInfo => {
+      const simplifiedMeetupInfo: SimpleMeetupInfo = {
+        id: meetup.id,
+        name: meetup.name,
+        date: dayjs(meetup.date).utcOffset(meetup.utc_offset).format(),
+        location: {
+          city: meetup.city,
+          state: meetup.state,
+          country: meetup.country,
+        },
+        // image_url: meetup.image_url,
+      };
+
+      return simplifiedMeetupInfo;
+    }
+  );
 
   return res.json(meetups);
 };
