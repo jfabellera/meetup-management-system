@@ -8,6 +8,46 @@ import { validateMeetup } from '../util/validator';
 
 dayjs.extend(utc);
 
+/**
+ * This contains basic information about a meetup, mainly details necessary for
+ * the homepage
+ */
+interface SimpleMeetupInfo {
+  id: number;
+  name: string;
+  date: Date;
+  location: {
+    city: string;
+    state: string;
+    country: string;
+  };
+  image_url: string;
+}
+
+/**
+ * This contains all important information about a meetup
+ */
+interface FullMeetupInfo {
+  id: number;
+  name: string;
+  date: Date;
+  location: {
+    full_address: string;
+    address_line_1: string;
+    address_line_2: string;
+    city: string;
+    state: string | null;
+    country: string;
+    postal_code: string;
+  };
+  organizers: string[];
+  tickets: {
+    total: number;
+    available: number;
+  };
+  image_url: string;
+}
+
 export const getAllMeetups = async (req: Request, res: Response) => {
   const meetups = await Meetup.find();
 
