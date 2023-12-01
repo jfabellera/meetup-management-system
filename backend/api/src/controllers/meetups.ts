@@ -1,7 +1,12 @@
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 import { Request, Response } from 'express';
-import { Meetup } from '../entity/Meetup';
-import { validateMeetup } from '../util/validator';
 import { ILike } from 'typeorm';
+import { Meetup } from '../entity/Meetup';
+import { getUtcOffset } from '../util/utcOffset';
+import { validateMeetup } from '../util/validator';
+
+dayjs.extend(utc);
 
 export const getAllMeetups = async (req: Request, res: Response) => {
   const meetups = await Meetup.find();
@@ -48,6 +53,23 @@ export const createMeetup = async (req: Request, res: Response) => {
   if (existingMeetup) {
     return res.status(409).json({ message: 'Meetup name is taken.' });
   }
+
+  // Get UTC offset for the inputted address
+  try {
+    value.utc_offset = await getUtcOffset(
+      `${value.address_line_1} ${value.address_line_2} ${value.city} ${value.state} ${value.country} ${value.postal_code}`,
+      new Date(value.date)
+    );
+  } catch (error: any) {
+    // TODO(jan): Better error handling
+    return res.status(500).json({
+      message:
+        'There was an issue determining the timezone for the provided address',
+    });
+  }
+
+  // Apply offset to date to be correct UTC
+  value.date = dayjs.utc(value.date).subtract(value.utc_offset, 'hour');
 
   const newMeetup = Meetup.create(value);
   await newMeetup.save();

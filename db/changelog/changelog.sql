@@ -25,3 +25,31 @@ ALTER TABLE "meetups" ALTER COLUMN "id" TYPE BIGINT;
 -- changeset jan:3
 ALTER TABLE "users" ADD COLUMN "password_hash" VARCHAR(60) NOT NULL;
 -- rollback ALTER TABLE "users" DROP COLUMN "password_hash";
+
+-- changeset jan:4
+ALTER TABLE "meetups" ADD COLUMN "capacity" INT NOT NULL DEFAULT 0;
+ALTER TABLE "meetups" ADD COLUMN "start_time" TIME WITHOUT TIME ZONE NOT NULL DEFAULT '00:00:00';
+ALTER TABLE "meetups" ADD COLUMN "duration_hours" INT NOT NULL DEFAULT 0;
+ALTER TABLE "meetups" ADD COLUMN "address_line_1" VARCHAR(255) NOT NULL DEFAULT '';
+ALTER TABLE "meetups" ADD COLUMN "address_line_2" VARCHAR(255) DEFAULT '';
+ALTER TABLE "meetups" ADD COLUMN "city" VARCHAR(100) NOT NULL DEFAULT '';
+ALTER TABLE "meetups" ADD COLUMN "state" VARCHAR(50) DEFAULT '';
+ALTER TABLE "meetups" ADD COLUMN "country" VARCHAR(100) NOT NULL DEFAULT '';
+ALTER TABLE "meetups" ADD COLUMN "postal_code" VARCHAR(20) NOT NULL DEFAULT '';
+-- rollback ALTER TABLE "meetups" DROP COLUMN "postal_code";
+-- rollback ALTER TABLE "meetups" DROP COLUMN "country";
+-- rollback ALTER TABLE "meetups" DROP COLUMN "state";
+-- rollback ALTER TABLE "meetups" DROP COLUMN "city";
+-- rollback ALTER TABLE "meetups" DROP COLUMN "address_line_2";
+-- rollback ALTER TABLE "meetups" DROP COLUMN "address_line_1";
+-- rollback ALTER TABLE "meetups" DROP COLUMN "duration_hours";
+-- rollback ALTER TABLE "meetups" DROP COLUMN "start_time";
+-- rollback ALTER TABLE "meetups" DROP COLUMN "capacity";
+
+-- changeset jan:5
+ALTER TABLE "meetups" DROP COLUMN "start_time";
+ALTER TABLE "meetups" ALTER COLUMN "date" TYPE TIMESTAMP WITH TIME ZONE;
+ALTER TABLE "meetups" ADD COLUMN "utc_offset" INT NOT NULL DEFAULT 0;
+-- rollback ALTER TABLE "meetups" DROP COLUMN "utc_offset";
+-- rollback ALTER TABLE "meetups" ALTER COLUMN "date" TYPE DATE;
+-- rollback ALTER TABLE "meetups" ADD COLUMN "start_time" TIME WITHOUT TIME ZONE NOT NULL DEFAULT '00:00:00';

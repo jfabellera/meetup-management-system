@@ -1,7 +1,10 @@
-import Joi from 'joi';
+import JoiDate from '@joi/date';
+import JoiBase from 'joi';
 import passwordComplexity from 'joi-password-complexity';
 
-const validator = (schema: Joi.Schema) => (payload: any) =>
+const Joi = JoiBase.extend(JoiDate);
+
+const validator = (schema: JoiBase.Schema) => (payload: any) =>
   schema.validate(payload, { abortEarly: false });
 
 const userSchema = Joi.object({
@@ -20,11 +23,20 @@ const userSchema = Joi.object({
 const meetupSchema = Joi.object({
   id: Joi.number(),
   name: Joi.string().required(),
-  date: Joi.date().required(),
+  date: Joi.date().format('YYYY-MM-DDTHH:mm:ss').required().raw(),
   organizer_ids: Joi.array()
     .items(Joi.number())
-    .default(<number[]>[]),
+    .default([] as number[]),
   has_raffle: Joi.boolean().default(false),
+  capacity: Joi.number().required(),
+  duration_hours: Joi.number().required(),
+  address_line_1: Joi.string().required(),
+  address_line_2: Joi.string(),
+  city: Joi.string().required(),
+  state: Joi.string(),
+  country: Joi.string().required(),
+  postal_code: Joi.string().required(),
+  utc_offset: Joi.number().default(0),
 });
 
 const ticketSchema = Joi.object({
