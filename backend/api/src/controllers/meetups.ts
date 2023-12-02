@@ -1,15 +1,73 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { Request, Response } from 'express';
-import { ILike } from 'typeorm';
+import { ILike, In } from 'typeorm';
 import { Meetup } from '../entity/Meetup';
+import { Ticket } from '../entity/Ticket';
+import { User } from '../entity/User';
 import { getUtcOffset } from '../util/utcOffset';
 import { validateMeetup } from '../util/validator';
 
 dayjs.extend(utc);
 
+/**
+ * This contains basic information about a meetup, mainly details necessary for
+ * the homepage
+ */
+interface SimpleMeetupInfo {
+  id: number;
+  name: string;
+  date: string;
+  location: {
+    city: string;
+    state: string;
+    country: string;
+  };
+  // image_url: string;
+}
+
+/**
+ * This contains all important information about a meetup
+ */
+interface FullMeetupInfo {
+  id: number;
+  name: string;
+  date: string;
+  location: {
+    full_address: string;
+    address_line_1: string;
+    address_line_2: string;
+    city: string;
+    state: string | null;
+    country: string;
+    postal_code: string;
+  };
+  organizers: string[];
+  tickets: {
+    total: number;
+    available: number;
+  };
+  // image_url: string;
+}
+
 export const getAllMeetups = async (req: Request, res: Response) => {
-  const meetups = await Meetup.find();
+  const meetups: SimpleMeetupInfo[] = (await Meetup.find()).map(
+    (meetup: Meetup): SimpleMeetupInfo => {
+      const simplifiedMeetupInfo: SimpleMeetupInfo = {
+        id: meetup.id,
+        name: meetup.name,
+        date: dayjs(meetup.date).utcOffset(meetup.utc_offset).format(),
+        location: {
+          city: meetup.city,
+          state: meetup.state,
+          country: meetup.country,
+        },
+        // image_url: meetup.image_url,
+      };
+
+      return simplifiedMeetupInfo;
+    }
+  );
 
   return res.json(meetups);
 };
@@ -25,7 +83,59 @@ export const getMeetup = async (req: Request, res: Response) => {
     return res.status(404).json({ message: 'Invalid meetup ID.' });
   }
 
-  return res.json(meetup);
+  const meetupInfo: FullMeetupInfo = {
+    id: meetup.id,
+    name: meetup.name,
+    date: dayjs(meetup.date).utcOffset(meetup.utc_offset).format(),
+    location: {
+      full_address: '',
+      address_line_1: meetup.address_line_1,
+      address_line_2: meetup.address_line_2,
+      city: meetup.city,
+      state: meetup.state,
+      country: meetup.country,
+      postal_code: meetup.postal_code,
+    },
+    organizers: [],
+    tickets: {
+      total: meetup.capacity,
+      available: 0,
+    },
+  };
+
+  // Build full address
+  const addressComponents: string[] = [];
+  if (meetup.address_line_1 !== '')
+    addressComponents.push(meetup.address_line_1);
+  if (meetup.address_line_2 !== '')
+    addressComponents.push(meetup.address_line_2);
+  if (meetup.city !== '') addressComponents.push(meetup.city);
+  if (meetup.state !== '') addressComponents.push(meetup.state);
+  if (meetup.country !== '') addressComponents.push(meetup.country);
+  if (meetup.postal_code !== '') addressComponents.push(meetup.postal_code);
+
+  meetupInfo.location.full_address = addressComponents.join(', ');
+
+  // Get organizer names
+  const organizers = await User.find({
+    select: ['nick_name'],
+    where: {
+      id: In(meetup.organizer_ids),
+    },
+  });
+
+  meetupInfo.organizers = organizers.map((organizer) => organizer.nick_name);
+
+  // Calculate available tickets
+  const ticketCount = await Ticket.count({
+    where: {
+      meetup_id: meetup.id,
+    },
+  });
+
+  meetupInfo.tickets.available = meetupInfo.tickets.total - ticketCount;
+
+  return res.json(meetupInfo);
 };
 
 export const createMeetup = async (req: Request, res: Response) => {
