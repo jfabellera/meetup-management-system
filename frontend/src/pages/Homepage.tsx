@@ -18,14 +18,19 @@ import {
   Text,
   useDisclosure,
 } from '@chakra-ui/react';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useState } from 'react';
 import Page from '../components/Page/Page';
-import { useGetMeetupsQuery, type Meetup } from '../store/meetupSlice';
+import { useGetMeetupQuery, useGetMeetupsQuery } from '../store/meetupSlice';
+
+dayjs.extend(customParseFormat);
 
 const Homepage = (): JSX.Element => {
+  const [meetupId, setMeetupId] = useState<number>(0);
   const { data: meetups, isLoading } = useGetMeetupsQuery();
+  const { data: meetup } = useGetMeetupQuery(meetupId);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [modalInfo, setModalInfo] = useState<Meetup | null>(null);
 
   return (
     <Page>
@@ -39,13 +44,17 @@ const Homepage = (): JSX.Element => {
               key={card.id}
               onClick={() => {
                 onOpen();
-                setModalInfo(card);
+                setMeetupId(card.id);
               }}
             >
               <MeetupCard
                 name={card.name}
-                location={card.location}
-                date={card.date}
+                location={`${card.location.city}, ${
+                  card.location.state ?? card.location.country
+                }`}
+                date={dayjs(card.date, 'YYYY-MM-DDTHH:mm:ss').format(
+                  'MMMM DD, YYYY',
+                )}
                 imageUrl="https://lh3.googleusercontent.com/pw/ADCreHesVU05iKeKXUrmmOBkySFqLJHmFCgBx_Y6WZhGzf3NVB_Th8o_kUo901MM_i805f-JQNbSBBgsT0Gzn25LuAHGhzX_7Q2OX_9hGEJ5C1W-bYxu8gaKsUgtVectOIcLn49TM80kmGsgggnSfzknPvATJQ=w2646-h1764-s-no-gm?authuser=0"
               />
             </GridItem>
@@ -69,10 +78,14 @@ const Homepage = (): JSX.Element => {
                 objectFit="cover"
               />
             </Flex>
-            <Heading>{modalInfo?.name}</Heading>
-            <Text>{modalInfo?.date}</Text>
-            <Text>{modalInfo?.location}</Text>
-            <Text>Organizers {modalInfo?.organizer_ids}</Text>
+            <Heading>{meetup?.name}</Heading>
+            <Text>
+              {dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format(
+                'MMMM DD, YYYY @ h:mm A',
+              )}
+            </Text>
+            <Text>{meetup?.location.full_address}</Text>
+            <Text>Organizers: {meetup?.organizers.join(', ')}</Text>
           </ModalBody>
 
           <ModalFooter>
