@@ -1,7 +1,8 @@
 import {
+  AspectRatio,
   Button,
   Card,
-  CardBody,
+  CardHeader,
   Flex,
   Grid,
   GridItem,
@@ -14,7 +15,6 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  Spacer,
   Text,
   useDisclosure,
 } from '@chakra-ui/react';
@@ -38,7 +38,7 @@ const Homepage = (): JSX.Element => {
         Upcoming Meetups
       </Text>
       {!isLoading ? (
-        <Grid templateColumns="repeat(4, 1fr)" gap={4}>
+        <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4}>
           {meetups?.map((card) => (
             <GridItem
               key={card.id}
@@ -55,7 +55,7 @@ const Homepage = (): JSX.Element => {
                 date={dayjs(card.date, 'YYYY-MM-DDTHH:mm:ss').format(
                   'MMMM DD, YYYY',
                 )}
-                imageUrl="https://lh3.googleusercontent.com/pw/ADCreHesVU05iKeKXUrmmOBkySFqLJHmFCgBx_Y6WZhGzf3NVB_Th8o_kUo901MM_i805f-JQNbSBBgsT0Gzn25LuAHGhzX_7Q2OX_9hGEJ5C1W-bYxu8gaKsUgtVectOIcLn49TM80kmGsgggnSfzknPvATJQ=w2646-h1764-s-no-gm?authuser=0"
+                imageUrl="https://media.discordapp.net/attachments/1149502169041621062/1182553630407135292/Eventbrite.jpg?ex=65851de4&is=6572a8e4&hm=bdc554f39abecd6436f4f344518f68c845a4340da137ad76ebfc258c034464cc&=&format=webp&width=2592&height=1296"
               />
             </GridItem>
           ))}
@@ -113,28 +113,21 @@ const MeetupCard = ({
   imageUrl,
 }: MeetupCardProps): JSX.Element => {
   return (
-    <Card background={'white'}>
-      <CardBody>
-        <Flex h={32} w="full">
-          <Image
-            w="full"
-            src={imageUrl}
-            alt="testing this shit outs"
-            borderRadius="lg"
-            objectFit="cover"
-          />
-        </Flex>
-
-        <Heading size="lg" py={2}>
-          {' '}
-          {name}
-        </Heading>
-        <Flex>
-          <Text>{location}</Text>
-          <Spacer />
-          <Text>{date}</Text>
-        </Flex>
-      </CardBody>
+    <Card
+      background={'white'}
+      borderRadius="md"
+      overflow="hidden"
+      height="100%"
+      cursor={'pointer'}
+    >
+      <AspectRatio ratio={2 / 1}>
+        <Image src={imageUrl} objectFit="cover" />
+      </AspectRatio>
+      <CardHeader>
+        <Text>{date}</Text>
+        <Heading size="md">{name}</Heading>
+        <Text>{location}</Text>
+      </CardHeader>
     </Card>
   );
 };
