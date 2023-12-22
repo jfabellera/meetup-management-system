@@ -17,6 +17,7 @@ import {
   ModalOverlay,
   Text,
   useDisclosure,
+  VStack,
 } from '@chakra-ui/react';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
@@ -34,9 +35,9 @@ const Homepage = (): JSX.Element => {
 
   return (
     <Page>
-      <Text fontSize="3xl" as="b">
+      <Heading fontSize="3xl" mb={'0.5em'}>
         Upcoming Meetups
-      </Text>
+      </Heading>
       {!isLoading ? (
         <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4}>
           {meetups?.map((card) => (
@@ -123,10 +124,14 @@ const MeetupCard = ({
       <AspectRatio ratio={2 / 1}>
         <Image src={imageUrl} objectFit="cover" />
       </AspectRatio>
-      <CardHeader>
-        <Text>{date}</Text>
-        <Heading size="md">{name}</Heading>
-        <Text>{location}</Text>
+      <CardHeader padding={'12px'}>
+        <VStack spacing={2} align={'left'}>
+          <Text fontWeight={'semibold'} color={'gray.600'}>
+            {date}
+          </Text>
+          <Heading size={'md'}>{name}</Heading>
+          <Text>{location}</Text>
+        </VStack>
       </CardHeader>
     </Card>
   );
