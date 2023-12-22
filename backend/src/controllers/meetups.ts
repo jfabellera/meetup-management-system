@@ -51,23 +51,27 @@ interface FullMeetupInfo {
 }
 
 export const getAllMeetups = async (req: Request, res: Response) => {
-  const meetups: SimpleMeetupInfo[] = (await Meetup.find()).map(
-    (meetup: Meetup): SimpleMeetupInfo => {
-      const simplifiedMeetupInfo: SimpleMeetupInfo = {
-        id: meetup.id,
-        name: meetup.name,
-        date: dayjs(meetup.date).utcOffset(meetup.utc_offset).format(),
-        location: {
-          city: meetup.city,
-          state: meetup.state,
-          country: meetup.country,
-        },
-        // image_url: meetup.image_url,
-      };
+  const meetups: SimpleMeetupInfo[] = (
+    await Meetup.find({
+      order: {
+        date: 'ASC',
+      },
+    })
+  ).map((meetup: Meetup): SimpleMeetupInfo => {
+    const simplifiedMeetupInfo: SimpleMeetupInfo = {
+      id: meetup.id,
+      name: meetup.name,
+      date: dayjs(meetup.date).utcOffset(meetup.utc_offset).format(),
+      location: {
+        city: meetup.city,
+        state: meetup.state,
+        country: meetup.country,
+      },
+      // image_url: meetup.image_url,
+    };
 
-      return simplifiedMeetupInfo;
-    }
-  );
+    return simplifiedMeetupInfo;
+  });
 
   return res.json(meetups);
 };
