@@ -25,6 +25,7 @@ import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useState } from 'react';
 import { FiCalendar, FiClock, FiMapPin, FiUser } from 'react-icons/fi';
 import Page from '../components/Page/Page';
+import { useAppSelector } from '../store/hooks';
 import { useGetMeetupQuery, useGetMeetupsQuery } from '../store/meetupSlice';
 
 dayjs.extend(customParseFormat);
@@ -34,6 +35,7 @@ const Homepage = (): JSX.Element => {
   const { data: meetups, isLoading } = useGetMeetupsQuery();
   const { data: meetup } = useGetMeetupQuery(meetupId);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isLoggedIn } = useAppSelector((state) => state.user);
 
   return (
     <Page>
@@ -140,10 +142,12 @@ const Homepage = (): JSX.Element => {
 
           <ModalFooter>
             {/* TODO(jan): Implement */}
-            <Button colorScheme={'green'} mr={3}>
-              RSVP
-            </Button>
-            <Button colorScheme={'gray'} mr={3} onClick={onClose}>
+            {isLoggedIn ? (
+              <Button colorScheme={'green'} mr={3}>
+                RSVP
+              </Button>
+            ) : null}
+            <Button colorScheme={'pink'} mr={3} onClick={onClose}>
               Close
             </Button>
           </ModalFooter>
