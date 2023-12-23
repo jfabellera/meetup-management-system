@@ -23,7 +23,7 @@ interface SimpleMeetupInfo {
     state: string;
     country: string;
   };
-  // image_url: string;
+  image_url: string;
 }
 
 /**
@@ -47,7 +47,7 @@ interface FullMeetupInfo {
     total: number;
     available: number;
   };
-  // image_url: string;
+  image_url: string;
 }
 
 export const getAllMeetups = async (req: Request, res: Response) => {
@@ -67,7 +67,7 @@ export const getAllMeetups = async (req: Request, res: Response) => {
         state: meetup.state,
         country: meetup.country,
       },
-      // image_url: meetup.image_url,
+      image_url: meetup.image_url,
     };
 
     return simplifiedMeetupInfo;
@@ -105,6 +105,7 @@ export const getMeetup = async (req: Request, res: Response) => {
       total: meetup.capacity,
       available: 0,
     },
+    image_url: meetup.image_url,
   };
 
   // Build full address
