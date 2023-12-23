@@ -37,6 +37,7 @@ const meetupSchema = Joi.object({
   country: Joi.string().required(),
   postal_code: Joi.string().required(),
   utc_offset: Joi.number().default(0),
+  image_url: Joi.string(),
 });
 
 const ticketSchema = Joi.object({

@@ -53,3 +53,7 @@ ALTER TABLE "meetups" ADD COLUMN "utc_offset" INT NOT NULL DEFAULT 0;
 -- rollback ALTER TABLE "meetups" DROP COLUMN "utc_offset";
 -- rollback ALTER TABLE "meetups" ALTER COLUMN "date" TYPE DATE;
 -- rollback ALTER TABLE "meetups" ADD COLUMN "start_time" TIME WITHOUT TIME ZONE NOT NULL DEFAULT '00:00:00';
+
+-- changeset jan:6
+ALTER TABLE "meetups" ADD COLUMN "image_url" VARCHAR(255) DEFAULT NULL;
+-- rollback ALTER TABLE "meetups" DROP COLUMN "image_url";
