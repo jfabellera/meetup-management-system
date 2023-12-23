@@ -23,7 +23,7 @@ import {
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useState } from 'react';
-import { FiCalendar, FiClock, FiMapPin, FiUser } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiImage, FiMapPin, FiUser } from 'react-icons/fi';
 import Page from '../components/Page/Page';
 import { useAppSelector } from '../store/hooks';
 import { useGetMeetupQuery, useGetMeetupsQuery } from '../store/meetupSlice';
@@ -60,7 +60,7 @@ const Homepage = (): JSX.Element => {
                 date={dayjs(card.date, 'YYYY-MM-DDTHH:mm:ss').format(
                   'MMMM DD, YYYY',
                 )}
-                imageUrl="https://media.discordapp.net/attachments/1149502169041621062/1182553630407135292/Eventbrite.jpg?ex=65851de4&is=6572a8e4&hm=bdc554f39abecd6436f4f344518f68c845a4340da137ad76ebfc258c034464cc&=&format=webp&width=2592&height=1296"
+                imageUrl={card.image_url}
               />
             </GridItem>
           ))}
@@ -79,10 +79,15 @@ const Homepage = (): JSX.Element => {
         <ModalOverlay />
 
         <ModalContent>
-          <Image
-            src="https://media.discordapp.net/attachments/1149502169041621062/1182553630407135292/Eventbrite.jpg?ex=65851de4&is=6572a8e4&hm=bdc554f39abecd6436f4f344518f68c845a4340da137ad76ebfc258c034464cc&=&format=webp&width=2592&height=1296"
-            borderRadius={'md'}
-          />
+          {meetup?.image_url != null ? (
+            <AspectRatio ratio={2 / 1}>
+              <Image
+                src={meetup?.image_url}
+                fallbackSrc="https://via.placeholder.com/150"
+                objectFit="cover"
+              />
+            </AspectRatio>
+          ) : null}
           <ModalHeader fontWeight={'semibold'} paddingBottom={'0.4em'}>
             <Heading>{meetup?.name}</Heading>
           </ModalHeader>
@@ -179,7 +184,17 @@ const MeetupCard = ({
       cursor={'pointer'}
     >
       <AspectRatio ratio={2 / 1}>
-        <Image src={imageUrl} objectFit="cover" />
+        {imageUrl != null ? (
+          <Image
+            src={imageUrl}
+            fallbackSrc="https://via.placeholder.com/150"
+            objectFit="cover"
+          />
+        ) : (
+          <Flex backgroundColor={'gray.200'}>
+            <Icon as={FiImage} boxSize={8} />
+          </Flex>
+        )}
       </AspectRatio>
       <CardHeader padding={'12px'}>
         <VStack spacing={2} align={'left'}>
