@@ -1,13 +1,8 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-
-export interface Meetup {
-  id: number;
-  name: string;
-  location: string;
-  date: string;
-  organizer_ids: number[];
-  imageUrl: string;
-}
+import type {
+  FullMeetupInfo,
+  SimpleMeetupInfo,
+} from '../../../backend/src/controllers/meetups';
 
 export const meetupSlice = createApi({
   reducerPath: 'meetupSlice',
@@ -16,13 +11,13 @@ export const meetupSlice = createApi({
     baseUrl: 'http://localhost:3000/',
   }),
   endpoints: (builder) => ({
-    getMeetups: builder.query<Meetup[], void>({
+    getMeetups: builder.query<SimpleMeetupInfo[], void>({
       query: () => ({
         url: `meetups/`,
       }),
       providesTags: ['Meetups'],
     }),
-    getMeetup: builder.query<Meetup, number>({
+    getMeetup: builder.query<FullMeetupInfo, number>({
       query: (id) => ({
         url: `meetups/${id}`,
       }),

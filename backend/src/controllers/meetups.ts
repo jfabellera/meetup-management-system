@@ -14,7 +14,7 @@ dayjs.extend(utc);
  * This contains basic information about a meetup, mainly details necessary for
  * the homepage
  */
-interface SimpleMeetupInfo {
+export interface SimpleMeetupInfo {
   id: number;
   name: string;
   date: string;
@@ -29,7 +29,7 @@ interface SimpleMeetupInfo {
 /**
  * This contains all important information about a meetup
  */
-interface FullMeetupInfo {
+export interface FullMeetupInfo {
   id: number;
   name: string;
   date: string;

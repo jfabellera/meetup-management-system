@@ -15,6 +15,7 @@
     "@emotion/styled": "^11.10.5",
     "@reduxjs/toolkit": "^1.9.5",
     "axios": "^1.6.1",
+    "dayjs": "^1.11.10",
     "formik": "^2.4.5",
     "framer-motion": "^7.6.19",
     "jsonwebtoken": "^9.0.2",
