@@ -22,7 +22,7 @@ import {
 } from '@chakra-ui/react';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FiCalendar, FiClock, FiImage, FiMapPin, FiUser } from 'react-icons/fi';
 import Page from '../components/Page/Page';
 import { useAppSelector } from '../store/hooks';
@@ -37,6 +37,13 @@ const Homepage = (): JSX.Element => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isLoggedIn } = useAppSelector((state) => state.user);
 
+  // Open modal once meetup is loaded
+  useEffect(() => {
+    if (meetupId !== 0) {
+      onOpen();
+    }
+  }, [meetup]);
+
   return (
     <Page>
       <Heading fontSize="3xl" mb={'0.5em'}>
@@ -48,8 +55,12 @@ const Homepage = (): JSX.Element => {
             <GridItem
               key={card.id}
               onClick={() => {
-                onOpen();
                 setMeetupId(card.id);
+
+                // Only open modal immediately if the selected meetup is already loaded
+                if (meetup?.id === card.id) {
+                  onOpen();
+                }
               }}
             >
               <MeetupCard
