@@ -15,6 +15,7 @@ import {
   ModalContent,
   ModalFooter,
   ModalOverlay,
+  Spacer,
   Text,
   useDisclosure,
   VStack,
@@ -22,7 +23,14 @@ import {
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useEffect, useState } from 'react';
-import { FiCalendar, FiClock, FiImage, FiMapPin, FiUser } from 'react-icons/fi';
+import { FaCircle } from 'react-icons/fa';
+import {
+  FiCalendar,
+  FiClock,
+  FiImage,
+  FiMapPin,
+  FiUser,
+} from 'react-icons/fi';
 import Page from '../components/Page/Page';
 import { useAppSelector } from '../store/hooks';
 import { useGetMeetupQuery, useGetMeetupsQuery } from '../store/meetupSlice';
@@ -158,6 +166,11 @@ const Homepage = (): JSX.Element => {
           </ModalBody>
 
           <ModalFooter>
+            <MeetupCapacityStatus
+              available={meetup?.tickets.available}
+              total={meetup?.tickets.total}
+            />
+            <Spacer />
             {/* TODO(jan): Implement */}
             {isLoggedIn ? (
               <Button colorScheme={'green'} mr={3}>
@@ -218,6 +231,36 @@ const MeetupCard = ({
         </VStack>
       </CardHeader>
     </Card>
+  );
+};
+
+interface MeetupCapacityStatusProps {
+  available: number;
+  total: number;
+}
+
+const MeetupCapacityStatus = ({
+  available,
+  total,
+}: MeetupCapacityStatusProps): JSX.Element => {
+  let statusColor: string;
+  const capacityRatio = available / total;
+
+  if (capacityRatio > 0.4) {
+    statusColor = 'green.500';
+  } else if (capacityRatio > 0.1) {
+    statusColor = 'yellow.500';
+  } else {
+    statusColor = 'red.500';
+  }
+
+  return (
+    <HStack>
+      <Icon as={FaCircle} boxSize={3} color={statusColor} />
+      <Text>
+        {available} of {total} available
+      </Text>
+    </HStack>
   );
 };
 
