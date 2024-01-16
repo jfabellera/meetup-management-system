@@ -1,19 +1,21 @@
 import {
   Avatar,
   Box,
+  type BoxProps,
   Button,
   Center,
   Flex,
+  type FlexProps,
   Icon,
+  IconButton,
   Link,
   Menu,
   MenuButton,
   MenuDivider,
+  MenuItem,
   MenuList,
   Stack,
   useColorModeValue,
-  type BoxProps,
-  type FlexProps,
 } from '@chakra-ui/react';
 import { type ReactNode } from 'react';
 import { type IconType } from 'react-icons';
@@ -21,6 +23,8 @@ import { FiLogOut } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../store/authSlice';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { HamburgerIcon } from '@chakra-ui/icons';
+import { MdAdminPanelSettings } from 'react-icons/all';
 
 /**
  * Adapted from https://chakra-templates.dev/navigation/navbar
@@ -55,6 +59,19 @@ const Nav = (): JSX.Element => {
         borderBottom="1px"
         borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
       >
+        <Menu>
+          <MenuButton
+              as={IconButton}
+              aria-label='Options'
+              icon={<HamburgerIcon />}
+              variant='outline'
+          />
+          <MenuList>
+            <MenuItem icon={<MdAdminPanelSettings />} onClick={() => {navigate('/admin');}}>
+              Admin Dashboard
+            </MenuItem>
+          </MenuList>
+        </Menu>
         <Link
           onClick={() => {
             navigate('/');

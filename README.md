@@ -23,7 +23,7 @@ Make sure your database is setup and ready to go. You can review the following p
 npm install
 ```
 
-2. Create a `.env` file in `backend/api` in the following format (Ports may change depending on database used/personal preference):
+2. Create a `.env` file in `backend` in the following format (Ports may change depending on database used/personal preference):
 
 ```
 MMS_API_SERVER_URL=http://localhost

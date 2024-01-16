@@ -3,6 +3,7 @@ import userRoutes from './routes/users';
 import meetupRoutes from './routes/meetups';
 import ticketRoutes from './routes/tickets';
 import { AppDataSource } from './datasource';
+import organizerRequests from './routes/organizerRequests';
 
 AppDataSource.initialize();
 
@@ -36,6 +37,7 @@ class Server {
     this.express.use('/users', userRoutes);
     this.express.use('/meetups', meetupRoutes);
     this.express.use('/tickets', ticketRoutes);
+    this.express.use('/organizerRequests', organizerRequests);
 
     this.express.use('*', (req, res, next) => {
       res.send('Not a valid endpoint.');
