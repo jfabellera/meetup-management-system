@@ -94,3 +94,16 @@ export const deleteTicket = async (req: Request, res: Response) => {
 
   return res.status(204).end();
 };
+
+export const getUserTickets = async (req: Request, res: Response) => {
+  const { user_id } = req.params;
+
+  const tickets = await Ticket.find({
+    select: ['id', 'meetup_id'],
+    where: {
+      user_id: parseInt(user_id),
+    },
+  });
+
+  return res.json(tickets);
+};
