@@ -5,6 +5,7 @@ import {
 } from '@reduxjs/toolkit';
 import axios, { AxiosError } from 'axios';
 import jwt from 'jsonwebtoken';
+import { type TokenData } from '../../../backend/src/controllers/auth';
 
 export interface LoginPayload {
   email: string;
@@ -19,9 +20,17 @@ export interface RegisterPayload {
   password: string;
 }
 
+interface User {
+  token: string;
+  id: number;
+  displayName: string;
+  isOrganizer: boolean;
+  isAdmin: boolean;
+}
+
 interface AuthState {
   isLoggedIn: boolean;
-  user: any | null;
+  user: User | null;
   loading: boolean;
   error: number | null;
 }
@@ -41,7 +50,7 @@ export const login = createAsyncThunk(
 
       localStorage.setItem('token', data.token);
 
-      return jwt.decode(data.token);
+      return getUserFromToken(data.token);
     } catch (err) {
       if (err instanceof AxiosError && err.response != null) {
         return rejectWithValue(err.response?.status);
@@ -77,23 +86,45 @@ export const register = createAsyncThunk(
 );
 
 /**
- * Gets user object from local storage token. If there is no token in local
- * storage, this function will return null.
+ * Gets user object from JWT. If the JWT cannot be decoded, this function will
+ * return null.
  *
+ *
+ * @param token The JWT to decode
  * @returns User object if valid token
  */
-const getUserFromLocalStorage = (): any => {
-  const token = localStorage.getItem('token');
-  if (token == null) return false;
+const getUserFromToken = (token: string): User | null => {
   try {
-    return jwt.decode(token);
+    const decoded = jwt.decode(token) as TokenData;
+
+    const user: User = {
+      token,
+      id: decoded.id,
+      displayName: decoded.nick_name,
+      isOrganizer: decoded.is_organizer,
+      isAdmin: decoded.is_admin,
+    };
+
+    return user;
   } catch (err) {
     return null;
   }
 };
 
+/**
+ * Gets user object from local storage token. If there is no token in local
+ * storage, this function will return null.
+ *
+ * @returns User object if valid token
+ */
+const getUserFromLocalStorage = (): User | null => {
+  const token = localStorage.getItem('token');
+  if (token == null) return null;
+  return getUserFromToken(token);
+};
+
 const initialState: AuthState = {
-  isLoggedIn: getUserFromLocalStorage(),
+  isLoggedIn: getUserFromLocalStorage() != null,
   user: getUserFromLocalStorage(),
   loading: false,
   error: null,

@@ -1,9 +1,16 @@
+import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { ILike } from 'typeorm';
 import { User } from '../entity/User';
-import { validateUser, validatePassword } from '../util/validator';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+import { validatePassword, validateUser } from '../util/validator';
+
+export interface TokenData {
+  id: number;
+  nick_name: string;
+  is_organizer: boolean;
+  is_admin: boolean;
+}
 
 const hashPassword = async (password: string) => {
   const saltRounds = 10;
@@ -144,19 +151,18 @@ export const login = async (req: Request, res: Response) => {
   if (existingUser) {
     const isAuthenticated = await bcrypt.compare(
       password,
-      existingUser.password_hash,
+      existingUser.password_hash
     );
 
     if (isAuthenticated) {
-      const token = jwt.sign(
-        {
-          id: existingUser.id,
-          nick_name: existingUser.nick_name,
-          is_organizer: existingUser.is_organizer,
-          is_admin: existingUser.is_admin,
-        },
-        process.env.JWT_ACCESS_SECRET || 'secret',
-      );
+      const data: TokenData = {
+        id: existingUser.id,
+        nick_name: existingUser.nick_name,
+        is_organizer: existingUser.is_organizer,
+        is_admin: existingUser.is_admin,
+      };
+
+      const token = jwt.sign(data, process.env.JWT_ACCESS_SECRET || 'secret');
 
       return res.status(201).json({ token });
     }
