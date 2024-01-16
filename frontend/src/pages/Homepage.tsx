@@ -30,19 +30,34 @@ import {
   FiImage,
   FiMapPin,
   FiUser,
+  FiUserCheck,
+  FiUserX,
 } from 'react-icons/fi';
 import Page from '../components/Page/Page';
 import { useAppSelector } from '../store/hooks';
 import { useGetMeetupQuery, useGetMeetupsQuery } from '../store/meetupSlice';
+import {
+  useCreateTicketMutation,
+  useDeleteTicketMutation,
+  useGetTicketsQuery,
+} from '../store/ticketSlice';
 
 dayjs.extend(customParseFormat);
 
 const Homepage = (): JSX.Element => {
+  const { isLoggedIn, user } = useAppSelector((state) => state.user);
   const [meetupId, setMeetupId] = useState<number>(0);
   const { data: meetups, isLoading } = useGetMeetupsQuery();
-  const { data: meetup } = useGetMeetupQuery(meetupId);
+  const { data: meetup, refetch: refetchMeetup } = useGetMeetupQuery(meetupId, {
+    skip: meetupId < 1,
+  });
+  // TODO(jan): figure out how to remove this ugly ternary without getting linting errors
+  const { data: tickets } = useGetTicketsQuery(user != null ? user.id : 0, {
+    skip: user == null,
+  });
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { isLoggedIn } = useAppSelector((state) => state.user);
+  const [rsvp] = useCreateTicketMutation();
+  const [unrsvp] = useDeleteTicketMutation();
 
   // Open modal once meetup is loaded
   useEffect(() => {
@@ -50,6 +65,51 @@ const Homepage = (): JSX.Element => {
       onOpen();
     }
   }, [meetup]);
+
+  /**
+   * RSVP for meetup and refetch meetup info to update count
+   */
+  const rsvpOnclick = (): void => {
+    // void to match onClick expected type
+    void (async () => {
+      if (meetup != null) {
+        await rsvp(meetup.id);
+        await refetchMeetup();
+      }
+    })();
+  };
+
+  /**
+   * Remove RSVP for meetup and refetch meetup info to update count
+   */
+  const unrsvpOnClick = (): void => {
+    // void to match onClick expected type
+    void (async () => {
+      const ticket = tickets?.filter(
+        (ticket) => ticket.meetup_id === meetup?.id,
+      )[0];
+      if (ticket !== undefined) {
+        await unrsvp(ticket.id);
+        await refetchMeetup();
+      }
+    })();
+  };
+
+  /**
+   * Get whether the logged in user is attending a meetup for the specified
+   * meetup ID
+   *
+   * @param meetupId
+   * @returns Whether the user is attending the meetup
+   */
+  const isAttendingMeetup = (meetupId: number): boolean => {
+    if (user != null && tickets != null) {
+      return (
+        tickets.filter((ticket) => ticket.meetup_id === meetupId).length > 0
+      );
+    }
+    return false;
+  };
 
   return (
     <Page>
@@ -172,11 +232,27 @@ const Homepage = (): JSX.Element => {
             />
             <Spacer />
             {/* TODO(jan): Implement */}
-            {isLoggedIn ? (
-              <Button colorScheme={'green'} mr={3}>
+            {isAttendingMeetup(meetup?.id) ? (
+              <Button
+                leftIcon={<FiUserX />}
+                colorScheme={'red'}
+                mr={3}
+                disabled={!isLoggedIn}
+                onClick={unrsvpOnClick}
+              >
+                Cancel RSVP
+              </Button>
+            ) : (
+              <Button
+                leftIcon={<FiUserCheck />}
+                colorScheme={'green'}
+                mr={3}
+                disabled={!isLoggedIn}
+                onClick={rsvpOnclick}
+              >
                 RSVP
               </Button>
-            ) : null}
+            )}
             <Button colorScheme={'pink'} mr={3} onClick={onClose}>
               Close
             </Button>
