@@ -1,5 +1,6 @@
 import {
   AspectRatio,
+  Badge,
   Button,
   Card,
   CardHeader,
@@ -139,6 +140,7 @@ const Homepage = (): JSX.Element => {
                   'MMMM DD, YYYY',
                 )}
                 imageUrl={card.image_url}
+                attending={isAttendingMeetup(card.id)}
               />
             </GridItem>
           ))}
@@ -268,6 +270,7 @@ interface MeetupCardProps {
   location: string;
   date: string;
   imageUrl: string;
+  attending: boolean;
 }
 
 const MeetupCard = ({
@@ -275,6 +278,7 @@ const MeetupCard = ({
   location,
   date,
   imageUrl,
+  attending,
 }: MeetupCardProps): JSX.Element => {
   return (
     <Card
@@ -299,9 +303,13 @@ const MeetupCard = ({
       </AspectRatio>
       <CardHeader padding={'12px'}>
         <VStack spacing={2} align={'left'}>
-          <Text fontWeight={'semibold'} color={'gray.600'}>
-            {date}
-          </Text>
+          <HStack>
+            <Text fontWeight={'semibold'} color={'gray.600'}>
+              {date}
+            </Text>
+            <Spacer />
+            {attending ? <Badge colorScheme={'green'}>RSVPed</Badge> : null}
+          </HStack>
           <Heading size={'md'}>{name}</Heading>
           <Text>{location}</Text>
         </VStack>
