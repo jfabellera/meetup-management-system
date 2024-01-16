@@ -9,10 +9,10 @@ import {
 const router = express.Router();
 
 router.get('/', getAllOrganizerRequests);
-router.post('/', createOrganizerRequest);
+router.post('/', authChecker([]), createOrganizerRequest);
 router.delete(
-    '/:organizer_request_id',
-    authChecker([Rule.requireAdmin]),
+    '/:request_id',
+    authChecker([Rule.overrideAdmin]),
     deleteOrganizerRequest,
 );
 

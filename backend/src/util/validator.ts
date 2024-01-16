@@ -49,6 +49,11 @@ const ticketSchema = Joi.object({
   raffle_wins: Joi.number().min(0).default(0).max(Joi.ref('raffle_entries')),
 });
 
+const organizerRequestSchema = Joi.object({
+  id: Joi.number().required(),
+  user_id: Joi.number().required(),
+});
+
 const passwordComplexityOptions = {
   min: 3,
   max: 30,
@@ -68,3 +73,4 @@ export const validatePassword = (password: string) => {
 export const validateUser = validator(userSchema);
 export const validateMeetup = validator(meetupSchema);
 export const validateTicket = validator(ticketSchema);
+export const validateOrganizerRequest = validator(ticketSchema);
