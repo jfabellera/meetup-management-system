@@ -1,8 +1,8 @@
 import * as express from 'express';
-import userRoutes from './routes/users';
+import { AppDataSource } from './datasource';
 import meetupRoutes from './routes/meetups';
 import ticketRoutes from './routes/tickets';
-import { AppDataSource } from './datasource';
+import userRoutes from './routes/users';
 
 AppDataSource.initialize();
 
@@ -22,11 +22,11 @@ class Server {
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader(
         'Access-Control-Allow-Methods',
-        'GET,POST,PUT,DELETE,OPTIONS',
+        'GET,POST,PUT,DELETE,OPTIONS'
       );
       res.setHeader(
         'Access-Control-Allow-Headers',
-        'Content-Type, Access-Control-Allow-Headers',
+        'Content-Type, Access-Control-Allow-Headers, Authorization'
       );
       next();
     });

@@ -64,7 +64,7 @@ const Nav = (): JSX.Element => {
         </Link>
         {/* TODO(jan): Make dependent on logged in state */}
         {isLoggedIn ? (
-          <NavbarDropdown nickname={user.nick_name} />
+          <NavbarDropdown nickname={user?.displayName} />
         ) : (
           <GuestButtons />
         )}
