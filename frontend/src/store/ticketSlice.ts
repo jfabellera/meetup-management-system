@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { type SimpleTicketInfo } from '../../../backend/src/controllers/tickets';
 import { type RootState } from './store';
 
 export const ticketSlice = createApi({
@@ -17,7 +18,7 @@ export const ticketSlice = createApi({
     },
   }),
   endpoints: (builder) => ({
-    getTickets: builder.query<any, number>({
+    getTickets: builder.query<SimpleTicketInfo[], number>({
       query: (userId) => ({
         url: `users/${userId}/tickets`,
       }),

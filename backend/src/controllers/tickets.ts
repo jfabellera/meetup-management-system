@@ -2,6 +2,11 @@ import { Request, Response } from 'express';
 import { Ticket } from '../entity/Ticket';
 import { validateTicket } from '../util/validator';
 
+export interface SimpleTicketInfo {
+  id: number;
+  meetup_id: number;
+}
+
 export const getAllTickets = async (req: Request, res: Response) => {
   const tickets = await Ticket.find();
 
@@ -98,7 +103,7 @@ export const deleteTicket = async (req: Request, res: Response) => {
 export const getUserTickets = async (req: Request, res: Response) => {
   const { user_id } = req.params;
 
-  const tickets = await Ticket.find({
+  const tickets: SimpleTicketInfo[] = await Ticket.find({
     select: ['id', 'meetup_id'],
     where: {
       user_id: parseInt(user_id),
