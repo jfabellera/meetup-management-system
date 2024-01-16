@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { User } from '../entity/User';
+import { OrganizerRequests } from '../entity/OrganizerRequests';
 
 export enum Rule {
   requireOrganizer,
@@ -134,6 +135,17 @@ export const authChecker =
         res.locals.meetup = meetup;
 
         if (!meetup.organizer_ids.includes(user.id)) {
+          return reject(res);
+        }
+      }
+
+      //If accessing an organizer request, either an admin or the requester must be accessing
+      if( req.params.request_id ) {
+        const organizerRequest = await OrganizerRequests.findOneBy({
+          id: parseInt(req.params.request_id)
+        });
+
+        if(!user.is_admin && user.id != organizerRequest?.user_id){
           return reject(res);
         }
       }
