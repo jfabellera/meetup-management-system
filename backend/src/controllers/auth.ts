@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { ILike } from 'typeorm';
+import config from '../config';
 import { User } from '../entity/User';
 import { validatePassword, validateUser } from '../util/validator';
 
@@ -162,7 +163,7 @@ export const login = async (req: Request, res: Response) => {
         is_admin: existingUser.is_admin,
       };
 
-      const token = jwt.sign(data, process.env.JWT_ACCESS_SECRET || 'secret');
+      const token = jwt.sign(data, config.jwtSecret);
 
       return res.status(201).json({ token });
     }

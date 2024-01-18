@@ -1,5 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import config from '../config';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { User } from '../entity/User';
@@ -26,7 +27,7 @@ const reject = (res: Response) => {
 
 const checkMeetupOrganizer = async (
   meetupId: number,
-  userId: number,
+  userId: number
 ): Promise<boolean> => {
   const meetup = await Meetup.findOneBy({
     id: meetupId,
@@ -58,7 +59,7 @@ export const authChecker =
       // Get requestor user
       const decodedToken = jwt.verify(
         token,
-        process.env.JWT_ACCESS_SECRET || 'secret',
+        config.jwtSecret
       ) as TokenInterface;
       const user = await User.findOneBy({
         id: decodedToken.id,

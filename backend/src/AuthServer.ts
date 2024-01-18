@@ -1,5 +1,6 @@
 import * as express from 'express';
-import { createUser, updateUser, deleteUser, login } from './controllers/auth';
+import config from './config';
+import { createUser, deleteUser, login, updateUser } from './controllers/auth';
 import { AppDataSource } from './datasource';
 import { authChecker, Rule } from './middleware/authChecker';
 
@@ -21,11 +22,11 @@ class AuthServer {
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader(
         'Access-Control-Allow-Methods',
-        'GET,POST,PUT,DELETE,OPTIONS',
+        'GET,POST,PUT,DELETE,OPTIONS'
       );
       res.setHeader(
         'Access-Control-Allow-Headers',
-        'Content-Type, Access-Control-Allow-Headers',
+        'Content-Type, Access-Control-Allow-Headers'
       );
       next();
     });
@@ -36,12 +37,12 @@ class AuthServer {
     this.express.put(
       '/:user_id',
       authChecker([Rule.overrideAdmin]),
-      updateUser,
+      updateUser
     );
     this.express.delete(
       '/:user_id',
       authChecker([Rule.overrideAdmin]),
-      deleteUser,
+      deleteUser
     );
 
     this.express.post('/login', login);
@@ -62,7 +63,7 @@ class AuthServer {
   };
 }
 
-const port = parseInt(process.env.MMS_AUTH_SERVER_PORT || '3001');
+const port = parseInt(config.authPort);
 const server = new AuthServer()
   .start(port)
   .then((port) => console.log(`Running on port ${port}`))

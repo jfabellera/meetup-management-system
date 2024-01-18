@@ -1,4 +1,5 @@
 import * as express from 'express';
+import config from './config';
 import { AppDataSource } from './datasource';
 import meetupRoutes from './routes/meetups';
 import ticketRoutes from './routes/tickets';
@@ -53,7 +54,7 @@ class Server {
   };
 }
 
-const port = parseInt(process.env.MMS_API_SERVER_PORT || '3000');
+const port = parseInt(config.apiPort);
 const server = new Server()
   .start(port)
   .then((port) => console.log(`Running on port ${port}`))

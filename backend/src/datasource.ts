@@ -1,16 +1,17 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import { User } from './entity/User';
+import config from './config';
 import { Meetup } from './entity/Meetup';
 import { Ticket } from './entity/Ticket';
+import { User } from './entity/User';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  host: process.env.MMS_DATABASE_HOST || 'localhost',
-  port: parseInt(process.env.MMS_DATABASE_PORT || '5432'),
-  username: process.env.MMS_DATABASE_USER || 'postgres',
-  password: process.env.MMS_DATABASE_PASSWORD || 'password',
-  database: process.env.MMS_DATABASE_NAME || 'mms-dev',
+  host: config.databaseHost,
+  port: parseInt(config.databasePort),
+  username: config.databaseUser,
+  password: config.databasePassword,
+  database: config.databaseName,
   entities: [User, Meetup, Ticket],
   synchronize: false,
   logging: false,

@@ -6,6 +6,7 @@ import {
 import axios, { AxiosError } from 'axios';
 import jwt from 'jsonwebtoken';
 import { type TokenData } from '../../../backend/src/controllers/auth';
+import config from '../config';
 
 export interface LoginPayload {
   email: string;
@@ -45,7 +46,10 @@ export const login = createAsyncThunk(
   'auth/login',
   async (payload: LoginPayload, { rejectWithValue }) => {
     try {
-      const response = await axios.post('http://localhost:3001/login', payload);
+      const response = await axios.post(
+        `${config.authUrl}:${config.authPort}/login`,
+        payload,
+      );
       const { data } = response;
 
       localStorage.setItem('token', data.token);
@@ -68,7 +72,7 @@ export const register = createAsyncThunk(
   'auth/register',
   async (payload: RegisterPayload, { rejectWithValue }) => {
     try {
-      await axios.post('http://localhost:3001/', {
+      await axios.post(`${config.authUrl}:${config.authPort}/`, {
         email: payload.email,
         first_name: payload.firstName,
         last_name: payload.lastName,
