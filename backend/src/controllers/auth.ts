@@ -1,7 +1,8 @@
 import bcrypt from 'bcrypt';
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { ILike } from 'typeorm';
+import config from '../config';
 import { User } from '../entity/User';
 import { validatePassword, validateUser } from '../util/validator';
 
@@ -12,13 +13,16 @@ export interface TokenData {
   is_admin: boolean;
 }
 
-const hashPassword = async (password: string) => {
+const hashPassword = async (password: string): Promise<string> => {
   const saltRounds = 10;
   const passwordHash = await bcrypt.hash(password, saltRounds);
   return passwordHash;
 };
 
-export const createUser = async (req: Request, res: Response) => {
+export const createUser = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { email, first_name, last_name, nick_name, password } = req.body;
 
   // TODO(jan): Make this cleaner (schema validation + password validation)
@@ -30,14 +34,14 @@ export const createUser = async (req: Request, res: Response) => {
     nick_name,
   });
 
-  if (error) {
+  if (error != null) {
     return res.status(400).json(error.details);
   }
 
   // Validate password
   const passwordValidationResult = validatePassword(password);
 
-  if (passwordValidationResult.error) {
+  if (passwordValidationResult.error != null) {
     return res.status(400).json(passwordValidationResult.error.details);
   }
 
@@ -48,7 +52,7 @@ export const createUser = async (req: Request, res: Response) => {
     },
   });
 
-  if (existingUser) {
+  if (existingUser != null) {
     return res.status(409).json({ message: 'Email is taken.' });
   }
 
@@ -61,7 +65,10 @@ export const createUser = async (req: Request, res: Response) => {
   return res.status(201).json(newUser);
 };
 
-export const updateUser = async (req: Request, res: Response) => {
+export const updateUser = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { user_id } = req.params;
   const {
     email,
@@ -77,7 +84,7 @@ export const updateUser = async (req: Request, res: Response) => {
     id: parseInt(user_id),
   });
 
-  if (!user) {
+  if (user == null) {
     return res.status(404).json({ message: 'Invalid user ID.' });
   }
 
@@ -88,7 +95,7 @@ export const updateUser = async (req: Request, res: Response) => {
     },
   });
 
-  if (existingUser) {
+  if (existingUser != null) {
     return res.status(409).json({ message: 'Email is taken.' });
   }
 
@@ -98,23 +105,23 @@ export const updateUser = async (req: Request, res: Response) => {
   user.nick_name = nick_name ?? user.nick_name;
 
   // Require admin
-  if (res.locals.requestor.is_admin) {
+  if ((res.locals.requestor as User).is_admin) {
     user.is_organizer = is_organizer ?? user.is_organizer;
     user.is_admin = is_admin ?? user.is_admin;
   }
 
-  if (password) {
+  if (password != null) {
     const passwordValidationResult = validatePassword(password);
-    if (passwordValidationResult.error) {
+    if (passwordValidationResult.error != null) {
       return res.status(400).json(passwordValidationResult.error.details);
     }
 
     user.password_hash = await hashPassword(password);
   }
 
-  const { error, value } = validateUser(user);
+  const { error } = validateUser(user);
 
-  if (error) {
+  if (error != null) {
     return res.status(400).json(error.details);
   }
 
@@ -123,23 +130,26 @@ export const updateUser = async (req: Request, res: Response) => {
   return res.status(201).json(user);
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
+export const deleteUser = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { user_id } = req.params;
 
   const user = await User.findOneBy({
     id: parseInt(user_id),
   });
 
-  if (!user) {
+  if (user == null) {
     return res.status(404).json({ message: 'Invalid user ID.' });
   }
 
-  user.remove();
+  await user.remove();
 
   return res.status(204).end();
 };
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body;
 
   const existingUser = await User.findOne({
@@ -148,7 +158,7 @@ export const login = async (req: Request, res: Response) => {
     },
   });
 
-  if (existingUser) {
+  if (existingUser != null) {
     const isAuthenticated = await bcrypt.compare(
       password,
       existingUser.password_hash
@@ -162,7 +172,7 @@ export const login = async (req: Request, res: Response) => {
         is_admin: existingUser.is_admin,
       };
 
-      const token = jwt.sign(data, process.env.JWT_ACCESS_SECRET || 'secret');
+      const token = jwt.sign(data, config.jwtSecret);
 
       return res.status(201).json({ token });
     }

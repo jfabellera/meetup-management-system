@@ -1,12 +1,13 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { type SimpleTicketInfo } from '../../../backend/src/controllers/tickets';
+import config from '../config';
 import { type RootState } from './store';
 
 export const ticketSlice = createApi({
   reducerPath: 'ticketSlice',
   tagTypes: ['Tickets'],
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/',
+    baseUrl: `${config.apiUrl}:${config.apiPort}/`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).user.user?.token;
 

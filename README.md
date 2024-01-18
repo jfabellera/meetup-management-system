@@ -1,67 +1,98 @@
-# meetup-management-system
+# Meetup Management System
 
 A way to manage large-scale meetups for Tex Mechs.
 
-# Project Details
+## Project Details
 
 This project is split into two portions:
 
 - The backend that sets up a REST API to query the database (PostgreSQL by default)
 - The frontend React application with the UI to interact with the data
 
-# Setup
+## Setup
 
-## Prerequisites
+### Database
 
-Make sure your database is setup and ready to go. You can review the following page on the Wiki for a sample database setup: https://github.com/jfabellera/meetup-management-system/wiki/Database-Setup
+1. Install [PostgreSQL](https://www.postgresql.org/download/) and create a user and database that the user has access to.
 
-## backend
+2. Install [Liquibase](https://www.liquibase.com/download#download-liquibase). This will be used for version control of the database schema.
 
-1. Install dependencies.
+3. Create a file named `liquibase.properties` in `db/changelog` with the following:
 
-```
-npm install
-```
+   ```text
+   driver: org.postgresql.Driver
+   url: jdbc:postgresql://localhost:5432/<database name>
+   username: <database username>
+   password: <database password>
+   changeLogFile: changelog.sql
+   ```
 
-2. Create a `.env` file in `backend/api` in the following format (Ports may change depending on database used/personal preference):
+4. Setup the database schema using Liquibase by running the following:
 
-```
-MMS_API_SERVER_URL=http://localhost
-MMS_API_SERVER_PORT=3000
+   ```bash
+   cd db/changelog
+   liquibase update
+   ```
 
-MMS_DATABASE_HOST=localhost
-MMS_DATABASE_PORT=5432
-MMS_DATABASE_NAME=
-MMS_DATABASE_USER=
-MMS_DATABASE_PASSWORD=
-```
-
-3. Start server.
-
-```
-npm start
-```
-
-2.
-
-## frontend
+### Backend
 
 1. Install dependencies.
 
-```
-npm install
-```
+   ```bash
+   cd backend
+   npm install
+   ```
 
-2. Create a `.env` file in `frontend` in the following format (Variables may change depending on port used/personal preference):
+2. Create a `.env` file in `backend/` in the following format (Ports may change depending on database used/personal preference):
+
+   ```bash
+   MMS_API_SERVER_URL=http://localhost
+   MMS_API_SERVER_PORT=3000
+
+   MMS_DATABASE_HOST=localhost
+   MMS_DATABASE_PORT=5432
+   MMS_DATABASE_NAME=
+   MMS_DATABASE_USER=
+   MMS_DATABASE_PASSWORD=
+
+   JWT_ACCESS_SECRET=
+
+   GCP_API_KEY=
+   ```
+
+3. Start the authentication server.
+
+   ```bash
+   npm run devAuth
+   ```
+
+4. Start the API server.
+
+   ```bash
+   npm run dev
+   ```
+
+### Frontend
+
+1. Install dependencies.
+
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. Create a `.env` file in `frontend/` in the following format (Variables may change depending on port used/personal preference):
    **Make sure your API URL matches the API Server URL and port you specified in your backend .env file above.**
 
-```
-VITE_APP_TITLE=Meetup Management System
-VITE_API_URL=http://localhost:3000/api
-```
+   ```bash
+   MMS_API_SERVER_URL=http://localhost
+   MMS_API_SERVER_PORT=3000
+   MMS_AUTH_SERVER_URL=http://localhost
+   MMS_AUTH_SERVER_PORT=3001
+   ```
 
 3. Run the app.
 
-```
-npm run [dev|prod]
-```
+   ```bash
+   npm run [dev|prod]
+   ```
