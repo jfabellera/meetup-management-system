@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
 import { ILike, In } from 'typeorm';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
@@ -50,7 +50,10 @@ export interface FullMeetupInfo {
   image_url: string;
 }
 
-export const getAllMeetups = async (req: Request, res: Response) => {
+export const getAllMeetups = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const meetups: SimpleMeetupInfo[] = (
     await Meetup.find({
       order: {
@@ -76,14 +79,17 @@ export const getAllMeetups = async (req: Request, res: Response) => {
   return res.json(meetups);
 };
 
-export const getMeetup = async (req: Request, res: Response) => {
+export const getMeetup = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { meetup_id } = req.params;
 
   const meetup = await Meetup.findOneBy({
     id: parseInt(meetup_id),
   });
 
-  if (!meetup) {
+  if (meetup == null) {
     return res.status(404).json({ message: 'Invalid meetup ID.' });
   }
 
@@ -143,10 +149,13 @@ export const getMeetup = async (req: Request, res: Response) => {
   return res.json(meetupInfo);
 };
 
-export const createMeetup = async (req: Request, res: Response) => {
+export const createMeetup = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { error, value } = validateMeetup(req.body);
 
-  if (error) {
+  if (error != null) {
     return res.status(400).json(error.details);
   }
 
@@ -165,7 +174,7 @@ export const createMeetup = async (req: Request, res: Response) => {
 
   // TODO(jan): Check if organizers are organizers?
 
-  if (existingMeetup) {
+  if (existingMeetup != null) {
     return res.status(409).json({ message: 'Meetup name is taken.' });
   }
 
@@ -192,7 +201,10 @@ export const createMeetup = async (req: Request, res: Response) => {
   return res.status(201).json(newMeetup);
 };
 
-export const updateMeetup = async (req: Request, res: Response) => {
+export const updateMeetup = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { meetup_id } = req.params;
   const { name, date, organizer_ids, has_raffle } = req.body;
 
@@ -200,7 +212,7 @@ export const updateMeetup = async (req: Request, res: Response) => {
     id: parseInt(meetup_id),
   });
 
-  if (!meetup) {
+  if (meetup == null) {
     return res.status(404).json({ message: 'Invalid meetup ID.' });
   }
 
@@ -211,7 +223,7 @@ export const updateMeetup = async (req: Request, res: Response) => {
     },
   });
 
-  if (existingMeetup) {
+  if (existingMeetup != null) {
     return res.status(409).json({ message: 'Meetup name is taken.' });
   }
 
@@ -221,8 +233,8 @@ export const updateMeetup = async (req: Request, res: Response) => {
 
   // Only allow "head" organizer to update organizer list
   if (
-    meetup.organizer_ids[0] == parseInt(res.locals.requestor.id) &&
-    organizer_ids
+    meetup.organizer_ids[0] === parseInt(res.locals.requestor.id) &&
+    organizer_ids != null
   ) {
     meetup.organizer_ids = organizer_ids;
 
@@ -234,15 +246,15 @@ export const updateMeetup = async (req: Request, res: Response) => {
 
     // Remove duplicates
     meetup.organizer_ids = Array.from(new Set(meetup.organizer_ids));
-  } else if (organizer_ids) {
+  } else if (organizer_ids != null) {
     return res.status(401).json({
       message: 'Only the head organizer can edit the organizer list.',
     });
   }
 
-  const { error, value } = validateMeetup(meetup);
+  const { error } = validateMeetup(meetup);
 
-  if (error) {
+  if (error != null) {
     return res.status(400).json(error.details);
   }
 
@@ -251,24 +263,27 @@ export const updateMeetup = async (req: Request, res: Response) => {
   return res.status(201).json(meetup);
 };
 
-export const deleteMeetup = async (req: Request, res: Response) => {
+export const deleteMeetup = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { meetup_id } = req.params;
 
   const meetup = await Meetup.findOneBy({
     id: parseInt(meetup_id),
   });
 
-  if (!meetup) {
+  if (meetup == null) {
     return res.status(404).json({ message: 'Invalid meetup ID.' });
   }
 
-  if (meetup.organizer_ids[0] != parseInt(res.locals.requestor.id)) {
+  if (Number(meetup.organizer_ids[0]) !== parseInt(res.locals.requestor.id)) {
     return res.status(401).json({
       message: 'Only the head organizer is authorized to delete this meetup.',
     });
   }
 
-  meetup.remove();
+  await meetup.remove();
 
   return res.status(204).end();
 };

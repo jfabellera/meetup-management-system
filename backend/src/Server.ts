@@ -5,10 +5,10 @@ import meetupRoutes from './routes/meetups';
 import ticketRoutes from './routes/tickets';
 import userRoutes from './routes/users';
 
-AppDataSource.initialize();
+void AppDataSource.initialize();
 
 class Server {
-  private express: express.Application;
+  private readonly express: express.Application;
 
   constructor() {
     this.express = express.default();
@@ -43,21 +43,17 @@ class Server {
     });
   }
 
-  public start = (port: number) => {
-    return new Promise((resolve, reject) => {
-      this.express
-        .listen(port, () => {
-          resolve(port);
-        })
-        .on('error', (err: Object) => reject(err));
-    });
+  public start = (port: number): void => {
+    this.express
+      .listen(port, () => {
+        console.log(`Running on port ${port}`);
+      })
+      .on('error', (err) => {
+        console.log(err);
+      });
   };
 }
 
 const port = parseInt(config.apiPort);
-const server = new Server()
-  .start(port)
-  .then((port) => console.log(`Running on port ${port}`))
-  .catch((error) => {
-    console.log(error);
-  });
+const server = new Server();
+server.start(port);
