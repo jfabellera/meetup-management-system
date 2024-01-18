@@ -77,11 +77,11 @@ const Nav = (): JSX.Element => {
             navigate('/');
           }}
         >
-          <Box> {import.meta.env.VITE_APP_TITLE} </Box>
+          <Box>Meetup Management System</Box>
         </Link>
         {/* TODO(jan): Make dependent on logged in state */}
         {isLoggedIn ? (
-          <NavbarDropdown nickname={user.nick_name} />
+          <NavbarDropdown nickname={user?.displayName} />
         ) : (
           <GuestButtons />
         )}

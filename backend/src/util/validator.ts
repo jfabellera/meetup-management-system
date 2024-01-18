@@ -64,7 +64,12 @@ const passwordComplexityOptions = {
   requirementCount: 4,
 };
 
-export const validatePassword = (password: string) => {
+export const validatePassword = (
+  password: string
+): JoiBase.ValidationResult<string> => {
+  if (password == null) {
+    password = '';
+  }
   return passwordComplexity(passwordComplexityOptions, '"password"').validate(
     password
   );

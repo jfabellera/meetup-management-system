@@ -1,4 +1,5 @@
 import axios from 'axios';
+import config from '../config';
 
 export const getUtcOffset = async (
   address: string,
@@ -13,7 +14,7 @@ export const getUtcOffset = async (
     const response = await axios.get(geocodeApi, {
       params: {
         address,
-        key: process.env.GCP_API_KEY,
+        key: config.gcpApiKey,
       },
     });
 
@@ -29,7 +30,7 @@ export const getUtcOffset = async (
       params: {
         location: `${latLng.lat},${latLng.lng}`,
         timestamp: date.getTime() / 1000,
-        key: process.env.GCP_API_KEY,
+        key: config.gcpApiKey,
       },
     });
 

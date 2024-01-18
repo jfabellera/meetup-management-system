@@ -3,12 +3,13 @@ import type {
   FullMeetupInfo,
   SimpleMeetupInfo,
 } from '../../../backend/src/controllers/meetups';
+import config from '../config';
 
 export const meetupSlice = createApi({
   reducerPath: 'meetupSlice',
   tagTypes: ['Meetups', 'Meetup'],
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/',
+    baseUrl: `${config.apiUrl}:${config.apiPort}/`,
   }),
   endpoints: (builder) => ({
     getMeetups: builder.query<SimpleMeetupInfo[], void>({
