@@ -1,9 +1,6 @@
 import {
   AspectRatio,
-  Badge,
   Button,
-  Card,
-  CardHeader,
   Flex,
   Grid,
   GridItem,
@@ -19,7 +16,6 @@ import {
   Spacer,
   Text,
   useDisclosure,
-  VStack,
 } from '@chakra-ui/react';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
@@ -28,12 +24,12 @@ import { FaCircle } from 'react-icons/fa';
 import {
   FiCalendar,
   FiClock,
-  FiImage,
   FiMapPin,
   FiUser,
   FiUserCheck,
   FiUserX,
 } from 'react-icons/fi';
+import { MeetupCard } from '../components/Meetups/MeetupCard';
 import Page from '../components/Page/Page';
 import { useAppSelector } from '../store/hooks';
 import { useGetMeetupQuery, useGetMeetupsQuery } from '../store/meetupSlice';
@@ -119,28 +115,21 @@ const Homepage = (): JSX.Element => {
       </Heading>
       {!isLoading ? (
         <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4}>
-          {meetups?.map((card) => (
+          {meetups?.map((meetup) => (
             <GridItem
-              key={card.id}
+              key={meetup.id}
               onClick={() => {
-                setMeetupId(card.id);
+                setMeetupId(meetup.id);
 
                 // Only open modal immediately if the selected meetup is already loaded
-                if (meetup?.id === card.id) {
+                if (meetup?.id === meetup.id) {
                   onOpen();
                 }
               }}
             >
               <MeetupCard
-                name={card.name}
-                location={`${card.location.city}, ${
-                  card.location.state ?? card.location.country
-                }`}
-                date={dayjs(card.date, 'YYYY-MM-DDTHH:mm:ss').format(
-                  'MMMM DD, YYYY',
-                )}
-                imageUrl={card.image_url}
-                attending={isAttendingMeetup(card.id)}
+                meetup={meetup}
+                attending={isAttendingMeetup(meetup.id)}
               />
             </GridItem>
           ))}
@@ -265,59 +254,6 @@ const Homepage = (): JSX.Element => {
         </Modal>
       ) : null}
     </Page>
-  );
-};
-
-interface MeetupCardProps {
-  name: string;
-  location: string;
-  date: string;
-  imageUrl: string;
-  attending: boolean;
-}
-
-const MeetupCard = ({
-  name,
-  location,
-  date,
-  imageUrl,
-  attending,
-}: MeetupCardProps): JSX.Element => {
-  return (
-    <Card
-      background={'white'}
-      borderRadius="md"
-      overflow="hidden"
-      height="100%"
-      cursor={'pointer'}
-    >
-      <AspectRatio ratio={2 / 1}>
-        {imageUrl != null ? (
-          <Image
-            src={imageUrl}
-            fallbackSrc="https://via.placeholder.com/150"
-            objectFit="cover"
-          />
-        ) : (
-          <Flex backgroundColor={'gray.200'}>
-            <Icon as={FiImage} boxSize={8} />
-          </Flex>
-        )}
-      </AspectRatio>
-      <CardHeader padding={'12px'}>
-        <VStack spacing={2} align={'left'}>
-          <HStack>
-            <Text fontWeight={'semibold'} color={'gray.600'}>
-              {date}
-            </Text>
-            <Spacer />
-            {attending ? <Badge colorScheme={'green'}>RSVPed</Badge> : null}
-          </HStack>
-          <Heading size={'md'}>{name}</Heading>
-          <Text>{location}</Text>
-        </VStack>
-      </CardHeader>
-    </Card>
   );
 };
 
