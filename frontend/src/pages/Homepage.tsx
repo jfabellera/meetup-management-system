@@ -34,43 +34,71 @@ const Homepage = (): JSX.Element => {
     return null;
   };
 
+  const meetupCardOnClick = (selectedMeetupId: number): void => {
+    setMeetupId(selectedMeetupId);
+
+    // Only open modal immediately if the selected meetup is already loaded
+    if (selectedMeetupId === meetupId) {
+      onOpen();
+    }
+  };
+
   return (
     <Page>
-      <Heading fontSize="3xl" mb={'0.5em'}>
-        Upcoming Meetups
-      </Heading>
-      {!isLoading ? (
-        <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4}>
-          {meetups?.map((meetup) => (
-            <GridItem
-              key={meetup.id}
-              onClick={() => {
-                setMeetupId(meetup.id);
-
-                // Only open modal immediately if the selected meetup is already loaded
-                if (meetup.id === meetupId) {
-                  onOpen();
-                }
-              }}
-            >
-              <MeetupCard
-                meetup={meetup}
-                attending={getTicketForMeetup(meetup.id) != null}
-              />
-            </GridItem>
-          ))}
-        </Grid>
-      ) : (
+      {isLoading ? (
         <></>
+      ) : (
+        <>
+          <Heading fontSize="3xl" mb={'0.5em'}>
+            Upcoming Meetups
+          </Heading>
+          <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4}>
+            {meetups
+              ?.filter((meetup) => new Date(meetup.date) > new Date())
+              .map((meetup) => (
+                <GridItem
+                  key={meetup.id}
+                  onClick={() => {
+                    meetupCardOnClick(meetup.id);
+                  }}
+                >
+                  <MeetupCard
+                    meetup={meetup}
+                    attending={getTicketForMeetup(meetup.id) != null}
+                  />
+                </GridItem>
+              ))}
+          </Grid>
+          <Heading fontSize="3xl" my={'0.5em'}>
+            Previous Meetups
+          </Heading>
+          <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4}>
+            {meetups
+              ?.filter((meetup) => new Date(meetup.date) <= new Date())
+              .map((meetup) => (
+                <GridItem
+                  key={meetup.id}
+                  onClick={() => {
+                    meetupCardOnClick(meetup.id);
+                  }}
+                >
+                  <MeetupCard
+                    meetup={meetup}
+                    attending={getTicketForMeetup(meetup.id) != null}
+                  />
+                </GridItem>
+              ))}
+          </Grid>
+          <MeetupModal
+            meetupId={meetupId}
+            ticket={getTicketForMeetup(meetupId)}
+            isLoggedIn={isLoggedIn}
+            isOpen={isOpen}
+            onClose={onClose}
+            onOpen={onOpen}
+          />
+        </>
       )}
-      <MeetupModal
-        meetupId={meetupId}
-        ticket={getTicketForMeetup(meetupId)}
-        isLoggedIn={isLoggedIn}
-        isOpen={isOpen}
-        onClose={onClose}
-        onOpen={onOpen}
-      />
     </Page>
   );
 };
