@@ -18,6 +18,7 @@ import {
 import { type ReactNode } from 'react';
 import { type IconType } from 'react-icons';
 import { FiLogOut } from 'react-icons/fi';
+import { MdDashboardCustomize } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../store/authSlice';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -30,6 +31,7 @@ interface LinkItemProps {
   name: string;
   url: string;
   icon: IconType;
+  organizerOnly?: boolean;
 }
 
 /**
@@ -37,6 +39,12 @@ interface LinkItemProps {
  */
 const LinkItems: LinkItemProps[] = [
   // { name: 'Home', url: '.', icon: FiHome },
+  {
+    name: 'Organizer Dashboard',
+    url: '/organizer',
+    icon: MdDashboardCustomize,
+    organizerOnly: true,
+  },
 ];
 
 const Nav = (): JSX.Element => {
@@ -62,9 +70,11 @@ const Nav = (): JSX.Element => {
         >
           <Box>Meetup Management System</Box>
         </Link>
-        {/* TODO(jan): Make dependent on logged in state */}
-        {isLoggedIn ? (
-          <NavbarDropdown nickname={user?.displayName} />
+        {isLoggedIn && user != null ? (
+          <NavbarDropdown
+            nickname={user.displayName}
+            isOrganizer={user.isOrganizer}
+          />
         ) : (
           <GuestButtons />
         )}
@@ -118,10 +128,11 @@ const GuestButtons = (): JSX.Element => {
 
 interface NavbarDropdownProps extends BoxProps {
   nickname: string;
+  isOrganizer: boolean;
 }
 
 const NavbarDropdown = (props: NavbarDropdownProps): JSX.Element => {
-  const { nickname } = props;
+  const { nickname, isOrganizer } = props;
   const dispatch = useAppDispatch();
 
   return (
@@ -154,11 +165,14 @@ const NavbarDropdown = (props: NavbarDropdownProps): JSX.Element => {
             </Center>
             <br />
             <MenuDivider />
-            {LinkItems.map((link) => (
-              <NavItem key={link.name} icon={link.icon} url={link.url}>
-                {link.name}
-              </NavItem>
-            ))}
+            {LinkItems.map((link) =>
+              link.organizerOnly == null ||
+              (link.organizerOnly && isOrganizer) ? (
+                <NavItem key={link.name} icon={link.icon} url={link.url}>
+                  {link.name}
+                </NavItem>
+              ) : null,
+            )}
             <NavItem
               key="logout"
               icon={FiLogOut}
