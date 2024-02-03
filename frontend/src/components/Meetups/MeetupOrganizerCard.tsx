@@ -9,18 +9,26 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { FiCalendar, FiClock, FiUsers } from 'react-icons/fi';
+
+dayjs.extend(customParseFormat);
 
 export interface MeetupOrganizerCardProps {
   name: string;
-  date: Date;
+  date: string;
   imageUrl: string;
+  ticketsAvailable: number;
+  ticketsTotal: number;
 }
 
 export const MeetupOrganizerCard = ({
   name,
   date,
   imageUrl,
+  ticketsAvailable,
+  ticketsTotal,
 }: MeetupOrganizerCardProps): JSX.Element => {
   return (
     <Card background={'white'} direction={'row'} cursor={'pointer'}>
@@ -45,15 +53,24 @@ export const MeetupOrganizerCard = ({
           </Heading>
           <HStack>
             <Icon as={FiCalendar} />
-            <Text noOfLines={1}>{'April 27, 2024'}</Text>
+            <Text noOfLines={1}>
+              {dayjs(date, 'YYYY-MM-DDTHH:mm:ss').format('MMMM DD, YYYY')}
+            </Text>
           </HStack>
           <HStack>
             <Icon as={FiClock} />
-            <Text noOfLines={1}>{'89 days'}</Text>
+            <Text noOfLines={1}>
+              {`${dayjs(date, 'YYYY-MM-DDTHH:mm:ss').diff(
+                dayjs(),
+                'day',
+              )} days`}
+            </Text>
           </HStack>
           <HStack>
             <Icon as={FiUsers} />
-            <Text noOfLines={1}>{'255 / 300'}</Text>
+            <Text noOfLines={1}>{`${
+              ticketsTotal - ticketsAvailable
+            } / ${ticketsTotal}`}</Text>
           </HStack>
         </Stack>
       </CardBody>
