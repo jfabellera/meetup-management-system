@@ -30,34 +30,35 @@ export const MeetupOrganizerCard = ({
       >
         <Image src={imageUrl} borderLeftRadius={'md'} />
       </AspectRatio>
-      <Stack width={{ base: '67%', sm: '60%' }}>
-        <CardBody
-          padding={'1rem'}
-          paddingY={'0.5rem'}
-          textOverflow={'ellipsis'}
-          overflow={'hidden'}
-        >
-          <Stack spacing={1}>
-            <Heading size={'md'} fontWeight={'semibold'} noOfLines={1}>
-              {name}
-            </Heading>
-            <HStack>
-              <Icon as={FiCalendar} />
-              <Text>{'April 27, 2024'}</Text>
-            </HStack>
-            <HStack>
-              <Icon as={FiClock} />
-              <Text>{'89 days'}</Text>
-            </HStack>
-            <HStack>
-              <Icon as={FiUsers} />
-              <Text>{'255 / 300'}</Text>
-            </HStack>
-          </Stack>
-        </CardBody>
-        {/* <CardBody padding={0} margin={0}>
+      <CardBody
+        width={{ base: '67%', sm: '60%' }}
+        padding={'1rem'}
+        paddingY={{ base: '0.5rem', sm: '1rem' }}
+        textOverflow={'ellipsis'}
+        overflow={'hidden'}
+        display={'flex'}
+        flexDirection={'column'}
+      >
+        <Stack spacing={{ base: 0, sm: 1.5 }} flex={1} justify={'center'}>
+          <Heading size={'md'} fontWeight={'semibold'} noOfLines={1}>
+            {name}
+          </Heading>
+          <HStack>
+            <Icon as={FiCalendar} />
+            <Text noOfLines={1}>{'April 27, 2024'}</Text>
+          </HStack>
+          <HStack>
+            <Icon as={FiClock} />
+            <Text noOfLines={1}>{'89 days'}</Text>
+          </HStack>
+          <HStack>
+            <Icon as={FiUsers} />
+            <Text noOfLines={1}>{'255 / 300'}</Text>
+          </HStack>
+        </Stack>
+      </CardBody>
+      {/* <CardBody padding={0} margin={0}>
         </CardBody> */}
-      </Stack>
     </Card>
   );
 };
