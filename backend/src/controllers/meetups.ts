@@ -60,7 +60,10 @@ export const getAllMeetups = async (
   // Build filters
   const findOptionsWhere: FindOptionsWhere<Meetup> = {};
 
-  if (Joi.array().items(Joi.number()).validate(organizer_ids).error == null) {
+  if (
+    Joi.array().items(Joi.number()).required().validate(organizer_ids).error ==
+    null
+  ) {
     findOptionsWhere.organizer_ids = ArrayContains<number>(organizer_ids);
   }
 
