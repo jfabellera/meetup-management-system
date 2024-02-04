@@ -55,16 +55,22 @@ export const getAllMeetups = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { organizer_ids } = req.body;
+  const { organizer_ids } = req.query;
 
   // Build filters
   const findOptionsWhere: FindOptionsWhere<Meetup> = {};
 
-  if (
-    Joi.array().items(Joi.number()).required().validate(organizer_ids).error ==
-    null
-  ) {
-    findOptionsWhere.organizer_ids = ArrayContains<number>(organizer_ids);
+  // TODO(jan): Make this better because it will get messier once we add more
+  // filters
+  if (organizer_ids != null) {
+    const organizerFilter = (organizer_ids as string).split(',').map(Number);
+    if (
+      Joi.array().items(Joi.number()).required().validate(organizerFilter)
+        .error != null
+    ) {
+      return res.status(400).json({ message: 'Invalid organizer filter.' });
+    }
+    findOptionsWhere.organizer_ids = ArrayContains<number>(organizerFilter);
   }
 
   // TODO(jan): Add additional filters and sorting options
