@@ -2,6 +2,7 @@ import {
   AspectRatio,
   Card,
   CardBody,
+  Flex,
   Heading,
   HStack,
   Icon,
@@ -11,7 +12,7 @@ import {
 } from '@chakra-ui/react';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { FiCalendar, FiClock, FiUsers } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiImage, FiUsers } from 'react-icons/fi';
 
 dayjs.extend(customParseFormat);
 
@@ -36,7 +37,13 @@ export const MeetupOrganizerCard = ({
         ratio={{ base: 1 / 1, sm: 2 / 1 }}
         width={{ base: '33%', sm: '40%' }}
       >
-        <Image src={imageUrl} borderLeftRadius={'md'} />
+        {imageUrl != null ? (
+          <Image src={imageUrl} borderLeftRadius={'md'} />
+        ) : (
+          <Flex backgroundColor={'gray.200'} borderLeftRadius={'md'}>
+            <Icon as={FiImage} boxSize={8} />
+          </Flex>
+        )}
       </AspectRatio>
       <CardBody
         width={{ base: '67%', sm: '60%' }}
