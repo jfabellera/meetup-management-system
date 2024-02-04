@@ -32,14 +32,14 @@ export interface MeetupInfo {
   image_url: string;
 }
 
-enum MeetupInfoType {
+enum MeetupInfoDetailLevel {
   Simple,
   Detailed,
 }
 
 const mapMeetupInfo = async (
   meetup: Meetup,
-  type: MeetupInfoType
+  type: MeetupInfoDetailLevel
 ): Promise<MeetupInfo> => {
   const meetupInfo: MeetupInfo = {
     id: meetup.id,
@@ -53,7 +53,7 @@ const mapMeetupInfo = async (
     image_url: meetup.image_url,
   };
 
-  if (type === MeetupInfoType.Detailed) {
+  if (type === MeetupInfoDetailLevel.Detailed) {
     // Build full address
     const addressComponents: string[] = [];
     if (meetup.address_line_1 !== '')
@@ -99,7 +99,13 @@ export const getAllMeetups = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { organizer_ids } = req.query;
+  const { detail_level, organizer_ids } = req.query;
+
+  const detailLevel =
+    detail_level != null &&
+    (detail_level as string).toLowerCase() === 'detailed'
+      ? MeetupInfoDetailLevel.Detailed
+      : MeetupInfoDetailLevel.Simple;
 
   // Build filters
   const findOptionsWhere: FindOptionsWhere<Meetup> = {};
@@ -128,7 +134,7 @@ export const getAllMeetups = async (
       },
     })
   ).map(async (meetup: Meetup): Promise<MeetupInfo> => {
-    const meetupInfo = await mapMeetupInfo(meetup, MeetupInfoType.Simple);
+    const meetupInfo = await mapMeetupInfo(meetup, detailLevel);
     return meetupInfo;
   });
 
@@ -140,6 +146,12 @@ export const getMeetup = async (
   res: Response
 ): Promise<Response> => {
   const { meetup_id } = req.params;
+  const { detail_level } = req.query;
+
+  const detailLevel =
+    detail_level != null && (detail_level as string).toLowerCase() === 'simple'
+      ? MeetupInfoDetailLevel.Simple
+      : MeetupInfoDetailLevel.Detailed;
 
   const meetup = await Meetup.findOneBy({
     id: parseInt(meetup_id),
@@ -149,7 +161,7 @@ export const getMeetup = async (
     return res.status(404).json({ message: 'Invalid meetup ID.' });
   }
 
-  const meetupInfo = await mapMeetupInfo(meetup, MeetupInfoType.Detailed);
+  const meetupInfo = await mapMeetupInfo(meetup, detailLevel);
 
   return res.json(meetupInfo);
 };
