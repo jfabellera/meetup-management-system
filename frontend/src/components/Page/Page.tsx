@@ -10,7 +10,7 @@ const Page = ({ children }: { children: ReactNode }): JSX.Element => {
       bg={useColorModeValue('gray.100', 'gray.900')}
     >
       <Navbar />
-      <Box w="auto" p="6" overflow="auto">
+      <Box w="auto" padding="1rem" overflow="auto">
         {children}
       </Box>
     </Flex>

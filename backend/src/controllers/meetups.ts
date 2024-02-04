@@ -1,7 +1,8 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
-import { ILike, In } from 'typeorm';
+import Joi from 'joi';
+import { ArrayContains, ILike, In, type FindOptionsWhere } from 'typeorm';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { User } from '../entity/User';
@@ -54,8 +55,30 @@ export const getAllMeetups = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  const { organizer_ids } = req.query;
+
+  // Build filters
+  const findOptionsWhere: FindOptionsWhere<Meetup> = {};
+
+  // TODO(jan): Make this better because it will get messier once we add more
+  // filters
+  if (organizer_ids != null) {
+    const organizerFilter = (organizer_ids as string).split(',').map(Number);
+    if (
+      Joi.array().items(Joi.number()).required().validate(organizerFilter)
+        .error != null
+    ) {
+      return res.status(400).json({ message: 'Invalid organizer filter.' });
+    }
+    findOptionsWhere.organizer_ids = ArrayContains<number>(organizerFilter);
+  }
+
+  // TODO(jan): Add additional filters and sorting options
+
+  // Query
   const meetups: SimpleMeetupInfo[] = (
     await Meetup.find({
+      where: findOptionsWhere,
       order: {
         date: 'ASC',
       },
