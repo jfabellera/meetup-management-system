@@ -4,7 +4,7 @@ import config from '../config';
 
 export interface GetMeetupsOptions {
   detail_level?: string;
-  organizer_ids?: number[];
+  by_organizer_id?: number[];
 }
 
 export const meetupSlice = createApi({

@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
 import Joi from 'joi';
+import { ParsedQs } from 'qs';
 import { ArrayContains, ILike, In, type FindOptionsWhere } from 'typeorm';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
@@ -95,11 +96,30 @@ const mapMeetupInfo = async (
   return meetupInfo;
 };
 
+const createMeetupsFilter = (query: ParsedQs): FindOptionsWhere<Meetup> => {
+  const findOptionsWhere: FindOptionsWhere<Meetup> = {};
+
+  if (query.by_organizer_id != null) {
+    const organizerFilter = (query.by_organizer_id as string)
+      .split(',')
+      .map(Number);
+    if (
+      Joi.array().items(Joi.number()).required().validate(organizerFilter)
+        .error != null
+    ) {
+      // TODO(jan): Throw something here, idk how throwing works lol
+    }
+    findOptionsWhere.organizer_ids = ArrayContains<number>(organizerFilter);
+  }
+
+  return findOptionsWhere;
+};
+
 export const getAllMeetups = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { detail_level, organizer_ids } = req.query;
+  const { detail_level } = req.query;
 
   const detailLevel =
     detail_level != null &&
@@ -108,22 +128,7 @@ export const getAllMeetups = async (
       : MeetupInfoDetailLevel.Simple;
 
   // Build filters
-  const findOptionsWhere: FindOptionsWhere<Meetup> = {};
-
-  // TODO(jan): Make this better because it will get messier once we add more
-  // filters
-  if (organizer_ids != null) {
-    const organizerFilter = (organizer_ids as string).split(',').map(Number);
-    if (
-      Joi.array().items(Joi.number()).required().validate(organizerFilter)
-        .error != null
-    ) {
-      return res.status(400).json({ message: 'Invalid organizer filter.' });
-    }
-    findOptionsWhere.organizer_ids = ArrayContains<number>(organizerFilter);
-  }
-
-  // TODO(jan): Add additional filters and sorting options
+  const findOptionsWhere = createMeetupsFilter(req.query);
 
   // Query
   const meetups: Array<Promise<MeetupInfo>> = (

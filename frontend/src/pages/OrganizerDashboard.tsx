@@ -14,7 +14,7 @@ import { useGetMeetupsQuery } from '../store/meetupSlice';
 const OrganizerDashboard = (): JSX.Element => {
   const { user } = useAppSelector((state) => state.user);
   const { data: meetups } = useGetMeetupsQuery({
-    organizer_ids: user != null ? [user.id] : [],
+    by_organizer_id: user != null ? [user.id] : [],
     detail_level: 'detailed',
   });
 
