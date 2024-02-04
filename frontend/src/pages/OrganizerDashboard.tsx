@@ -15,6 +15,7 @@ const OrganizerDashboard = (): JSX.Element => {
   const { user } = useAppSelector((state) => state.user);
   const { data: meetups } = useGetMeetupsQuery({
     organizer_ids: user != null ? [user.id] : [],
+    detail_level: 'detailed',
   });
 
   return (
@@ -34,8 +35,8 @@ const OrganizerDashboard = (): JSX.Element => {
                     name={meetup.name}
                     date={meetup.date}
                     imageUrl={meetup.image_url}
-                    ticketsAvailable={0} // TODO(jan): implement once supported
-                    ticketsTotal={0} // TODO(jan): implement once supported
+                    ticketsAvailable={meetup.tickets?.available ?? NaN}
+                    ticketsTotal={meetup.tickets?.total ?? NaN}
                   />
                 );
               })

@@ -3,6 +3,7 @@ import type { MeetupInfo } from '../../../backend/src/controllers/meetups';
 import config from '../config';
 
 export interface GetMeetupsOptions {
+  detail_level?: string;
   organizer_ids?: number[];
 }
 
