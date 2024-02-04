@@ -1,8 +1,22 @@
-import { Button, Container, Heading, HStack, Spacer } from '@chakra-ui/react';
+import {
+  Button,
+  Container,
+  Heading,
+  HStack,
+  Spacer,
+  Stack,
+} from '@chakra-ui/react';
 import { MeetupOrganizerCard } from '../components/Meetups/MeetupOrganizerCard';
 import Page from '../components/Page/Page';
+import { useAppSelector } from '../store/hooks';
+import { useGetMeetupsQuery } from '../store/meetupSlice';
 
 const OrganizerDashboard = (): JSX.Element => {
+  const { user } = useAppSelector((state) => state.user);
+  const { data: meetups } = useGetMeetupsQuery({
+    organizer_ids: user != null ? [user.id] : [],
+  });
+
   return (
     <Page>
       <Container padding={0} maxWidth={'container.md'}>
@@ -11,15 +25,22 @@ const OrganizerDashboard = (): JSX.Element => {
           <Spacer />
           <Button colorScheme={'green'}>New meetup</Button>
         </HStack>
-        <MeetupOrganizerCard
-          name={'TexMechs Keyboard Roundup 2024'}
-          date={'2024-04-27T13:00:00-05:00'}
-          imageUrl={
-            'https://media.discordapp.net/attachments/1149502169041621062/1182553630407135292/Eventbrite.jpg?ex=65851de4&is=6572a8e4&hm=bdc554f39abecd6436f4f344518f68c845a4340da137ad76ebfc258c034464cc&=&format=webp&width=2592&height=1296'
-          }
-          ticketsAvailable={45}
-          ticketsTotal={300}
-        />
+        <Stack spacing={4}>
+          {meetups != null
+            ? meetups.map((meetup) => {
+                return (
+                  <MeetupOrganizerCard
+                    key={meetup.id}
+                    name={meetup.name}
+                    date={meetup.date}
+                    imageUrl={meetup.image_url}
+                    ticketsAvailable={0} // TODO(jan): implement once supported
+                    ticketsTotal={0} // TODO(jan): implement once supported
+                  />
+                );
+              })
+            : null}
+        </Stack>
       </Container>
     </Page>
   );

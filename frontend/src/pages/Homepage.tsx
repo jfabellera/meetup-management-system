@@ -11,7 +11,7 @@ import { useGetTicketsQuery } from '../store/ticketSlice';
 const Homepage = (): JSX.Element => {
   const { isLoggedIn, user } = useAppSelector((state) => state.user);
   const [meetupId, setMeetupId] = useState<number>(0);
-  const { data: meetups, isLoading } = useGetMeetupsQuery();
+  const { data: meetups, isLoading } = useGetMeetupsQuery({});
   // TODO(jan): figure out how to remove this ugly ternary without getting linting errors
   const { data: tickets } = useGetTicketsQuery(user != null ? user.id : 0, {
     skip: user == null,

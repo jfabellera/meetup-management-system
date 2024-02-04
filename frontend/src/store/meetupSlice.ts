@@ -5,6 +5,10 @@ import type {
 } from '../../../backend/src/controllers/meetups';
 import config from '../config';
 
+export interface GetMeetupsOptions {
+  organizer_ids?: number[];
+}
+
 export const meetupSlice = createApi({
   reducerPath: 'meetupSlice',
   tagTypes: ['Meetups', 'Meetup'],
@@ -12,9 +16,10 @@ export const meetupSlice = createApi({
     baseUrl: `${config.apiUrl}:${config.apiPort}/`,
   }),
   endpoints: (builder) => ({
-    getMeetups: builder.query<SimpleMeetupInfo[], void>({
-      query: () => ({
+    getMeetups: builder.query<SimpleMeetupInfo[], GetMeetupsOptions>({
+      query: (options) => ({
         url: `meetups/`,
+        params: options,
       }),
       providesTags: ['Meetups'],
     }),
