@@ -1,8 +1,14 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
-import Joi from 'joi';
-import { ArrayContains, ILike, In, type FindOptionsWhere } from 'typeorm';
+import { type ParsedQs } from 'qs';
+import {
+  ArrayOverlap,
+  ILike,
+  In,
+  type FindOptionsOrder,
+  type FindOptionsWhere,
+} from 'typeorm';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { User } from '../entity/User';
@@ -11,95 +17,164 @@ import { validateMeetup } from '../util/validator';
 
 dayjs.extend(utc);
 
-/**
- * This contains basic information about a meetup, mainly details necessary for
- * the homepage
- */
-export interface SimpleMeetupInfo {
+export interface MeetupInfo {
   id: number;
   name: string;
   date: string;
   location: {
-    city: string;
-    state: string;
-    country: string;
-  };
-  image_url: string;
-}
-
-/**
- * This contains all important information about a meetup
- */
-export interface FullMeetupInfo {
-  id: number;
-  name: string;
-  date: string;
-  location: {
-    full_address: string;
-    address_line_1: string;
-    address_line_2: string;
+    full_address?: string;
+    address_line_1?: string;
+    address_line_2?: string;
     city: string;
     state: string | null;
     country: string;
-    postal_code: string;
+    postal_code?: string;
   };
-  organizers: string[];
-  tickets: {
+  organizers?: string[];
+  tickets?: {
     total: number;
     available: number;
   };
   image_url: string;
 }
 
+enum MeetupInfoDetailLevel {
+  Simple,
+  Detailed,
+}
+
+const mapMeetupInfo = async (
+  meetup: Meetup,
+  type: MeetupInfoDetailLevel
+): Promise<MeetupInfo> => {
+  const meetupInfo: MeetupInfo = {
+    id: meetup.id,
+    name: meetup.name,
+    date: dayjs(meetup.date).utcOffset(meetup.utc_offset).format(),
+    location: {
+      city: meetup.city,
+      state: meetup.state,
+      country: meetup.country,
+    },
+    image_url: meetup.image_url,
+  };
+
+  if (type === MeetupInfoDetailLevel.Detailed) {
+    // Build full address
+    const addressComponents: string[] = [];
+    if (meetup.address_line_1 !== '')
+      addressComponents.push(meetup.address_line_1);
+    if (meetup.address_line_2 !== '')
+      addressComponents.push(meetup.address_line_2);
+    if (meetup.city !== '') addressComponents.push(meetup.city);
+    if (meetup.state !== '') addressComponents.push(meetup.state);
+    if (meetup.country !== '') addressComponents.push(meetup.country);
+    if (meetup.postal_code !== '') addressComponents.push(meetup.postal_code);
+    meetupInfo.location.full_address = addressComponents.join(', ');
+    meetupInfo.location.address_line_1 = meetup.address_line_1;
+    meetupInfo.location.address_line_2 = meetup.address_line_2;
+    meetupInfo.location.postal_code = meetup.postal_code;
+
+    // Get organizer names
+    const organizers = await User.find({
+      select: ['nick_name'],
+      where: {
+        id: In(meetup.organizer_ids),
+      },
+    });
+
+    meetupInfo.organizers = organizers.map((organizer) => organizer.nick_name);
+
+    // Get ticket details
+    const ticketCount = await Ticket.count({
+      where: {
+        meetup_id: meetup.id,
+      },
+    });
+
+    meetupInfo.tickets = {
+      total: meetup.capacity,
+      available: meetup.capacity - ticketCount,
+    };
+  }
+
+  return meetupInfo;
+};
+
+const createMeetupsFilter = (query: ParsedQs): FindOptionsWhere<Meetup> => {
+  const findOptionsWhere: FindOptionsWhere<Meetup> = {};
+
+  if (query.by_organizer_id != null) {
+    const organizerId = Number(query.by_organizer_id);
+    findOptionsWhere.organizer_ids = ArrayOverlap<number>(
+      Number.isNaN(organizerId) ? [] : [organizerId]
+    );
+  }
+
+  if (query.by_city != null) {
+    const city = String(query.by_city);
+    findOptionsWhere.city = ILike(city);
+  }
+
+  if (query.by_state != null) {
+    const state = String(query.by_state);
+    findOptionsWhere.state = ILike(state);
+  }
+
+  if (query.by_country != null) {
+    const country = String(query.by_country);
+    findOptionsWhere.country = ILike(country);
+  }
+
+  return findOptionsWhere;
+};
+
+const createMeetupsSorting = (query: ParsedQs): FindOptionsOrder<Meetup> => {
+  const findOptionsOrder: FindOptionsOrder<Meetup> = {};
+
+  if (query.sort_by != null) {
+    const sortBy = query.sort_by as string;
+
+    if (sortBy === 'date_asc') findOptionsOrder.date = 'ASC';
+    else if (sortBy === 'date_desc') findOptionsOrder.date = 'DESC';
+    else if (sortBy === 'id_asc') findOptionsOrder.id = 'ASC';
+    else if (sortBy === 'id_desc') findOptionsOrder.id = 'DESC';
+    else findOptionsOrder.date = 'ASC';
+  } else {
+    findOptionsOrder.date = 'ASC';
+  }
+
+  return findOptionsOrder;
+};
+
 export const getAllMeetups = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { organizer_ids } = req.query;
+  const { detail_level } = req.query;
 
-  // Build filters
-  const findOptionsWhere: FindOptionsWhere<Meetup> = {};
+  const detailLevel =
+    detail_level != null &&
+    (detail_level as string).toLowerCase() === 'detailed'
+      ? MeetupInfoDetailLevel.Detailed
+      : MeetupInfoDetailLevel.Simple;
 
-  // TODO(jan): Make this better because it will get messier once we add more
-  // filters
-  if (organizer_ids != null) {
-    const organizerFilter = (organizer_ids as string).split(',').map(Number);
-    if (
-      Joi.array().items(Joi.number()).required().validate(organizerFilter)
-        .error != null
-    ) {
-      return res.status(400).json({ message: 'Invalid organizer filter.' });
-    }
-    findOptionsWhere.organizer_ids = ArrayContains<number>(organizerFilter);
-  }
-
-  // TODO(jan): Add additional filters and sorting options
+  // Build filters and sorting
+  const findOptionsWhere = createMeetupsFilter(req.query);
+  const findOptionsOrder = createMeetupsSorting(req.query);
 
   // Query
-  const meetups: SimpleMeetupInfo[] = (
+  const meetups: Array<Promise<MeetupInfo>> = (
     await Meetup.find({
       where: findOptionsWhere,
-      order: {
-        date: 'ASC',
-      },
+      order: findOptionsOrder,
     })
-  ).map((meetup: Meetup): SimpleMeetupInfo => {
-    const simplifiedMeetupInfo: SimpleMeetupInfo = {
-      id: meetup.id,
-      name: meetup.name,
-      date: dayjs(meetup.date).utcOffset(meetup.utc_offset).format(),
-      location: {
-        city: meetup.city,
-        state: meetup.state,
-        country: meetup.country,
-      },
-      image_url: meetup.image_url,
-    };
-
-    return simplifiedMeetupInfo;
+  ).map(async (meetup: Meetup): Promise<MeetupInfo> => {
+    const meetupInfo = await mapMeetupInfo(meetup, detailLevel);
+    return meetupInfo;
   });
 
-  return res.json(meetups);
+  return res.json(await Promise.all(meetups));
 };
 
 export const getMeetup = async (
@@ -107,6 +182,12 @@ export const getMeetup = async (
   res: Response
 ): Promise<Response> => {
   const { meetup_id } = req.params;
+  const { detail_level } = req.query;
+
+  const detailLevel =
+    detail_level != null && (detail_level as string).toLowerCase() === 'simple'
+      ? MeetupInfoDetailLevel.Simple
+      : MeetupInfoDetailLevel.Detailed;
 
   const meetup = await Meetup.findOneBy({
     id: parseInt(meetup_id),
@@ -116,58 +197,7 @@ export const getMeetup = async (
     return res.status(404).json({ message: 'Invalid meetup ID.' });
   }
 
-  const meetupInfo: FullMeetupInfo = {
-    id: meetup.id,
-    name: meetup.name,
-    date: dayjs(meetup.date).utcOffset(meetup.utc_offset).format(),
-    location: {
-      full_address: '',
-      address_line_1: meetup.address_line_1,
-      address_line_2: meetup.address_line_2,
-      city: meetup.city,
-      state: meetup.state,
-      country: meetup.country,
-      postal_code: meetup.postal_code,
-    },
-    organizers: [],
-    tickets: {
-      total: meetup.capacity,
-      available: 0,
-    },
-    image_url: meetup.image_url,
-  };
-
-  // Build full address
-  const addressComponents: string[] = [];
-  if (meetup.address_line_1 !== '')
-    addressComponents.push(meetup.address_line_1);
-  if (meetup.address_line_2 !== '')
-    addressComponents.push(meetup.address_line_2);
-  if (meetup.city !== '') addressComponents.push(meetup.city);
-  if (meetup.state !== '') addressComponents.push(meetup.state);
-  if (meetup.country !== '') addressComponents.push(meetup.country);
-  if (meetup.postal_code !== '') addressComponents.push(meetup.postal_code);
-
-  meetupInfo.location.full_address = addressComponents.join(', ');
-
-  // Get organizer names
-  const organizers = await User.find({
-    select: ['nick_name'],
-    where: {
-      id: In(meetup.organizer_ids),
-    },
-  });
-
-  meetupInfo.organizers = organizers.map((organizer) => organizer.nick_name);
-
-  // Calculate available tickets
-  const ticketCount = await Ticket.count({
-    where: {
-      meetup_id: meetup.id,
-    },
-  });
-
-  meetupInfo.tickets.available = meetupInfo.tickets.total - ticketCount;
+  const meetupInfo = await mapMeetupInfo(meetup, detailLevel);
 
   return res.json(meetupInfo);
 };
