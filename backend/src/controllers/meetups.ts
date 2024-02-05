@@ -1,9 +1,8 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
-import Joi from 'joi';
 import { ParsedQs } from 'qs';
-import { ArrayContains, ILike, In, type FindOptionsWhere } from 'typeorm';
+import { ArrayOverlap, ILike, In, type FindOptionsWhere } from 'typeorm';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { User } from '../entity/User';
@@ -100,16 +99,25 @@ const createMeetupsFilter = (query: ParsedQs): FindOptionsWhere<Meetup> => {
   const findOptionsWhere: FindOptionsWhere<Meetup> = {};
 
   if (query.by_organizer_id != null) {
-    const organizerFilter = (query.by_organizer_id as string)
-      .split(',')
-      .map(Number);
-    if (
-      Joi.array().items(Joi.number()).required().validate(organizerFilter)
-        .error != null
-    ) {
-      // TODO(jan): Throw something here, idk how throwing works lol
-    }
-    findOptionsWhere.organizer_ids = ArrayContains<number>(organizerFilter);
+    const organizerId = Number(query.by_organizer_id);
+    findOptionsWhere.organizer_ids = ArrayOverlap<number>(
+      Number.isNaN(organizerId) ? [] : [organizerId]
+    );
+  }
+
+  if (query.by_city != null) {
+    const city = String(query.by_city);
+    findOptionsWhere.city = ILike(city);
+  }
+
+  if (query.by_state != null) {
+    const state = String(query.by_state);
+    findOptionsWhere.state = ILike(state);
+  }
+
+  if (query.by_country != null) {
+    const country = String(query.by_country);
+    findOptionsWhere.country = ILike(country);
   }
 
   return findOptionsWhere;
