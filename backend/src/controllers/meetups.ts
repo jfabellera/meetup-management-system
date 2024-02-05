@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
-import { ParsedQs } from 'qs';
+import { type ParsedQs } from 'qs';
 import { ArrayOverlap, ILike, In, type FindOptionsWhere } from 'typeorm';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
