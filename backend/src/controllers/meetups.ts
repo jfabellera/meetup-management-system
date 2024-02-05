@@ -2,7 +2,13 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
 import { type ParsedQs } from 'qs';
-import { ArrayOverlap, ILike, In, type FindOptionsWhere } from 'typeorm';
+import {
+  ArrayOverlap,
+  ILike,
+  In,
+  type FindOptionsOrder,
+  type FindOptionsWhere,
+} from 'typeorm';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { User } from '../entity/User';
@@ -123,6 +129,24 @@ const createMeetupsFilter = (query: ParsedQs): FindOptionsWhere<Meetup> => {
   return findOptionsWhere;
 };
 
+const createMeetupsSorting = (query: ParsedQs): FindOptionsOrder<Meetup> => {
+  const findOptionsOrder: FindOptionsOrder<Meetup> = {};
+
+  if (query.sort_by != null) {
+    const sortBy = query.sort_by as string;
+
+    if (sortBy === 'date_asc') findOptionsOrder.date = 'ASC';
+    else if (sortBy === 'date_desc') findOptionsOrder.date = 'DESC';
+    else if (sortBy === 'id_asc') findOptionsOrder.id = 'ASC';
+    else if (sortBy === 'id_desc') findOptionsOrder.id = 'DESC';
+    else findOptionsOrder.date = 'ASC';
+  } else {
+    findOptionsOrder.date = 'ASC';
+  }
+
+  return findOptionsOrder;
+};
+
 export const getAllMeetups = async (
   req: Request,
   res: Response
@@ -135,16 +159,15 @@ export const getAllMeetups = async (
       ? MeetupInfoDetailLevel.Detailed
       : MeetupInfoDetailLevel.Simple;
 
-  // Build filters
+  // Build filters and sorting
   const findOptionsWhere = createMeetupsFilter(req.query);
+  const findOptionsOrder = createMeetupsSorting(req.query);
 
   // Query
   const meetups: Array<Promise<MeetupInfo>> = (
     await Meetup.find({
       where: findOptionsWhere,
-      order: {
-        date: 'ASC',
-      },
+      order: findOptionsOrder,
     })
   ).map(async (meetup: Meetup): Promise<MeetupInfo> => {
     const meetupInfo = await mapMeetupInfo(meetup, detailLevel);
