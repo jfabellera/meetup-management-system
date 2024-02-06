@@ -20,7 +20,7 @@ const userSchema = Joi.object({
   password_hash: Joi.string().default(''),
 });
 
-const meetupSchema = Joi.object({
+export const meetupSchema = Joi.object({
   id: Joi.number(),
   name: Joi.string().required(),
   date: Joi.date().format('YYYY-MM-DDTHH:mm:ss').required().raw(),

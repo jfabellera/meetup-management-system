@@ -12,7 +12,7 @@ import {
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { User } from '../entity/User';
-import { getUtcOffset } from '../util/utcOffset';
+import { geocode, getUtcOffset } from '../util/externalApis';
 import { validateMeetup } from '../util/validator';
 
 dayjs.extend(utc);
@@ -41,6 +41,15 @@ export interface MeetupInfo {
 enum MeetupInfoDetailLevel {
   Simple,
   Detailed,
+}
+
+export interface CreateMeetupSchema {
+  name: string;
+  date: string;
+  address: string;
+  duration_hours: number;
+  capacity: number;
+  has_raffle: boolean;
 }
 
 const mapMeetupInfo = async (
@@ -153,6 +162,8 @@ export const getAllMeetups = async (
 ): Promise<Response> => {
   const { detail_level } = req.query;
 
+  console.log(await geocode('Volmerlaan 12, 2288 GD Rijswijk'));
+
   const detailLevel =
     detail_level != null &&
     (detail_level as string).toLowerCase() === 'detailed'
@@ -208,9 +219,9 @@ export const createMeetup = async (
 ): Promise<Response> => {
   const { error, value } = validateMeetup(req.body);
 
-  if (error != null) {
-    return res.status(400).json(error.details);
-  }
+  // if (error != null) {
+  //   return res.status(400).json(error.details);
+  // }
 
   // Add requestor to front of organizer list
   value.organizer_ids.unshift(parseInt(res.locals.requestor.id));
@@ -233,8 +244,15 @@ export const createMeetup = async (
 
   // Get UTC offset for the inputted address
   try {
+    const geocodeResult = await geocode(req.body.address);
+
+    value.city = geocodeResult.city;
+    value.state = geocodeResult.state;
+    value.country = geocodeResult.country;
+
     value.utc_offset = await getUtcOffset(
-      `${value.address_line_1} ${value.address_line_2} ${value.city} ${value.state} ${value.country} ${value.postal_code}`,
+      geocodeResult.latitude,
+      geocodeResult.longitude,
       new Date(value.date)
     );
   } catch (error: any) {
