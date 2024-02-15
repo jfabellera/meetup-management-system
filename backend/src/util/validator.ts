@@ -89,3 +89,5 @@ export const createMeetupSchema = z.object({
   image_url: z.string(),
   organizer_ids: z.array(z.number()).optional(),
 });
+
+export type CreateMeetupPayload = z.infer<typeof createMeetupSchema>;
