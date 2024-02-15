@@ -13,7 +13,7 @@ import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { User } from '../entity/User';
 import { geocode, getUtcOffset } from '../util/externalApis';
-import { validateMeetup } from '../util/validator';
+import { createMeetupSchema, validateMeetup } from '../util/validator';
 
 dayjs.extend(utc);
 
@@ -41,15 +41,6 @@ export interface MeetupInfo {
 enum MeetupInfoDetailLevel {
   Simple,
   Detailed,
-}
-
-export interface CreateMeetupSchema {
-  name: string;
-  date: string;
-  address: string;
-  duration_hours: number;
-  capacity: number;
-  has_raffle: boolean;
 }
 
 const mapMeetupInfo = async (
@@ -149,8 +140,6 @@ export const getAllMeetups = async (
 ): Promise<Response> => {
   const { detail_level } = req.query;
 
-  console.log(await geocode('Volmerlaan 12, 2288 GD Rijswijk'));
-
   const detailLevel =
     detail_level != null &&
     (detail_level as string).toLowerCase() === 'detailed'
@@ -204,22 +193,33 @@ export const createMeetup = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { error, value } = validateMeetup(req.body);
+  const result = createMeetupSchema.safeParse(req.body);
 
-  // if (error != null) {
-  //   return res.status(400).json(error.details);
-  // }
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
+
+  const newMeetup = Meetup.create({
+    name: result.data.name,
+    date: result.data.date,
+    address: result.data.address,
+    organizer_ids: result.data.organizer_ids ?? [],
+    has_raffle: result.data.has_raffle,
+    capacity: result.data.capacity,
+    duration_hours: result.data.duration_hours,
+    image_url: result.data.image_url,
+  });
 
   // Add requestor to front of organizer list
-  value.organizer_ids.unshift(parseInt(res.locals.requestor.id));
+  newMeetup.organizer_ids.unshift(parseInt(res.locals.requestor.id));
 
   // Remove duplicates
-  value.organizer_ids = Array.from(new Set(value.organizer_ids));
+  newMeetup.organizer_ids = Array.from(new Set(newMeetup.organizer_ids));
 
   // Check if meetup name is taken
   const existingMeetup = await Meetup.findOne({
     where: {
-      name: ILike(value.name),
+      name: ILike(result.data.name),
     },
   });
 
@@ -233,14 +233,14 @@ export const createMeetup = async (
   try {
     const geocodeResult = await geocode(req.body.address);
 
-    value.city = geocodeResult.city;
-    value.state = geocodeResult.state;
-    value.country = geocodeResult.country;
+    newMeetup.city = geocodeResult.city;
+    if (geocodeResult.state != null) newMeetup.state = geocodeResult.state;
+    newMeetup.country = geocodeResult.country;
 
-    value.utc_offset = await getUtcOffset(
+    newMeetup.utc_offset = await getUtcOffset(
       geocodeResult.latitude,
       geocodeResult.longitude,
-      new Date(value.date)
+      new Date(result.data.date)
     );
   } catch (error: any) {
     // TODO(jan): Better error handling
@@ -251,9 +251,11 @@ export const createMeetup = async (
   }
 
   // Apply offset to date to be correct UTC
-  value.date = dayjs.utc(value.date).subtract(value.utc_offset, 'hour');
+  newMeetup.date = dayjs
+    .utc(newMeetup.date)
+    .subtract(newMeetup.utc_offset, 'hour')
+    .toISOString();
 
-  const newMeetup = Meetup.create(value);
   await newMeetup.save();
 
   return res.status(201).json(newMeetup);
