@@ -69,20 +69,7 @@ const mapMeetupInfo = async (
   };
 
   if (type === MeetupInfoDetailLevel.Detailed) {
-    // Build full address
-    const addressComponents: string[] = [];
-    if (meetup.address_line_1 !== '')
-      addressComponents.push(meetup.address_line_1);
-    if (meetup.address_line_2 !== '')
-      addressComponents.push(meetup.address_line_2);
-    if (meetup.city !== '') addressComponents.push(meetup.city);
-    if (meetup.state !== '') addressComponents.push(meetup.state);
-    if (meetup.country !== '') addressComponents.push(meetup.country);
-    if (meetup.postal_code !== '') addressComponents.push(meetup.postal_code);
-    meetupInfo.location.full_address = addressComponents.join(', ');
-    meetupInfo.location.address_line_1 = meetup.address_line_1;
-    meetupInfo.location.address_line_2 = meetup.address_line_2;
-    meetupInfo.location.postal_code = meetup.postal_code;
+    meetupInfo.location.full_address = meetup.address;
 
     // Get organizer names
     const organizers = await User.find({
