@@ -13,8 +13,10 @@ import {
   type BoxProps,
 } from '@chakra-ui/react';
 import { useFormik } from 'formik';
+import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
 import Page from '../components/Page/Page';
+import { useCreateMeetupMutation } from '../store/meetupSlice';
 
 const NewMeetupSchema = Yup.object().shape({
   name: Yup.string().required('Required'),
@@ -31,17 +33,32 @@ const NewMeetupSchema = Yup.object().shape({
 });
 
 export const NewMeetupPage = (): JSX.Element => {
+  const [createMeetup] = useCreateMeetupMutation();
+  const navigate = useNavigate();
   const formik = useFormik({
     initialValues: {
-      name: null,
-      date: null,
-      startTime: null,
-      address: null,
-      duration: null,
-      capacity: null,
-      imageUrl: null,
+      name: '',
+      date: '',
+      startTime: '',
+      address: '',
+      duration: 0,
+      capacity: 0,
+      imageUrl: '',
     },
-    onSubmit: (values) => {},
+    onSubmit: async (values) => {
+      await createMeetup({
+        name: formik.values.name,
+        date: new Date(
+          `${formik.values.date}T${formik.values.startTime}Z`,
+        ).toISOString(),
+        address: formik.values.address,
+        duration_hours: formik.values.duration,
+        capacity: formik.values.capacity,
+        image_url: formik.values.imageUrl,
+        has_raffle: false, // TODO(jan)
+      });
+      navigate('/organizer');
+    },
     validationSchema: NewMeetupSchema,
     validateOnMount: true,
   });
