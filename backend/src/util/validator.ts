@@ -78,7 +78,6 @@ export const validateTicket = validator(ticketSchema);
 export const createMeetupSchema = z.object({
   name: z.string().min(3),
   date: z.string().datetime({
-    precision: 0,
     offset: false,
     message: 'Datetime must be in the format of YYYY-MM-DDT:HH:mm:ssZ',
   }),
