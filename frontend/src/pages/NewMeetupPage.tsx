@@ -19,8 +19,12 @@ import Page from '../components/Page/Page';
 import { useCreateMeetupMutation } from '../store/meetupSlice';
 
 const NewMeetupSchema = Yup.object().shape({
-  name: Yup.string().required('Required'),
-  date: Yup.string().required('Required'),
+  name: Yup.string()
+    .min(3, 'Name must be at least 3 characters')
+    .required('Required'),
+  date: Yup.date()
+    .min(new Date(), 'Date must be in the future')
+    .required('Required'),
   startTime: Yup.string().required('Required'),
   address: Yup.string().required('Required'),
   duration: Yup.number()
