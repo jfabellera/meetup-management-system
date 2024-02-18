@@ -233,6 +233,7 @@ export const createMeetup = async (
   try {
     const geocodeResult = await geocode(req.body.address);
 
+    newMeetup.address = geocodeResult.fullAddress;
     newMeetup.city = geocodeResult.city;
     if (geocodeResult.state != null) newMeetup.state = geocodeResult.state;
     newMeetup.country = geocodeResult.country;
