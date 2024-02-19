@@ -64,10 +64,12 @@ export const NewMeetupPage = (): JSX.Element => {
         has_raffle: false, // TODO(jan)
       });
 
-      if (result.error != null) {
+      if ('error' in result && 'data' in result.error) {
+        // is this allowed
+        const data: any = result.error.data;
         toast({
           title: 'Error creating meetup',
-          description: result.error.data.message,
+          description: data.message,
           status: 'error',
           isClosable: true,
         });
