@@ -10,6 +10,7 @@ import {
   Input,
   Stack,
   useColorModeValue,
+  useToast,
   type BoxProps,
 } from '@chakra-ui/react';
 import { useFormik } from 'formik';
@@ -39,6 +40,7 @@ const NewMeetupSchema = Yup.object().shape({
 export const NewMeetupPage = (): JSX.Element => {
   const [createMeetup] = useCreateMeetupMutation();
   const navigate = useNavigate();
+  const toast = useToast();
   const formik = useFormik({
     initialValues: {
       name: '',
@@ -50,7 +52,7 @@ export const NewMeetupPage = (): JSX.Element => {
       imageUrl: '',
     },
     onSubmit: async (values) => {
-      await createMeetup({
+      const result = await createMeetup({
         name: formik.values.name,
         date: new Date(
           `${formik.values.date}T${formik.values.startTime}Z`,
@@ -61,7 +63,17 @@ export const NewMeetupPage = (): JSX.Element => {
         image_url: formik.values.imageUrl,
         has_raffle: false, // TODO(jan)
       });
-      navigate('/organizer');
+
+      if (result.error != null) {
+        toast({
+          title: 'Error creating meetup',
+          description: result.error.data.message,
+          status: 'error',
+          isClosable: true,
+        });
+      } else {
+        navigate('/organizer');
+      }
     },
     validationSchema: NewMeetupSchema,
     validateOnMount: true,
