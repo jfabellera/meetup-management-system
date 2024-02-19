@@ -37,7 +37,7 @@ const NewMeetupSchema = Yup.object().shape({
   imageUrl: Yup.string().required('Required'),
 });
 
-export const NewMeetupPage = (): JSX.Element => {
+const NewMeetupPage = (): JSX.Element => {
   const [createMeetup] = useCreateMeetupMutation();
   const navigate = useNavigate();
   const toast = useToast();
@@ -264,3 +264,5 @@ export const NewMeetupPage = (): JSX.Element => {
     </Page>
   );
 };
+
+export default NewMeetupPage;

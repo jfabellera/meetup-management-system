@@ -3,11 +3,11 @@ import './App.css';
 
 import Homepage from './pages/Homepage';
 import LoginPage from './pages/LoginPage';
+import NewMeetupPage from './pages/NewMeetupPage';
 import OrganizerDashboard from './pages/OrganizerDashboard';
 import RegisterPage from './pages/RegisterPage';
 
 import { Provider } from 'react-redux';
-import { NewMeetupPage } from './pages/NewMeetupPage';
 import { store } from './store/store';
 
 const App = (): JSX.Element => {
