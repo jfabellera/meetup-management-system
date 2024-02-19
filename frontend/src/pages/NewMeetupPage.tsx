@@ -90,7 +90,7 @@ export const NewMeetupPage = (): JSX.Element => {
   return (
     <Page>
       <Container padding={0} maxWidth={'contanier.md'}>
-        <Stack spacing={8} mx={'auto'} maxW={'lg'} py={6} px={6}>
+        <Stack padding={0} mx={'auto'} maxW={'lg'}>
           <Heading fontSize={'4xl'} textAlign={'center'}>
             New Meetup
           </Heading>
@@ -106,8 +106,9 @@ export const NewMeetupPage = (): JSX.Element => {
                   id="name"
                   isRequired
                   isInvalid={formik.errors.name != null && formik.touched.name}
+                  minWidth={0}
                 >
-                  <FormLabel>Meetup Name</FormLabel>
+                  <FormLabel noOfLines={1}>Meetup Name</FormLabel>
                   <Input
                     type="text"
                     name="name"
@@ -117,15 +118,16 @@ export const NewMeetupPage = (): JSX.Element => {
                   <ErrorMessage>{formik.errors.name}</ErrorMessage>
                 </FormControl>
 
-                <HStack>
+                <HStack align={'baseline'}>
                   <FormControl
                     id="date"
                     isRequired
                     isInvalid={
                       formik.errors.date != null && formik.touched.date
                     }
+                    minWidth={0}
                   >
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel noOfLines={1}>Date</FormLabel>
                     <Input
                       type="date"
                       name="date"
@@ -142,8 +144,9 @@ export const NewMeetupPage = (): JSX.Element => {
                       formik.errors.startTime != null &&
                       formik.touched.startTime
                     }
+                    minWidth={0}
                   >
-                    <FormLabel>Start Time</FormLabel>
+                    <FormLabel noOfLines={1}>Start Time</FormLabel>
                     <Input
                       type="time"
                       name="startTime"
@@ -154,15 +157,18 @@ export const NewMeetupPage = (): JSX.Element => {
                   </FormControl>
                 </HStack>
 
-                <HStack>
+                <HStack align={'baseline'}>
                   <FormControl
                     id="duration"
                     isRequired
                     isInvalid={
                       formik.errors.duration != null && formik.touched.duration
                     }
+                    minWidth={0}
                   >
-                    <FormLabel>Duration (hours)</FormLabel>
+                    <FormLabel noOfLines={1} wordBreak={'break-all'}>
+                      Duration (hours)
+                    </FormLabel>
                     <Input
                       type="number"
                       name="duration"
@@ -178,8 +184,9 @@ export const NewMeetupPage = (): JSX.Element => {
                     isInvalid={
                       formik.errors.capacity != null && formik.touched.capacity
                     }
+                    minWidth={0}
                   >
-                    <FormLabel>Capacity</FormLabel>
+                    <FormLabel noOfLines={1}>Capacity</FormLabel>
                     <Input
                       type="number"
                       name="capacity"
@@ -196,8 +203,9 @@ export const NewMeetupPage = (): JSX.Element => {
                   isInvalid={
                     formik.errors.address != null && formik.touched.address
                   }
+                  minWidth={0}
                 >
-                  <FormLabel>Address</FormLabel>
+                  <FormLabel noOfLines={1}>Address</FormLabel>
                   <Input
                     type="text"
                     name="address"
@@ -213,8 +221,9 @@ export const NewMeetupPage = (): JSX.Element => {
                   isInvalid={
                     formik.errors.imageUrl != null && formik.touched.imageUrl
                   }
+                  minWidth={0}
                 >
-                  <FormLabel>Image URL</FormLabel>
+                  <FormLabel noOfLines={1}>Image URL</FormLabel>
                   <Input
                     type="text"
                     name="imageUrl"
