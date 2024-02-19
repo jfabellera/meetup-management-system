@@ -244,11 +244,7 @@ export const createMeetup = async (
       new Date(result.data.date)
     );
   } catch (error: any) {
-    // TODO(jan): Better error handling
-    return res.status(500).json({
-      message:
-        'There was an issue determining the timezone for the provided address',
-    });
+    return res.status(400).json({ message: error.message });
   }
 
   // Apply offset to date to be correct UTC
