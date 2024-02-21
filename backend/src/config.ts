@@ -3,9 +3,9 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 interface Config {
-  apiUrl: string;
+  apiHostname: string;
   apiPort: string;
-  authUrl: string;
+  authHostname: string;
   authPort: string;
   databaseHost: string;
   databasePort: string;
@@ -17,9 +17,9 @@ interface Config {
 }
 
 const config: Config = {
-  apiUrl: process.env.MMS_API_SERVER_URL ?? 'http://localhost',
+  apiHostname: process.env.MMS_API_SERVER_HOSTNAME ?? 'localhost',
   apiPort: process.env.MMS_API_SERVER_PORT ?? '3000',
-  authUrl: process.env.MMS_AUTH_SERVER_URL ?? 'http://localhost',
+  authHostname: process.env.MMS_AUTH_SERVER_HOSTNAME ?? 'localhost',
   authPort: process.env.MMS_AUTH_SERVER_PORT ?? '3001',
   databaseHost: process.env.MMS_DATABASE_HOST ?? 'localhost',
   databasePort: process.env.MMS_DATABASE_PORT ?? '5432',
