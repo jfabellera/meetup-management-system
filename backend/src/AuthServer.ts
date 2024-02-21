@@ -53,9 +53,9 @@ class AuthServer {
     });
   }
 
-  public start = (port: number): void => {
+  public start = (port: number, hostname: string): void => {
     this.express
-      .listen(port, () => {
+      .listen(port, hostname, () => {
         console.log(`Running on port ${port}`);
       })
       .on('error', (err) => {
@@ -65,5 +65,6 @@ class AuthServer {
 }
 
 const port = parseInt(config.authPort);
+const hostname = config.authHostname;
 const server = new AuthServer();
-server.start(port);
+server.start(port, hostname);
