@@ -26,7 +26,7 @@ const OrganizerDashboard = (): JSX.Element => {
 
   return (
     <Page>
-      <Container padding={0} maxWidth={'container.md'}>
+      <Container padding={'1rem'} maxWidth={'container.md'}>
         <HStack marginBottom={'1rem'}>
           <Heading fontWeight={'semibold'}>Your Meetups</Heading>
           <Spacer />

@@ -1,4 +1,4 @@
-import { Grid, GridItem, Heading, useDisclosure } from '@chakra-ui/react';
+import { Box, Grid, GridItem, Heading, useDisclosure } from '@chakra-ui/react';
 import { useState } from 'react';
 import { type SimpleTicketInfo } from '../../../backend/src/controllers/tickets';
 import { MeetupCard } from '../components/Meetups/MeetupCard';
@@ -48,7 +48,7 @@ const Homepage = (): JSX.Element => {
       {isLoading ? (
         <></>
       ) : (
-        <>
+        <Box padding={'1rem'}>
           <Heading fontSize="3xl" mb={'0.5em'}>
             Upcoming Meetups
           </Heading>
@@ -97,7 +97,7 @@ const Homepage = (): JSX.Element => {
             onClose={onClose}
             onOpen={onOpen}
           />
-        </>
+        </Box>
       )}
     </Page>
   );
