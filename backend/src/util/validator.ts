@@ -1,6 +1,7 @@
 import JoiDate from '@joi/date';
 import JoiBase from 'joi';
 import passwordComplexity from 'joi-password-complexity';
+import { z } from 'zod';
 
 const Joi = JoiBase.extend(JoiDate);
 
@@ -20,7 +21,7 @@ const userSchema = Joi.object({
   password_hash: Joi.string().default(''),
 });
 
-const meetupSchema = Joi.object({
+export const meetupSchema = Joi.object({
   id: Joi.number(),
   name: Joi.string().required(),
   date: Joi.date().format('YYYY-MM-DDTHH:mm:ss').required().raw(),
@@ -73,3 +74,19 @@ export const validatePassword = (
 export const validateUser = validator(userSchema);
 export const validateMeetup = validator(meetupSchema);
 export const validateTicket = validator(ticketSchema);
+
+export const createMeetupSchema = z.object({
+  name: z.string().min(3),
+  date: z.string().datetime({
+    offset: false,
+    message: 'Datetime must be in the format of YYYY-MM-DDT:HH:mm:ssZ',
+  }),
+  address: z.string(),
+  duration_hours: z.number().gt(0),
+  has_raffle: z.boolean(),
+  capacity: z.number().gt(0),
+  image_url: z.string(),
+  organizer_ids: z.array(z.number()).optional(),
+});
+
+export type CreateMeetupPayload = z.infer<typeof createMeetupSchema>;

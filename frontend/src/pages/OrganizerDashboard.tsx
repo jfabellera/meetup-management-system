@@ -6,6 +6,7 @@ import {
   Spacer,
   Stack,
 } from '@chakra-ui/react';
+import { useNavigate } from 'react-router-dom';
 import { MeetupOrganizerCard } from '../components/Meetups/MeetupOrganizerCard';
 import Page from '../components/Page/Page';
 import { useAppSelector } from '../store/hooks';
@@ -17,6 +18,11 @@ const OrganizerDashboard = (): JSX.Element => {
     by_organizer_id: user != null ? [user.id] : [],
     detail_level: 'detailed',
   });
+  const navigate = useNavigate();
+
+  const newMeetupOnClick = (): void => {
+    navigate('/newmeetup');
+  };
 
   return (
     <Page>
@@ -24,7 +30,9 @@ const OrganizerDashboard = (): JSX.Element => {
         <HStack marginBottom={'1rem'}>
           <Heading fontWeight={'semibold'}>Your Meetups</Heading>
           <Spacer />
-          <Button colorScheme={'green'}>New meetup</Button>
+          <Button colorScheme={'green'} onClick={newMeetupOnClick}>
+            New meetup
+          </Button>
         </HStack>
         <Stack spacing={4}>
           {meetups != null

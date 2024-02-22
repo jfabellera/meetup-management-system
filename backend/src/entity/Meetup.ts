@@ -24,10 +24,7 @@ export class Meetup extends BaseEntity {
   duration_hours: number;
 
   @Column({ type: 'varchar', length: 255 })
-  address_line_1: string;
-
-  @Column({ type: 'varchar', length: 255 })
-  address_line_2: string;
+  address: string;
 
   @Column({ type: 'varchar', length: 100 })
   city: string;
@@ -37,9 +34,6 @@ export class Meetup extends BaseEntity {
 
   @Column({ type: 'varchar', length: 100 })
   country: string;
-
-  @Column({ type: 'varchar', length: 20 })
-  postal_code: string;
 
   @Column({ type: 'int' })
   utc_offset: number;

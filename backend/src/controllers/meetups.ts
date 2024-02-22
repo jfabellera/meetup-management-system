@@ -12,8 +12,8 @@ import {
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { User } from '../entity/User';
-import { getUtcOffset } from '../util/utcOffset';
-import { validateMeetup } from '../util/validator';
+import { geocode, getUtcOffset } from '../util/externalApis';
+import { createMeetupSchema, validateMeetup } from '../util/validator';
 
 dayjs.extend(utc);
 
@@ -60,20 +60,7 @@ const mapMeetupInfo = async (
   };
 
   if (type === MeetupInfoDetailLevel.Detailed) {
-    // Build full address
-    const addressComponents: string[] = [];
-    if (meetup.address_line_1 !== '')
-      addressComponents.push(meetup.address_line_1);
-    if (meetup.address_line_2 !== '')
-      addressComponents.push(meetup.address_line_2);
-    if (meetup.city !== '') addressComponents.push(meetup.city);
-    if (meetup.state !== '') addressComponents.push(meetup.state);
-    if (meetup.country !== '') addressComponents.push(meetup.country);
-    if (meetup.postal_code !== '') addressComponents.push(meetup.postal_code);
-    meetupInfo.location.full_address = addressComponents.join(', ');
-    meetupInfo.location.address_line_1 = meetup.address_line_1;
-    meetupInfo.location.address_line_2 = meetup.address_line_2;
-    meetupInfo.location.postal_code = meetup.postal_code;
+    meetupInfo.location.full_address = meetup.address;
 
     // Get organizer names
     const organizers = await User.find({
@@ -206,22 +193,33 @@ export const createMeetup = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { error, value } = validateMeetup(req.body);
+  const result = createMeetupSchema.safeParse(req.body);
 
-  if (error != null) {
-    return res.status(400).json(error.details);
+  if (!result.success) {
+    return res.status(400).json(result.error);
   }
 
+  const newMeetup = Meetup.create({
+    name: result.data.name,
+    date: result.data.date,
+    address: result.data.address,
+    organizer_ids: result.data.organizer_ids ?? [],
+    has_raffle: result.data.has_raffle,
+    capacity: result.data.capacity,
+    duration_hours: result.data.duration_hours,
+    image_url: result.data.image_url,
+  });
+
   // Add requestor to front of organizer list
-  value.organizer_ids.unshift(parseInt(res.locals.requestor.id));
+  newMeetup.organizer_ids.unshift(parseInt(res.locals.requestor.id));
 
   // Remove duplicates
-  value.organizer_ids = Array.from(new Set(value.organizer_ids));
+  newMeetup.organizer_ids = Array.from(new Set(newMeetup.organizer_ids));
 
   // Check if meetup name is taken
   const existingMeetup = await Meetup.findOne({
     where: {
-      name: ILike(value.name),
+      name: ILike(result.data.name),
     },
   });
 
@@ -233,22 +231,28 @@ export const createMeetup = async (
 
   // Get UTC offset for the inputted address
   try {
-    value.utc_offset = await getUtcOffset(
-      `${value.address_line_1} ${value.address_line_2} ${value.city} ${value.state} ${value.country} ${value.postal_code}`,
-      new Date(value.date)
+    const geocodeResult = await geocode(req.body.address);
+
+    newMeetup.address = geocodeResult.fullAddress;
+    newMeetup.city = geocodeResult.city;
+    if (geocodeResult.state != null) newMeetup.state = geocodeResult.state;
+    newMeetup.country = geocodeResult.country;
+
+    newMeetup.utc_offset = await getUtcOffset(
+      geocodeResult.latitude,
+      geocodeResult.longitude,
+      new Date(result.data.date)
     );
   } catch (error: any) {
-    // TODO(jan): Better error handling
-    return res.status(500).json({
-      message:
-        'There was an issue determining the timezone for the provided address',
-    });
+    return res.status(400).json({ message: error.message });
   }
 
   // Apply offset to date to be correct UTC
-  value.date = dayjs.utc(value.date).subtract(value.utc_offset, 'hour');
+  newMeetup.date = dayjs
+    .utc(newMeetup.date)
+    .subtract(newMeetup.utc_offset, 'hour')
+    .toISOString();
 
-  const newMeetup = Meetup.create(value);
   await newMeetup.save();
 
   return res.status(201).json(newMeetup);

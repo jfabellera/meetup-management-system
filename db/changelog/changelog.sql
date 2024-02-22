@@ -57,3 +57,11 @@ ALTER TABLE "meetups" ADD COLUMN "utc_offset" INT NOT NULL DEFAULT 0;
 -- changeset jan:6
 ALTER TABLE "meetups" ADD COLUMN "image_url" VARCHAR(255) DEFAULT NULL;
 -- rollback ALTER TABLE "meetups" DROP COLUMN "image_url";
+
+-- changeset jan:7
+ALTER TABLE "meetups" RENAME COLUMN "address_line_1" TO "address";
+ALTER TABLE "meetups" DROP COLUMN "address_line_2";
+ALTER TABLE "meetups" DROP COLUMN "postal_code";
+-- rollback ALTER TABLE "meetups" ADD COLUMN "postal_code" VARCHAR(20) NOT NULL DEFAULT '';
+-- rollback ALTER TABLE "meetups" ADD COLUMN "address_line_2" VARCHAR(255) DEFAULT '';
+-- rollback ALTER TABLE "meetups" RENAME COLUMN "address" TO "address_line_1";
