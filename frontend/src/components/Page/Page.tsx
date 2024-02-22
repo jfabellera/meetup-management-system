@@ -6,7 +6,7 @@ const Page = ({ children }: { children: ReactNode }): JSX.Element => {
   return (
     <Flex
       direction="column"
-      height="100vh"
+      height="100svh"
       bg={useColorModeValue('gray.100', 'gray.900')}
     >
       <Navbar />
