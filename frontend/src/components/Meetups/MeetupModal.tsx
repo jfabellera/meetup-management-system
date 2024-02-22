@@ -99,7 +99,7 @@ export const MeetupModal = ({
       onClose={onClose}
       isCentered
       motionPreset={'slideInBottom'}
-      size={'3xl'}
+      size={{ base: 'full', md: '3xl' }}
       scrollBehavior={'inside'}
     >
       <ModalOverlay />

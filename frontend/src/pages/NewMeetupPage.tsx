@@ -89,7 +89,7 @@ const NewMeetupPage = (): JSX.Element => {
 
   return (
     <Page>
-      <Container padding={0} maxWidth={'contanier.md'}>
+      <Container padding={'1rem'} maxWidth={'contanier.md'}>
         <Stack padding={0} mx={'auto'} maxW={'lg'}>
           <Heading fontSize={'4xl'} textAlign={'center'}>
             New Meetup
