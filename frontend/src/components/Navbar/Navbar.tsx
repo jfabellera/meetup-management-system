@@ -4,12 +4,15 @@ import {
   Button,
   Center,
   Flex,
+  HStack,
   Icon,
   Link,
   Menu,
   MenuButton,
   MenuDivider,
   MenuList,
+  Show,
+  Spacer,
   Stack,
   useColorModeValue,
   type BoxProps,
@@ -17,7 +20,7 @@ import {
 } from '@chakra-ui/react';
 import { type ReactNode } from 'react';
 import { type IconType } from 'react-icons';
-import { FiLogOut } from 'react-icons/fi';
+import { FiLogOut, FiMenu } from 'react-icons/fi';
 import { MdDashboardCustomize } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../store/authSlice';
@@ -47,7 +50,12 @@ const LinkItems: LinkItemProps[] = [
   },
 ];
 
-const Nav = (): JSX.Element => {
+interface NavbarProps {
+  sidebar?: boolean;
+  onOpen?: () => void;
+}
+
+const Nav = ({ sidebar, onOpen }: NavbarProps): JSX.Element => {
   const { isLoggedIn, user } = useAppSelector((state) => state.user);
   const navigate = useNavigate();
 
@@ -63,21 +71,29 @@ const Nav = (): JSX.Element => {
         borderBottom="1px"
         borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
       >
-        <Link
-          onClick={() => {
-            navigate('/');
-          }}
-        >
-          <Box>Meetup Management System</Box>
-        </Link>
-        {isLoggedIn && user != null ? (
-          <NavbarDropdown
-            nickname={user.displayName}
-            isOrganizer={user.isOrganizer}
-          />
-        ) : (
-          <GuestButtons />
-        )}
+        <HStack flexGrow={1} gap={1}>
+          {sidebar != null && sidebar ? (
+            <Show below={'md'}>
+              <Icon as={FiMenu} onClick={onOpen} />
+            </Show>
+          ) : null}
+          <Link
+            onClick={() => {
+              navigate('/');
+            }}
+          >
+            <Box>Meetup Management System</Box>
+          </Link>
+          <Spacer />
+          {isLoggedIn && user != null ? (
+            <NavbarDropdown
+              nickname={user.displayName}
+              isOrganizer={user.isOrganizer}
+            />
+          ) : (
+            <GuestButtons />
+          )}
+        </HStack>
       </Flex>
     </>
   );
@@ -237,36 +253,5 @@ const NavItem = ({
     </Link>
   );
 };
-
-// interface MobileProps extends FlexProps {
-//   onOpen: () => void;
-// }
-
-// const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
-//   return (
-//     <Flex
-//       ml={{ base: 0, md: 60 }}
-//       px={{ base: 4, md: 24 }}
-//       height="20"
-//       alignItems="center"
-//       bg={useColorModeValue('white', 'gray.900')}
-//       borderBottomWidth="1px"
-//       borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
-//       justifyContent="flex-start"
-//       {...rest}
-//     >
-//       <IconButton
-//         variant="outline"
-//         onClick={onOpen}
-//         aria-label="open menu"
-//         icon={<FiMenu />}
-//       />
-
-//       <Text fontSize="xl" ml="8" fontWeight="bold">
-//         {import.meta.env.VITE_APP_TITLE}
-//       </Text>
-//     </Flex>
-//   );
-// };
 
 export default Nav;
