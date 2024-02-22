@@ -5,6 +5,7 @@ import Homepage from './pages/Homepage';
 import LoginPage from './pages/LoginPage';
 import NewMeetupPage from './pages/NewMeetupPage';
 import OrganizerDashboard from './pages/OrganizerDashboard';
+import OrganizerMeetupPage from './pages/OrganizerMeetupPage';
 import RegisterPage from './pages/RegisterPage';
 
 import { Provider } from 'react-redux';
@@ -20,6 +21,7 @@ const App = (): JSX.Element => {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/organizer" element={<OrganizerDashboard />} />
           <Route path="/newmeetup" element={<NewMeetupPage />} />
+          <Route path="/meetup/:meetupId" element={<OrganizerMeetupPage />} />
         </Routes>
       </Router>
     </Provider>
