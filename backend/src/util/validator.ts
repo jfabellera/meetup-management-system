@@ -1,33 +1,4 @@
-import JoiDate from '@joi/date';
-import JoiBase from 'joi';
-import passwordComplexity from 'joi-password-complexity';
 import { z } from 'zod';
-
-const Joi = JoiBase.extend(JoiDate);
-
-const validator = (schema: JoiBase.Schema) => (payload: any) =>
-  schema.validate(payload, { abortEarly: false });
-
-const passwordComplexityOptions = {
-  min: 3,
-  max: 30,
-  lowerCase: 1,
-  upperCase: 1,
-  numeric: 1,
-  symbol: 1,
-  requirementCount: 4,
-};
-
-export const validatePassword = (
-  password: string
-): JoiBase.ValidationResult<string> => {
-  if (password == null) {
-    password = '';
-  }
-  return passwordComplexity(passwordComplexityOptions, '"password"').validate(
-    password
-  );
-};
 
 export const createMeetupSchema = z.object({
   name: z.string().min(3),
