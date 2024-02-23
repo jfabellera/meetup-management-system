@@ -33,7 +33,10 @@ const checkMeetupOrganizer = async (
     id: meetupId,
   });
 
-  if (meetup != null && meetup.organizer_ids.includes(userId)) {
+  if (
+    meetup != null &&
+    meetup.organizers.filter((organizer) => organizer.id === userId).length > 0
+  ) {
     return true;
   }
   return false;
@@ -78,8 +81,14 @@ export const authChecker =
 
       if (rules != null) {
         // Account type overrides
-        if (rules.includes(Rule.overrideOrganizer) && user.is_organizer) next();
-        if (rules.includes(Rule.overrideAdmin) && user.is_admin) next();
+        if (rules.includes(Rule.overrideOrganizer) && user.is_organizer) {
+          next();
+          return;
+        }
+        if (rules.includes(Rule.overrideAdmin) && user.is_admin) {
+          next();
+          return;
+        }
 
         // Account type requires
         if (rules.includes(Rule.requireOrganizer) && !user.is_organizer)
@@ -102,8 +111,11 @@ export const authChecker =
 
       // If accessing a ticket, check that the requestor is the owner of the ticket
       if (req.params.ticket_id != null) {
-        const ticket = await Ticket.findOneBy({
-          id: parseInt(req.params.ticket_id),
+        const ticket = await Ticket.findOne({
+          relations: { user: true },
+          where: {
+            id: parseInt(req.params.ticket_id),
+          },
         });
 
         if (ticket == null)
@@ -120,7 +132,7 @@ export const authChecker =
           next();
         }
 
-        if (user.id !== ticket.user_id) {
+        if (user.id !== ticket.user.id) {
           return reject(res);
         }
       }
@@ -130,8 +142,13 @@ export const authChecker =
         req.params.meetup_id != null &&
         (rules == null || !rules.includes(Rule.ignoreMeetupOrganizer))
       ) {
-        const meetup = await Meetup.findOneBy({
-          id: parseInt(req.params.meetup_id),
+        const meetup = await Meetup.findOne({
+          relations: {
+            organizers: true,
+          },
+          where: {
+            id: parseInt(req.params.meetup_id),
+          },
         });
 
         if (meetup == null)
@@ -140,7 +157,12 @@ export const authChecker =
         // Pass meetup to next function
         res.locals.meetup = meetup;
 
-        if (!meetup.organizer_ids.includes(user.id)) {
+        if (
+          !(
+            meetup.organizers.filter((organizer) => organizer.id === user.id)
+              .length > 0
+          )
+        ) {
           return reject(res);
         }
       }

@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { ILike } from 'typeorm';
 import config from '../config';
 import { User } from '../entity/User';
-import { validatePassword, validateUser } from '../util/validator';
+import { createUserSchema, editUserSchema } from '../util/validator';
 
 export interface TokenData {
   id: number;
@@ -23,32 +23,16 @@ export const createUser = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { email, first_name, last_name, nick_name, password } = req.body;
+  const result = createUserSchema.safeParse(req.body);
 
-  // TODO(jan): Make this cleaner (schema validation + password validation)
-  // Validate all of schema except password_hash (not yet generated)
-  const { error, value } = validateUser({
-    email,
-    first_name,
-    last_name,
-    nick_name,
-  });
-
-  if (error != null) {
-    return res.status(400).json(error.details);
-  }
-
-  // Validate password
-  const passwordValidationResult = validatePassword(password);
-
-  if (passwordValidationResult.error != null) {
-    return res.status(400).json(passwordValidationResult.error.details);
+  if (!result.success) {
+    return res.status(400).json(result.error);
   }
 
   // Check if email is taken
   const existingUser = await User.findOne({
     where: {
-      email: ILike(value.email),
+      email: ILike(req.body.email),
     },
   });
 
@@ -57,9 +41,15 @@ export const createUser = async (
   }
 
   // Hash password and create
-  value.password_hash = await hashPassword(password);
+  const password_hash = await hashPassword(req.body.password);
 
-  const newUser = User.create(value);
+  const newUser = User.create({
+    email: req.body.email,
+    first_name: req.body.first_name,
+    last_name: req.body.last_name,
+    nick_name: req.body.nick_name,
+    password_hash,
+  });
   await newUser.save();
 
   return res.status(201).json(newUser);
@@ -70,16 +60,14 @@ export const updateUser = async (
   res: Response
 ): Promise<Response> => {
   const { user_id } = req.params;
-  const {
-    email,
-    first_name,
-    last_name,
-    nick_name,
-    is_organizer,
-    is_admin,
-    password,
-  } = req.body;
 
+  const result = editUserSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
+
+  // Check if user exists
   const user = await User.findOneBy({
     id: parseInt(user_id),
   });
@@ -91,7 +79,7 @@ export const updateUser = async (
   // Check if email is taken
   const existingUser = await User.findOne({
     where: {
-      email: ILike(email),
+      email: ILike(req.body.email),
     },
   });
 
@@ -99,30 +87,19 @@ export const updateUser = async (
     return res.status(409).json({ message: 'Email is taken.' });
   }
 
-  user.email = email ?? user.email;
-  user.first_name = first_name ?? user.first_name;
-  user.last_name = last_name ?? user.last_name;
-  user.nick_name = nick_name ?? user.nick_name;
+  user.email = req.body.email ?? user.email;
+  user.first_name = req.body.first_name ?? user.first_name;
+  user.last_name = req.body.last_name ?? user.last_name;
+  user.nick_name = req.body.nick_name ?? user.nick_name;
 
   // Require admin
   if ((res.locals.requestor as User).is_admin) {
-    user.is_organizer = is_organizer ?? user.is_organizer;
-    user.is_admin = is_admin ?? user.is_admin;
+    user.is_organizer = req.body.is_organizer ?? user.is_organizer;
+    user.is_admin = req.body.is_admin ?? user.is_admin;
   }
 
-  if (password != null) {
-    const passwordValidationResult = validatePassword(password);
-    if (passwordValidationResult.error != null) {
-      return res.status(400).json(passwordValidationResult.error.details);
-    }
-
-    user.password_hash = await hashPassword(password);
-  }
-
-  const { error } = validateUser(user);
-
-  if (error != null) {
-    return res.status(400).json(error.details);
+  if (req.body.password != null) {
+    user.password_hash = await hashPassword(req.body.password);
   }
 
   await user.save();

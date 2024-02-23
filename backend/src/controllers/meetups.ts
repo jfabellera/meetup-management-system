@@ -2,18 +2,11 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
 import { type ParsedQs } from 'qs';
-import {
-  ArrayOverlap,
-  ILike,
-  In,
-  type FindOptionsOrder,
-  type FindOptionsWhere,
-} from 'typeorm';
+import { ILike, type FindOptionsOrder, type FindOptionsWhere } from 'typeorm';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
-import { User } from '../entity/User';
 import { geocode, getUtcOffset } from '../util/externalApis';
-import { createMeetupSchema, validateMeetup } from '../util/validator';
+import { createMeetupSchema, editMeetupSchema } from '../util/validator';
 
 dayjs.extend(utc);
 
@@ -62,20 +55,16 @@ const mapMeetupInfo = async (
   if (type === MeetupInfoDetailLevel.Detailed) {
     meetupInfo.location.full_address = meetup.address;
 
-    // Get organizer names
-    const organizers = await User.find({
-      select: ['nick_name'],
-      where: {
-        id: In(meetup.organizer_ids),
-      },
-    });
-
-    meetupInfo.organizers = organizers.map((organizer) => organizer.nick_name);
+    meetupInfo.organizers = meetup.organizers.map(
+      (organizer) => organizer.nick_name
+    );
 
     // Get ticket details
     const ticketCount = await Ticket.count({
       where: {
-        meetup_id: meetup.id,
+        meetup: {
+          id: meetup.id,
+        },
       },
     });
 
@@ -93,9 +82,9 @@ const createMeetupsFilter = (query: ParsedQs): FindOptionsWhere<Meetup> => {
 
   if (query.by_organizer_id != null) {
     const organizerId = Number(query.by_organizer_id);
-    findOptionsWhere.organizer_ids = ArrayOverlap<number>(
-      Number.isNaN(organizerId) ? [] : [organizerId]
-    );
+    findOptionsWhere.organizers = {
+      id: organizerId,
+    };
   }
 
   if (query.by_city != null) {
@@ -153,6 +142,9 @@ export const getAllMeetups = async (
   // Query
   const meetups: Array<Promise<MeetupInfo>> = (
     await Meetup.find({
+      relations: {
+        organizers: true,
+      },
       where: findOptionsWhere,
       order: findOptionsOrder,
     })
@@ -176,8 +168,13 @@ export const getMeetup = async (
       ? MeetupInfoDetailLevel.Simple
       : MeetupInfoDetailLevel.Detailed;
 
-  const meetup = await Meetup.findOneBy({
-    id: parseInt(meetup_id),
+  const meetup = await Meetup.findOne({
+    relations: {
+      organizers: true,
+    },
+    where: {
+      id: parseInt(meetup_id),
+    },
   });
 
   if (meetup == null) {
@@ -203,7 +200,7 @@ export const createMeetup = async (
     name: result.data.name,
     date: result.data.date,
     address: result.data.address,
-    organizer_ids: result.data.organizer_ids ?? [],
+    organizers: [],
     has_raffle: result.data.has_raffle,
     capacity: result.data.capacity,
     duration_hours: result.data.duration_hours,
@@ -211,10 +208,10 @@ export const createMeetup = async (
   });
 
   // Add requestor to front of organizer list
-  newMeetup.organizer_ids.unshift(parseInt(res.locals.requestor.id));
+  newMeetup.organizers.unshift(res.locals.requestor);
 
   // Remove duplicates
-  newMeetup.organizer_ids = Array.from(new Set(newMeetup.organizer_ids));
+  newMeetup.organizers = Array.from(new Set(newMeetup.organizers));
 
   // Check if meetup name is taken
   const existingMeetup = await Meetup.findOne({
@@ -263,7 +260,12 @@ export const updateMeetup = async (
   res: Response
 ): Promise<Response> => {
   const { meetup_id } = req.params;
-  const { name, date, organizer_ids, has_raffle } = req.body;
+
+  const result = editMeetupSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
 
   const meetup = await Meetup.findOneBy({
     id: parseInt(meetup_id),
@@ -276,7 +278,7 @@ export const updateMeetup = async (
   // Check if meetup name is taken
   const existingMeetup = await Meetup.findOne({
     where: {
-      name: ILike(name),
+      name: ILike(req.body.name),
     },
   });
 
@@ -284,36 +286,36 @@ export const updateMeetup = async (
     return res.status(409).json({ message: 'Meetup name is taken.' });
   }
 
-  meetup.name = name ?? meetup.name;
-  meetup.date = date ?? meetup.date;
-  meetup.has_raffle = has_raffle ?? meetup.has_raffle;
+  meetup.name = req.body.name ?? meetup.name;
+  meetup.date = req.body.date ?? meetup.date;
+  meetup.duration_hours = req.body.duration ?? meetup.duration_hours;
+  meetup.has_raffle = req.body.has_raffle ?? meetup.has_raffle;
+  meetup.capacity = req.body.capacity ?? meetup.capacity;
+  meetup.image_url = req.body.image_url ?? meetup.image_url;
+
+  // TODO(jan): Add ability to edit address
+  // TODO(jan): Implement this correctly with new typeorm entities
 
   // Only allow "head" organizer to update organizer list
-  if (
-    meetup.organizer_ids[0] === parseInt(res.locals.requestor.id) &&
-    organizer_ids != null
-  ) {
-    meetup.organizer_ids = organizer_ids;
+  // if (
+  //   meetup.organizer_ids[0] === parseInt(res.locals.requestor.id) &&
+  //   organizer_ids != null
+  // ) {
+  //   meetup.organizer_ids = organizer_ids;
 
-    // Cast as number[]
-    meetup.organizer_ids = meetup.organizer_ids.map((value) => Number(value));
+  //   // Cast as number[]
+  //   meetup.organizer_ids = meetup.organizer_ids.map((value) => Number(value));
 
-    // Add requestor to front of organizer list (prevent head organizer from removing themselves)
-    meetup.organizer_ids.unshift(parseInt(res.locals.requestor.id));
+  //   // Add requestor to front of organizer list (prevent head organizer from removing themselves)
+  //   meetup.organizer_ids.unshift(parseInt(res.locals.requestor.id));
 
-    // Remove duplicates
-    meetup.organizer_ids = Array.from(new Set(meetup.organizer_ids));
-  } else if (organizer_ids != null) {
-    return res.status(401).json({
-      message: 'Only the head organizer can edit the organizer list.',
-    });
-  }
-
-  const { error } = validateMeetup(meetup);
-
-  if (error != null) {
-    return res.status(400).json(error.details);
-  }
+  //   // Remove duplicates
+  //   meetup.organizer_ids = Array.from(new Set(meetup.organizer_ids));
+  // } else if (organizer_ids != null) {
+  //   return res.status(401).json({
+  //     message: 'Only the head organizer can edit the organizer list.',
+  //   });
+  // }
 
   await meetup.save();
 
@@ -334,7 +336,7 @@ export const deleteMeetup = async (
     return res.status(404).json({ message: 'Invalid meetup ID.' });
   }
 
-  if (Number(meetup.organizer_ids[0]) !== parseInt(res.locals.requestor.id)) {
+  if (Number(meetup.organizers[0].id) !== parseInt(res.locals.requestor.id)) {
     return res.status(401).json({
       message: 'Only the head organizer is authorized to delete this meetup.',
     });
