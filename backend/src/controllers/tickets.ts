@@ -1,6 +1,6 @@
 import { type Request, type Response } from 'express';
 import { Ticket } from '../entity/Ticket';
-import { createTicketSchema, validateTicket } from '../util/validator';
+import { createTicketSchema, editTicketSchema } from '../util/validator';
 
 export interface SimpleTicketInfo {
   id: number;
@@ -76,7 +76,12 @@ export const updateTicket = async (
   res: Response
 ): Promise<Response> => {
   const { ticket_id } = req.params;
-  const { is_checked_in, raffle_entries, raffle_wins } = req.body;
+
+  const result = editTicketSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
 
   const ticket = await Ticket.findOneBy({
     id: parseInt(ticket_id),
@@ -87,15 +92,9 @@ export const updateTicket = async (
   }
 
   // TODO(jan): Do we want to throw an error when meetup_id or user_id is found in req.body?
-  ticket.is_checked_in = is_checked_in ?? ticket.is_checked_in;
-  ticket.raffle_entries = raffle_entries ?? ticket.raffle_entries;
-  ticket.raffle_wins = raffle_wins ?? ticket.raffle_wins;
-
-  const { error } = validateTicket(ticket);
-
-  if (error != null) {
-    return res.status(400).json(error.details);
-  }
+  ticket.is_checked_in = req.body.is_checked_in ?? ticket.is_checked_in;
+  ticket.raffle_entries = req.body.raffle_entries ?? ticket.raffle_entries;
+  ticket.raffle_wins = req.body.raffle_wins ?? ticket.raffle_wins;
 
   await ticket.save();
 

@@ -8,15 +8,6 @@ const Joi = JoiBase.extend(JoiDate);
 const validator = (schema: JoiBase.Schema) => (payload: any) =>
   schema.validate(payload, { abortEarly: false });
 
-const ticketSchema = Joi.object({
-  id: Joi.number(),
-  meetup_id: Joi.number().required(),
-  user_id: Joi.number().required(),
-  is_checked_in: Joi.boolean().default(false),
-  raffle_entries: Joi.number().min(0).default(0),
-  raffle_wins: Joi.number().min(0).default(0).max(Joi.ref('raffle_entries')),
-});
-
 const passwordComplexityOptions = {
   min: 3,
   max: 30,
@@ -37,8 +28,6 @@ export const validatePassword = (
     password
   );
 };
-
-export const validateTicket = validator(ticketSchema);
 
 export const createMeetupSchema = z.object({
   name: z.string().min(3),
@@ -81,6 +70,14 @@ export const createTicketSchema = z.object({
 });
 
 export type CreateTicketPayload = z.infer<typeof createTicketSchema>;
+
+export const editTicketSchema = z.object({
+  is_checked_in: z.boolean().optional(),
+  raffle_entries: z.number().min(0).optional(),
+  raffle_wins: z.number().min(0).optional(),
+});
+
+export type EditTicketPayload = z.infer<typeof editTicketSchema>;
 
 export const createUserSchema = z.object({
   email: z.string().email(),
