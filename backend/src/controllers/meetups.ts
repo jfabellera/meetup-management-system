@@ -346,3 +346,35 @@ export const deleteMeetup = async (
 
   return res.status(204).end();
 };
+
+export const getMeetupAttendees = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { meetup_id } = req.params;
+
+  const meetup = await Meetup.findOne({
+    select: {
+      tickets: {
+        id: true,
+        is_checked_in: true,
+        user: {
+          first_name: true,
+          last_name: true,
+          nick_name: true,
+          email: true,
+        },
+      },
+    },
+    relations: { tickets: { user: true } },
+    where: {
+      id: parseInt(meetup_id),
+    },
+  });
+
+  if (meetup == null) {
+    return res.status(404).json({ message: 'Invalid meetupID.' });
+  }
+
+  return res.json(meetup.tickets);
+};

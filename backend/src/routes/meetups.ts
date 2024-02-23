@@ -4,6 +4,7 @@ import {
   deleteMeetup,
   getAllMeetups,
   getMeetup,
+  getMeetupAttendees,
   updateMeetup,
 } from '../controllers/meetups';
 import { createTicket } from '../controllers/tickets';
@@ -32,6 +33,11 @@ router.post(
   '/:meetup_id/rsvp',
   authChecker([Rule.ignoreMeetupOrganizer]) as RequestHandler,
   createTicket as RequestHandler
+);
+router.get(
+  '/:meetup_id/attendees',
+  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  getMeetupAttendees as RequestHandler
 );
 
 export default router;
