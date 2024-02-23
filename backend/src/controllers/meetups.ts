@@ -75,7 +75,9 @@ const mapMeetupInfo = async (
     // Get ticket details
     const ticketCount = await Ticket.count({
       where: {
-        meetup_id: meetup.id,
+        meetup: {
+          id: meetup.id,
+        },
       },
     });
 

@@ -90,3 +90,10 @@ export const createMeetupSchema = z.object({
 });
 
 export type CreateMeetupPayload = z.infer<typeof createMeetupSchema>;
+
+export const createTicketSchema = z.object({
+  meetup_id: z.number(),
+  user_id: z.number(),
+});
+
+export type CreateTicketPayload = z.infer<typeof createTicketSchema>;

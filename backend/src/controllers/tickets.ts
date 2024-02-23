@@ -1,6 +1,6 @@
 import { type Request, type Response } from 'express';
 import { Ticket } from '../entity/Ticket';
-import { validateTicket } from '../util/validator';
+import { createTicketSchema, validateTicket } from '../util/validator';
 
 export interface SimpleTicketInfo {
   id: number;
@@ -40,26 +40,32 @@ export const createTicket = async (
   const meetup_id = parseInt(req.params.meetup_id);
   const user_id = parseInt(res.locals.requestor.id);
 
-  const { error, value } = validateTicket({
-    meetup_id,
-    user_id,
-  });
+  const result = createTicketSchema.safeParse({ meetup_id, user_id });
 
-  if (error != null) {
-    return res.status(400).json(error.details);
+  if (!result.success) {
+    return res.status(400).json(result.error);
   }
 
   // Check if ticket already exists
   const existingTicket = await Ticket.findOneBy({
-    meetup_id: value.meetup_id,
-    user_id: value.user_id,
+    meetup: { id: meetup_id },
+    user: {
+      id: user_id,
+    },
   });
 
   if (existingTicket != null) {
     return res.status(409).json({ message: 'Ticket already exists.' });
   }
 
-  const newTicket = Ticket.create(value);
+  const newTicket = Ticket.create({
+    meetup: {
+      id: meetup_id,
+    },
+    user: {
+      id: user_id,
+    },
+  });
   await newTicket.save();
 
   return res.status(201).json(newTicket);
@@ -121,12 +127,30 @@ export const getUserTickets = async (
 ): Promise<Response> => {
   const { user_id } = req.params;
 
-  const tickets: SimpleTicketInfo[] = await Ticket.find({
-    select: ['id', 'meetup_id'],
+  // TODO(jan): make this better
+
+  const tickets = await Ticket.find({
+    relations: { meetup: true },
+    select: {
+      id: true,
+      meetup: {
+        id: true,
+      },
+    },
     where: {
-      user_id: parseInt(user_id),
+      user: {
+        id: parseInt(user_id),
+      },
     },
   });
 
-  return res.json(tickets);
+  const ticketsInfo: SimpleTicketInfo[] = tickets.map((ticket) => {
+    const ticketInfo: SimpleTicketInfo = {
+      id: ticket.id,
+      meetup_id: ticket.meetup.id,
+    };
+    return ticketInfo;
+  });
+
+  return res.json(ticketsInfo);
 };

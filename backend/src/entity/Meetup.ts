@@ -1,4 +1,11 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Ticket } from './Ticket';
 
 @Entity({ name: 'meetups' })
 export class Meetup extends BaseEntity {
@@ -40,4 +47,7 @@ export class Meetup extends BaseEntity {
 
   @Column({ type: 'varchar', length: 255 })
   image_url: string;
+
+  @OneToMany(() => Ticket, (ticket) => ticket.meetup)
+  tickets: Ticket[];
 }

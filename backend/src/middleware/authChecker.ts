@@ -102,8 +102,11 @@ export const authChecker =
 
       // If accessing a ticket, check that the requestor is the owner of the ticket
       if (req.params.ticket_id != null) {
-        const ticket = await Ticket.findOneBy({
-          id: parseInt(req.params.ticket_id),
+        const ticket = await Ticket.findOne({
+          relations: { user: true },
+          where: {
+            id: parseInt(req.params.ticket_id),
+          },
         });
 
         if (ticket == null)
@@ -120,7 +123,7 @@ export const authChecker =
           next();
         }
 
-        if (user.id !== ticket.user_id) {
+        if (user.id !== ticket.user.id) {
           return reject(res);
         }
       }
