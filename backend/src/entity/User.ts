@@ -24,10 +24,10 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 30 })
   nick_name: string;
 
-  @Column({ type: 'boolean' })
+  @Column({ type: 'boolean', default: false })
   is_organizer: boolean;
 
-  @Column({ type: 'boolean' })
+  @Column({ type: 'boolean', default: false })
   is_admin: boolean;
 
   @Column({ type: 'varchar', length: 60 })
