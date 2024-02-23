@@ -81,8 +81,14 @@ export const authChecker =
 
       if (rules != null) {
         // Account type overrides
-        if (rules.includes(Rule.overrideOrganizer) && user.is_organizer) next();
-        if (rules.includes(Rule.overrideAdmin) && user.is_admin) next();
+        if (rules.includes(Rule.overrideOrganizer) && user.is_organizer) {
+          next();
+          return;
+        }
+        if (rules.includes(Rule.overrideAdmin) && user.is_admin) {
+          next();
+          return;
+        }
 
         // Account type requires
         if (rules.includes(Rule.requireOrganizer) && !user.is_organizer)
