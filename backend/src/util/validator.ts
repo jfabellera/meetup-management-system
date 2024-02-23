@@ -8,19 +8,6 @@ const Joi = JoiBase.extend(JoiDate);
 const validator = (schema: JoiBase.Schema) => (payload: any) =>
   schema.validate(payload, { abortEarly: false });
 
-const userSchema = Joi.object({
-  id: Joi.number(),
-  email: Joi.string()
-    .email({ tlds: { allow: false } }) // Less strict, allow any TLD to match frontend validation
-    .required(),
-  first_name: Joi.string().required(),
-  last_name: Joi.string().required(),
-  nick_name: Joi.string().required(),
-  is_organizer: Joi.boolean().default(false),
-  is_admin: Joi.boolean().default(false),
-  password_hash: Joi.string().default(''),
-});
-
 export const meetupSchema = Joi.object({
   id: Joi.number(),
   name: Joi.string().required(),
@@ -71,7 +58,6 @@ export const validatePassword = (
   );
 };
 
-export const validateUser = validator(userSchema);
 export const validateMeetup = validator(meetupSchema);
 export const validateTicket = validator(ticketSchema);
 
@@ -97,3 +83,25 @@ export const createTicketSchema = z.object({
 });
 
 export type CreateTicketPayload = z.infer<typeof createTicketSchema>;
+
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  first_name: z.string(),
+  last_name: z.string(),
+  nick_name: z.string(),
+  password: z.string(), // TODO(jan): check for password strength?
+});
+
+export type CreateUserSchema = z.infer<typeof createUserSchema>;
+
+export const editUserSchema = z.object({
+  email: z.string().email().optional(),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+  nick_name: z.string().optional(),
+  password: z.string().optional(), // TODO(jan): check for password strength?
+  is_organizer: z.boolean().optional(),
+  is_admin: z.boolean().optional(),
+});
+
+export type EditUserSchema = z.infer<typeof editUserSchema>;
