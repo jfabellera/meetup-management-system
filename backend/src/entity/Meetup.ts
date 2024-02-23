@@ -1,4 +1,14 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Ticket } from './Ticket';
+import { User } from './User';
 
 @Entity({ name: 'meetups' })
 export class Meetup extends BaseEntity {
@@ -11,8 +21,9 @@ export class Meetup extends BaseEntity {
   @Column({ type: 'timestamp with time zone' })
   date: string;
 
-  @Column({ type: 'bigint', array: true })
-  organizer_ids: number[];
+  @ManyToMany(() => User, (user) => user.id)
+  @JoinTable()
+  organizers: User[];
 
   @Column({ type: 'boolean' })
   has_raffle: boolean;
@@ -40,4 +51,7 @@ export class Meetup extends BaseEntity {
 
   @Column({ type: 'varchar', length: 255 })
   image_url: string;
+
+  @OneToMany(() => Ticket, (ticket) => ticket.meetup)
+  tickets: Ticket[];
 }
