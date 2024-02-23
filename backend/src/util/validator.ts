@@ -8,26 +8,6 @@ const Joi = JoiBase.extend(JoiDate);
 const validator = (schema: JoiBase.Schema) => (payload: any) =>
   schema.validate(payload, { abortEarly: false });
 
-export const meetupSchema = Joi.object({
-  id: Joi.number(),
-  name: Joi.string().required(),
-  date: Joi.date().format('YYYY-MM-DDTHH:mm:ss').required().raw(),
-  organizer_ids: Joi.array()
-    .items(Joi.number())
-    .default([] as number[]),
-  has_raffle: Joi.boolean().default(false),
-  capacity: Joi.number().required(),
-  duration_hours: Joi.number().required(),
-  address_line_1: Joi.string().required(),
-  address_line_2: Joi.string(),
-  city: Joi.string().required(),
-  state: Joi.string(),
-  country: Joi.string().required(),
-  postal_code: Joi.string().required(),
-  utc_offset: Joi.number().default(0),
-  image_url: Joi.string(),
-});
-
 const ticketSchema = Joi.object({
   id: Joi.number(),
   meetup_id: Joi.number().required(),
@@ -58,7 +38,6 @@ export const validatePassword = (
   );
 };
 
-export const validateMeetup = validator(meetupSchema);
 export const validateTicket = validator(ticketSchema);
 
 export const createMeetupSchema = z.object({
@@ -76,6 +55,25 @@ export const createMeetupSchema = z.object({
 });
 
 export type CreateMeetupPayload = z.infer<typeof createMeetupSchema>;
+
+export const editMeetupSchema = z.object({
+  name: z.string().min(3).optional(),
+  date: z
+    .string()
+    .datetime({
+      offset: false,
+      message: 'Datetime must be in the format of YYYY-MM-DDT:HH:mm:ssZ',
+    })
+    .optional(),
+  address: z.string().optional(),
+  duration_hours: z.number().gt(0).optional(),
+  has_raffle: z.boolean().optional(),
+  capacity: z.number().gt(0).optional(),
+  image_url: z.string().optional(),
+  organizer_ids: z.array(z.number()).optional(),
+});
+
+export type EditMeetupSchema = z.infer<typeof editMeetupSchema>;
 
 export const createTicketSchema = z.object({
   meetup_id: z.number(),

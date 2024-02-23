@@ -6,7 +6,7 @@ import { ILike, type FindOptionsOrder, type FindOptionsWhere } from 'typeorm';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { geocode, getUtcOffset } from '../util/externalApis';
-import { createMeetupSchema, validateMeetup } from '../util/validator';
+import { createMeetupSchema, editMeetupSchema } from '../util/validator';
 
 dayjs.extend(utc);
 
@@ -260,7 +260,12 @@ export const updateMeetup = async (
   res: Response
 ): Promise<Response> => {
   const { meetup_id } = req.params;
-  const { name, date, organizer_ids, has_raffle } = req.body;
+
+  const result = editMeetupSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
 
   const meetup = await Meetup.findOneBy({
     id: parseInt(meetup_id),
@@ -273,7 +278,7 @@ export const updateMeetup = async (
   // Check if meetup name is taken
   const existingMeetup = await Meetup.findOne({
     where: {
-      name: ILike(name),
+      name: ILike(req.body.name),
     },
   });
 
@@ -281,10 +286,14 @@ export const updateMeetup = async (
     return res.status(409).json({ message: 'Meetup name is taken.' });
   }
 
-  meetup.name = name ?? meetup.name;
-  meetup.date = date ?? meetup.date;
-  meetup.has_raffle = has_raffle ?? meetup.has_raffle;
+  meetup.name = req.body.name ?? meetup.name;
+  meetup.date = req.body.date ?? meetup.date;
+  meetup.duration_hours = req.body.duration ?? meetup.duration_hours;
+  meetup.has_raffle = req.body.has_raffle ?? meetup.has_raffle;
+  meetup.capacity = req.body.capacity ?? meetup.capacity;
+  meetup.image_url = req.body.image_url ?? meetup.image_url;
 
+  // TODO(jan): Add ability to edit address
   // TODO(jan): Implement this correctly with new typeorm entities
 
   // Only allow "head" organizer to update organizer list
@@ -307,12 +316,6 @@ export const updateMeetup = async (
   //     message: 'Only the head organizer can edit the organizer list.',
   //   });
   // }
-
-  const { error } = validateMeetup(meetup);
-
-  if (error != null) {
-    return res.status(400).json(error.details);
-  }
 
   await meetup.save();
 
