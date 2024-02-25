@@ -9,7 +9,7 @@ import {
   type BoxProps,
   type FlexProps,
 } from '@chakra-ui/react';
-import { type ReactNode } from 'react';
+import { type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { type IconType } from 'react-icons';
 
 /**
@@ -25,12 +25,16 @@ interface SidebarProps {
   sidebarItems: SidebarItem[];
   isOpen: boolean;
   onClose: () => void;
+  value: string;
+  setValue: Dispatch<SetStateAction<string>>;
 }
 
 const Sidebar = ({
   sidebarItems,
   isOpen,
   onClose,
+  value,
+  setValue,
 }: SidebarProps): JSX.Element => {
   return (
     <Box height="100%" bg={useColorModeValue('gray.100', 'gray.900')}>
@@ -38,6 +42,8 @@ const Sidebar = ({
         sidebarItems={sidebarItems}
         onClose={onClose}
         display={{ base: 'none', md: 'block' }}
+        value={value}
+        setValue={setValue}
       />
       <Drawer
         isOpen={isOpen}
@@ -48,7 +54,12 @@ const Sidebar = ({
         // size="full"
       >
         <DrawerContent>
-          <SidebarContent sidebarItems={sidebarItems} onClose={onClose} />
+          <SidebarContent
+            sidebarItems={sidebarItems}
+            onClose={onClose}
+            value={value}
+            setValue={setValue}
+          />
         </DrawerContent>
       </Drawer>
     </Box>
@@ -58,11 +69,15 @@ const Sidebar = ({
 interface SidebarContentProps extends BoxProps {
   sidebarItems: SidebarItem[];
   onClose: () => void;
+  value: string;
+  setValue: Dispatch<SetStateAction<string>>;
 }
 
 const SidebarContent = ({
   sidebarItems,
   onClose,
+  value,
+  setValue,
   ...rest
 }: SidebarContentProps): JSX.Element => {
   return (
@@ -79,7 +94,14 @@ const SidebarContent = ({
         <CloseButton display={{ base: 'flex', md: 'none' }} onClick={onClose} />
       </Flex>
       {sidebarItems.map((link) => (
-        <NavItem key={link.name} icon={link.icon}>
+        <NavItem
+          key={link.name}
+          icon={link.icon}
+          selected={link.name === value}
+          onClick={() => {
+            setValue(link.name);
+          }}
+        >
           {link.name}
         </NavItem>
       ))}
@@ -90,9 +112,15 @@ const SidebarContent = ({
 interface NavItemProps extends FlexProps {
   icon: IconType;
   children: ReactNode;
+  selected: boolean;
 }
 
-const NavItem = ({ icon, children, ...rest }: NavItemProps): JSX.Element => {
+const NavItem = ({
+  icon,
+  children,
+  selected,
+  ...rest
+}: NavItemProps): JSX.Element => {
   return (
     <Box
       as="a"
@@ -111,6 +139,8 @@ const NavItem = ({ icon, children, ...rest }: NavItemProps): JSX.Element => {
           bg: 'cyan.400',
           color: 'white',
         }}
+        background={selected ? 'cyan.400' : 'inherit'}
+        color={selected ? 'white' : 'inherit'}
         {...rest}
       >
         {icon != null && (
