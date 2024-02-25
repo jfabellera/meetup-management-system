@@ -18,6 +18,7 @@ import { type IconType } from 'react-icons';
 
 export interface SidebarItem {
   name: string;
+  value: string;
   icon: IconType;
 }
 
@@ -95,11 +96,11 @@ const SidebarContent = ({
       </Flex>
       {sidebarItems.map((link) => (
         <NavItem
-          key={link.name}
+          key={link.value}
           icon={link.icon}
-          selected={link.name === value}
+          selected={link.value === value}
           onClick={() => {
-            setValue(link.name);
+            setValue(link.value);
           }}
         >
           {link.name}
@@ -122,12 +123,7 @@ const NavItem = ({
   ...rest
 }: NavItemProps): JSX.Element => {
   return (
-    <Box
-      as="a"
-      href="#"
-      style={{ textDecoration: 'none' }}
-      _focus={{ boxShadow: 'none' }}
-    >
+    <Box style={{ textDecoration: 'none' }} _focus={{ boxShadow: 'none' }}>
       <Flex
         align="center"
         p="4"
