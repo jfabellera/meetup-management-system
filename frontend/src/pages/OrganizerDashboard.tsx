@@ -46,7 +46,7 @@ const OrganizerDashboard = (): JSX.Element => {
                     ticketsAvailable={meetup.tickets?.available ?? NaN}
                     ticketsTotal={meetup.tickets?.total ?? NaN}
                     onClick={() => {
-                      navigate(`/meetup/${meetup.id}`);
+                      navigate(`/meetup/${meetup.id}/manage`);
                     }}
                   />
                 );
