@@ -24,6 +24,7 @@ const ManageMeetupAttendeesPage = (): JSX.Element => {
       padding={'0.5rem'}
       borderRadius={'md'}
       boxShadow={'sm'}
+      margin={{ base: '0.5rem', md: '1rem' }}
     >
       <Heading size={'lg'} paddingX={'1.5rem'} paddingY={'1rem'}>
         Attendees
