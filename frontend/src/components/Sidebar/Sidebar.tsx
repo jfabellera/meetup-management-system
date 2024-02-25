@@ -88,7 +88,6 @@ const SidebarContent = ({
       borderRightColor={useColorModeValue('gray.200', 'gray.700')}
       w={{ base: 'full', md: 60 }}
       h="full"
-      paddingY={'0.5rem'}
       {...rest}
     >
       <Flex justify={'right'}>
@@ -127,16 +126,14 @@ const NavItem = ({
       <Flex
         align="center"
         p="4"
-        mx="4"
-        borderRadius="lg"
         role="group"
         cursor="pointer"
+        background={selected ? 'blue.400' : 'inherit'}
+        color={selected ? 'white' : 'inherit'}
         _hover={{
-          bg: 'cyan.400',
+          bg: 'blue.500',
           color: 'white',
         }}
-        background={selected ? 'cyan.400' : 'inherit'}
-        color={selected ? 'white' : 'inherit'}
         {...rest}
       >
         {icon != null && (
