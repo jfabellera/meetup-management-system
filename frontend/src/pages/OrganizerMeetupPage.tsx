@@ -1,4 +1,5 @@
 import { Box, Heading } from '@chakra-ui/react';
+import { useState } from 'react';
 import { FiHome, FiSettings, FiUsers } from 'react-icons/fi';
 import { useParams } from 'react-router-dom';
 import Page from '../components/Page/Page';
@@ -10,13 +11,21 @@ const OrganizerMeetupPage = (): JSX.Element => {
   const { data: meetup } = useGetMeetupQuery(parseInt(meetupId ?? ''));
 
   const sidebarItems: SidebarItem[] = [
-    { name: 'Home', icon: FiHome },
-    { name: 'Attendees', icon: FiUsers },
-    { name: 'Meetup Settings', icon: FiSettings },
+    { name: 'Home', value: 'home', icon: FiHome },
+    { name: 'Attendees', value: 'attendees', icon: FiUsers },
+    { name: 'Meetup Settings', value: 'settings', icon: FiSettings },
   ];
 
+  const [sidebarValue, setSidebarValue] = useState<string>(
+    sidebarItems[0].value,
+  );
+
   return (
-    <Page sidebarItems={sidebarItems}>
+    <Page
+      sidebarItems={sidebarItems}
+      sidebarValue={sidebarValue}
+      setSidebarValue={setSidebarValue}
+    >
       <Box padding={'1rem'}>
         <Heading>{meetup?.name}</Heading>
       </Box>
