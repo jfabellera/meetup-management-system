@@ -49,7 +49,7 @@ const ManageMeetupPage = ({
       sidebarValue={sidebarValue}
       setSidebarValue={setSidebarValue}
     >
-      <Flex direction={'column'} height={'100%'}>
+      <Flex direction={'column'} height={'100%'} overflow={'scroll'}>
         <Heading width={'100%'} textAlign={'center'} marginTop={'1rem'}>
           {meetup?.name}
         </Heading>

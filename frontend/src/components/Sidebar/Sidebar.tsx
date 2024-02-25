@@ -105,6 +105,7 @@ const SidebarContent = ({
           onClick={() => {
             setValue(link.value);
             navigate(link.url);
+            onClose();
           }}
         >
           {link.name}

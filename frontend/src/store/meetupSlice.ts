@@ -11,7 +11,7 @@ export interface GetMeetupsOptions {
 
 export const meetupSlice = createApi({
   reducerPath: 'meetupSlice',
-  tagTypes: ['Meetups', 'Meetup'],
+  tagTypes: ['Meetups', 'Meetup', 'Attendees'],
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}:${config.apiPort}/`,
     prepareHeaders: (headers, { getState }) => {
@@ -46,6 +46,12 @@ export const meetupSlice = createApi({
       }),
       invalidatesTags: ['Meetups'],
     }),
+    getMeetupAttendees: builder.query<any, number>({
+      query: (meetupId) => ({
+        url: `meetups/${meetupId}/attendees`,
+      }),
+      providesTags: ['Attendees'],
+    }),
   }),
 });
 
@@ -53,4 +59,5 @@ export const {
   useGetMeetupsQuery,
   useGetMeetupQuery,
   useCreateMeetupMutation,
+  useGetMeetupAttendeesQuery,
 } = meetupSlice;
