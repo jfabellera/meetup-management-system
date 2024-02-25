@@ -6,14 +6,14 @@ import Page from '../components/Page/Page';
 import { type SidebarItem } from '../components/Sidebar/Sidebar';
 import { useGetMeetupQuery } from '../store/meetupSlice';
 
-interface OrganizerMeetupPageProps extends BoxProps {
+interface ManageMeetupPageProps extends BoxProps {
   children: ReactNode;
 }
 
-const OrganizerMeetupPage = ({
+const ManageMeetupPage = ({
   children,
   ...rest
-}: OrganizerMeetupPageProps): JSX.Element => {
+}: ManageMeetupPageProps): JSX.Element => {
   const { meetupId } = useParams();
   const { data: meetup } = useGetMeetupQuery(parseInt(meetupId ?? ''));
   const location = useLocation();
@@ -61,4 +61,4 @@ const OrganizerMeetupPage = ({
   );
 };
 
-export default OrganizerMeetupPage;
+export default ManageMeetupPage;

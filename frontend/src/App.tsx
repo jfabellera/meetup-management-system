@@ -16,7 +16,7 @@ import OrganizerDashboard from './pages/OrganizerDashboard';
 import RegisterPage from './pages/RegisterPage';
 
 import { Provider } from 'react-redux';
-import OrganizerMeetupPage from './pages/OrganizerMeetupPage';
+import ManageMeetupPage from './pages/ManageMeetupPage';
 import { store } from './store/store';
 
 const App = (): JSX.Element => {
@@ -32,9 +32,9 @@ const App = (): JSX.Element => {
           <Route
             path="/meetup/:meetupId/manage/"
             element={
-              <OrganizerMeetupPage>
+              <ManageMeetupPage>
                 <Outlet />
-              </OrganizerMeetupPage>
+              </ManageMeetupPage>
             }
           >
             <Route path="" element={<ManageMeetupHomePage />} />
