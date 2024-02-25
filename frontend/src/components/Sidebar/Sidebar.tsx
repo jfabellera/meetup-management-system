@@ -11,6 +11,7 @@ import {
 } from '@chakra-ui/react';
 import { type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { type IconType } from 'react-icons';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Adapted from https://chakra-templates.vercel.app/navigation/sidebar
@@ -20,6 +21,7 @@ export interface SidebarItem {
   name: string;
   value: string;
   icon: IconType;
+  url: string;
 }
 
 interface SidebarProps {
@@ -81,6 +83,8 @@ const SidebarContent = ({
   setValue,
   ...rest
 }: SidebarContentProps): JSX.Element => {
+  const navigate = useNavigate();
+
   return (
     <Box
       bg={useColorModeValue('white', 'gray.900')}
@@ -100,6 +104,7 @@ const SidebarContent = ({
           selected={link.value === value}
           onClick={() => {
             setValue(link.value);
+            navigate(link.url);
           }}
         >
           {link.name}
