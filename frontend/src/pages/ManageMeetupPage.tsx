@@ -53,7 +53,7 @@ const ManageMeetupPage = ({
         <Heading width={'100%'} textAlign={'center'} marginTop={'1rem'}>
           {meetup?.name}
         </Heading>
-        <Box flexGrow={1} {...rest}>
+        <Box flexGrow={1} padding={'1rem'} {...rest}>
           {children}
         </Box>
       </Flex>
