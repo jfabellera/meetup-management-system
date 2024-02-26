@@ -10,6 +10,7 @@ import {
   Spacer,
   Text,
   useBoolean,
+  useToast,
   type InputProps,
 } from '@chakra-ui/react';
 import dayjs from 'dayjs';
@@ -18,7 +19,7 @@ import { useFormik } from 'formik';
 import { useEffect } from 'react';
 import { FiEdit } from 'react-icons/fi';
 import { useParams } from 'react-router-dom';
-import { useGetMeetupQuery } from '../store/meetupSlice';
+import { useEditMeetupMutation, useGetMeetupQuery } from '../store/meetupSlice';
 import MeetupFormSchema from '../util/schemas/MeetupFormSchema';
 
 dayjs.extend(customParseFormat);
@@ -77,6 +78,8 @@ const ManageMeetupSettingsPage = (): JSX.Element => {
   const { meetupId } = useParams();
   const { data: meetup } = useGetMeetupQuery(parseInt(meetupId ?? '0'));
   const [editable, setEditable] = useBoolean(false);
+  const [editMeetup] = useEditMeetupMutation();
+  const toast = useToast();
   const formik = useFormik({
     initialValues: {
       name: '',
@@ -87,8 +90,31 @@ const ManageMeetupSettingsPage = (): JSX.Element => {
       capacity: 0,
       imageUrl: '',
     },
-    onSubmit: () => {
-      // TODO(jan): implement
+    onSubmit: async (values) => {
+      const result = await editMeetup({
+        meetupId: parseInt(meetupId ?? '0'),
+        payload: {
+          name: values.name,
+          date: new Date(`${values.date}T${values.startTime}Z`).toISOString(),
+          address: values.address,
+          duration_hours: values.duration,
+          capacity: values.capacity,
+          image_url: values.imageUrl,
+        },
+      });
+
+      if ('error' in result && 'data' in result.error) {
+        // is this allowed
+        const data: any = result.error.data;
+        toast({
+          title: 'Error creating meetup',
+          description: data.message,
+          status: 'error',
+          isClosable: true,
+        });
+      } else {
+        setEditable.off();
+      }
     },
     validationSchema: MeetupFormSchema,
     validateOnMount: true,
