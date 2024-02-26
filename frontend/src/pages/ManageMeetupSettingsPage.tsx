@@ -19,6 +19,7 @@ import { useFormik } from 'formik';
 import { useEffect } from 'react';
 import { FiEdit } from 'react-icons/fi';
 import { useParams } from 'react-router-dom';
+import { type EditMeetupPayload } from '../../../backend/src/util/validator';
 import { useEditMeetupMutation, useGetMeetupQuery } from '../store/meetupSlice';
 import MeetupFormSchema from '../util/schemas/MeetupFormSchema';
 
@@ -91,16 +92,27 @@ const ManageMeetupSettingsPage = (): JSX.Element => {
       imageUrl: '',
     },
     onSubmit: async (values) => {
+      const payload: EditMeetupPayload = {};
+      if (formik.initialValues.name !== values.name) payload.name = values.name;
+      if (
+        formik.initialValues.date !== values.date ||
+        formik.initialValues.startTime !== values.startTime
+      )
+        payload.date = new Date(
+          `${values.date}T${values.startTime}Z`,
+        ).toISOString();
+      if (formik.initialValues.address !== values.address)
+        payload.address = values.address;
+      if (formik.initialValues.duration !== values.duration)
+        payload.duration_hours = values.duration;
+      if (formik.initialValues.capacity !== values.capacity)
+        payload.capacity = values.capacity;
+      if (formik.initialValues.imageUrl !== values.imageUrl)
+        payload.image_url = values.imageUrl;
+
       const result = await editMeetup({
         meetupId: parseInt(meetupId ?? '0'),
-        payload: {
-          name: values.name,
-          date: new Date(`${values.date}T${values.startTime}Z`).toISOString(),
-          address: values.address,
-          duration_hours: values.duration,
-          capacity: values.capacity,
-          image_url: values.imageUrl,
-        },
+        payload,
       });
 
       if ('error' in result && 'data' in result.error) {
