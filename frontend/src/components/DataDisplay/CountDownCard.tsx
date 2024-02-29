@@ -7,12 +7,55 @@ import {
   type BoxProps,
 } from '@chakra-ui/react';
 import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import { useEffect, useMemo, useState } from 'react';
+dayjs.extend(duration);
+
+const convertToSmallestUnitOfTime = (
+  durationMs: number,
+): { amount: number; unit: string } => {
+  const duration = dayjs.duration(Math.abs(durationMs));
+  const days = Math.floor(duration.asDays());
+  const hours = Math.floor(duration.asHours());
+  const minutes = Math.floor(duration.asMinutes());
+  const seconds = Math.floor(duration.asSeconds());
+
+  if (days > 0) return { amount: days, unit: `day${days > 1 ? 's' : ''}` };
+  if (hours > 0) return { amount: hours, unit: `hour${hours > 1 ? 's' : ''}` };
+  if (minutes > 0)
+    return { amount: minutes, unit: `minute${minutes > 1 ? 's' : ''}` };
+  return { amount: seconds, unit: `second${seconds > 1 ? 's' : ''}` };
+};
 
 interface CountDownProps extends BoxProps {
-  date?: Date;
+  date: Date;
+  futureText: string;
+  pastText: string;
 }
 
-const CountDown = ({ date, ...rest }: CountDownProps): JSX.Element => {
+const CountDown = ({
+  date,
+  futureText,
+  pastText,
+  ...rest
+}: CountDownProps): JSX.Element => {
+  const [durationMs, setDurationMs] = useState<number>(dayjs(date).diff());
+
+  const { amount, unit } = useMemo(
+    () => convertToSmallestUnitOfTime(durationMs),
+    [durationMs],
+  );
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setDurationMs(dayjs(date).diff());
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
   return (
     <Box
       background={'white'}
@@ -24,14 +67,14 @@ const CountDown = ({ date, ...rest }: CountDownProps): JSX.Element => {
       <VStack spacing={0}>
         <HStack align={'baseline'}>
           <Heading size={'2xl'} fontWeight={'medium'}>
-            {dayjs(date).diff(dayjs(), 'day')}
+            {amount}
           </Heading>
           <Heading size={'sm'} fontWeight={'normal'}>
-            {'DAYS'}
+            {unit.toUpperCase()}
           </Heading>
         </HStack>
         <Text fontSize={'xs'} textAlign={'center'}>
-          {'UNTIL'}
+          {durationMs > 0 ? futureText.toUpperCase() : pastText.toUpperCase()}
         </Text>
       </VStack>
     </Box>
