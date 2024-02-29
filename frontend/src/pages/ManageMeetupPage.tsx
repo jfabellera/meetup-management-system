@@ -1,5 +1,5 @@
 import { Box, Flex, Heading, type BoxProps } from '@chakra-ui/react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { FiHome, FiSettings, FiUsers } from 'react-icons/fi';
 import { useLocation, useParams } from 'react-router-dom';
 import Page from '../components/Page/Page';
@@ -39,9 +39,18 @@ const ManageMeetupPage = ({
     },
   ];
 
+  const getSidebarValueFromPath = (): string => {
+    return sidebarItems.filter((item) => item.url === location.pathname)[0]
+      .value;
+  };
+
   const [sidebarValue, setSidebarValue] = useState<string>(
-    sidebarItems.filter((item) => item.url === location.pathname)[0].value,
+    getSidebarValueFromPath(),
   );
+
+  useEffect(() => {
+    setSidebarValue(getSidebarValueFromPath());
+  }, [location]);
 
   return (
     <Page
@@ -50,7 +59,13 @@ const ManageMeetupPage = ({
       setSidebarValue={setSidebarValue}
     >
       <Flex direction={'column'} height={'100%'} overflow={'scroll'}>
-        <Heading width={'100%'} textAlign={'center'} marginTop={'1rem'}>
+        <Heading
+          width={'100%'}
+          textAlign={'center'}
+          marginTop={'1rem'}
+          noOfLines={2}
+          paddingX={'1.5rem'}
+        >
           {meetup?.name}
         </Heading>
         <Box flexGrow={1} {...rest}>
