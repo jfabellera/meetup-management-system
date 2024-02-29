@@ -6,7 +6,7 @@ import {
   VStack,
   type BoxProps,
 } from '@chakra-ui/react';
-import dayjs from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import { useEffect, useMemo, useState } from 'react';
 dayjs.extend(duration);
@@ -28,15 +28,17 @@ const convertToSmallestUnitOfTime = (
 };
 
 interface CountDownProps extends BoxProps {
-  date: Date;
+  date: Date | Dayjs;
   futureText: string;
   pastText: string;
+  simple?: boolean;
 }
 
 const CountDown = ({
   date,
   futureText,
   pastText,
+  simple,
   ...rest
 }: CountDownProps): JSX.Element => {
   const [durationMs, setDurationMs] = useState<number>(dayjs(date).diff());
@@ -66,12 +68,20 @@ const CountDown = ({
     >
       <VStack spacing={0}>
         <HStack align={'baseline'}>
-          <Heading size={'2xl'} fontWeight={'medium'}>
-            {amount}
-          </Heading>
-          <Heading size={'sm'} fontWeight={'normal'}>
-            {unit.toUpperCase()}
-          </Heading>
+          {simple != null && simple ? (
+            <>
+              <Heading size={'2xl'} fontWeight={'medium'}>
+                {amount}
+              </Heading>
+              <Heading size={'sm'} fontWeight={'normal'}>
+                {unit.toUpperCase()}
+              </Heading>
+            </>
+          ) : (
+            <Heading size={'2xl'} fontWeight={'medium'}>
+              {dayjs.duration(Math.abs(durationMs)).format('HH:mm:ss')}
+            </Heading>
+          )}
         </HStack>
         <Text fontSize={'xs'} textAlign={'center'}>
           {durationMs > 0 ? futureText.toUpperCase() : pastText.toUpperCase()}

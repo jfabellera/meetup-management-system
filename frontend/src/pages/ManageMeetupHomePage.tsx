@@ -1,13 +1,33 @@
 import { Flex, HStack } from '@chakra-ui/react';
+import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
+import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CountDownCard from '../components/DataDisplay/CountDownCard';
 import FractionCard from '../components/DataDisplay/FractionCard';
 import { useGetMeetupQuery } from '../store/meetupSlice';
 
+dayjs.extend(isBetween);
+
 const ManageMeetupHomePage = (): JSX.Element => {
   const { meetupId } = useParams();
   const { data: meetup } = useGetMeetupQuery(parseInt(meetupId ?? ''));
   const navigate = useNavigate();
+
+  const hasMeetupStarted = useMemo(
+    () => (meetup != null ? dayjs().isAfter(meetup.date) : false),
+    [meetup],
+  );
+
+  const hasMeetupEnded = useMemo(
+    () =>
+      meetup != null
+        ? dayjs().isAfter(
+            dayjs(meetup.date).add(meetup.duration_hours ?? 0, 'hours'),
+          )
+        : false,
+    [meetup],
+  );
 
   return (
     <Flex margin={'1rem'} justify={'center'}>
@@ -28,10 +48,15 @@ const ManageMeetupHomePage = (): JSX.Element => {
             }}
           />
           <CountDownCard
-            date={new Date(meetup.date)}
-            futureText={'until'}
+            date={
+              hasMeetupStarted || hasMeetupEnded
+                ? dayjs(meetup.date).add(meetup.duration_hours ?? 0, 'hours')
+                : dayjs(meetup.date)
+            }
+            futureText={!hasMeetupStarted ? 'left' : 'until end'}
             pastText={'ago'}
             width={'50%'}
+            simple={!hasMeetupStarted || hasMeetupEnded}
           />
         </HStack>
       ) : null}
