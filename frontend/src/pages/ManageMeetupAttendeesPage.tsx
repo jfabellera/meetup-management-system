@@ -1,6 +1,7 @@
 import {
   Box,
   Heading,
+  Show,
   Table,
   TableContainer,
   Tbody,
@@ -34,8 +35,10 @@ const ManageMeetupAttendeesPage = (): JSX.Element => {
           <Thead>
             <Tr>
               <Th>Display Name</Th>
-              <Th>First Name</Th>
-              <Th>Last Name</Th>
+              <Show above={'md'}>
+                <Th>First Name</Th>
+                <Th>Last Name</Th>
+              </Show>
             </Tr>
           </Thead>
           <Tbody>
@@ -43,8 +46,10 @@ const ManageMeetupAttendeesPage = (): JSX.Element => {
               ? attendees.map((attendee: any) => (
                   <Tr key={attendee.id}>
                     <Td>{attendee.user.nick_name}</Td>
-                    <Td>{attendee.user.first_name}</Td>
-                    <Td>{attendee.user.last_name}</Td>
+                    <Show above={'md'}>
+                      <Td>{attendee.user.first_name}</Td>
+                      <Td>{attendee.user.last_name}</Td>
+                    </Show>
                   </Tr>
                 ))
               : null}
