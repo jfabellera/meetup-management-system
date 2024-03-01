@@ -45,6 +45,9 @@ const OrganizerDashboard = (): JSX.Element => {
                     imageUrl={meetup.image_url}
                     ticketsAvailable={meetup.tickets?.available ?? NaN}
                     ticketsTotal={meetup.tickets?.total ?? NaN}
+                    onClick={() => {
+                      navigate(`/meetup/${meetup.id}/manage`);
+                    }}
                   />
                 );
               })

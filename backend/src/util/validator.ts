@@ -33,7 +33,7 @@ export const editMeetupSchema = z.object({
   organizer_ids: z.array(z.number()).optional(),
 });
 
-export type EditMeetupSchema = z.infer<typeof editMeetupSchema>;
+export type EditMeetupPayload = z.infer<typeof editMeetupSchema>;
 
 export const createTicketSchema = z.object({
   meetup_id: z.number(),
@@ -58,7 +58,7 @@ export const createUserSchema = z.object({
   password: z.string(), // TODO(jan): check for password strength?
 });
 
-export type CreateUserSchema = z.infer<typeof createUserSchema>;
+export type CreateUserPayload = z.infer<typeof createUserSchema>;
 
 export const editUserSchema = z.object({
   email: z.string().email().optional(),
@@ -70,4 +70,4 @@ export const editUserSchema = z.object({
   is_admin: z.boolean().optional(),
 });
 
-export type EditUserSchema = z.infer<typeof editUserSchema>;
+export type EditUserPayload = z.infer<typeof editUserSchema>;

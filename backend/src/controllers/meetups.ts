@@ -28,6 +28,7 @@ export interface MeetupInfo {
     total: number;
     available: number;
   };
+  duration_hours?: number;
   image_url: string;
 }
 
@@ -54,6 +55,7 @@ const mapMeetupInfo = async (
 
   if (type === MeetupInfoDetailLevel.Detailed) {
     meetupInfo.location.full_address = meetup.address;
+    meetupInfo.duration_hours = meetup.duration_hours;
 
     meetupInfo.organizers = meetup.organizers.map(
       (organizer) => organizer.nick_name
@@ -287,13 +289,41 @@ export const updateMeetup = async (
   }
 
   meetup.name = req.body.name ?? meetup.name;
-  meetup.date = req.body.date ?? meetup.date;
-  meetup.duration_hours = req.body.duration ?? meetup.duration_hours;
+  meetup.duration_hours = req.body.duration_hours ?? meetup.duration_hours;
   meetup.has_raffle = req.body.has_raffle ?? meetup.has_raffle;
   meetup.capacity = req.body.capacity ?? meetup.capacity;
   meetup.image_url = req.body.image_url ?? meetup.image_url;
+  meetup.address = req.body.address ?? meetup.address;
 
-  // TODO(jan): Add ability to edit address
+  // TODO(jan): This is mostly copied from createMeetup. We should reduce this duplication
+  if (req.body.address != null || req.body.date != null) {
+    try {
+      const oldLocalDateTime = dayjs
+        .utc(meetup.date)
+        .add(meetup.utc_offset, 'hour');
+      const geocodeResult = await geocode(meetup.address);
+
+      meetup.address = geocodeResult.fullAddress;
+      meetup.city = geocodeResult.city;
+      if (geocodeResult.state != null) meetup.state = geocodeResult.state;
+      meetup.country = geocodeResult.country;
+
+      meetup.utc_offset = await getUtcOffset(
+        geocodeResult.latitude,
+        geocodeResult.longitude,
+        new Date(meetup.date)
+      );
+
+      // Apply offset to date to be correct UTC
+      meetup.date = dayjs
+        .utc(req.body.date ?? oldLocalDateTime)
+        .subtract(meetup.utc_offset, 'hour')
+        .toISOString();
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  }
+
   // TODO(jan): Implement this correctly with new typeorm entities
 
   // Only allow "head" organizer to update organizer list
@@ -345,4 +375,36 @@ export const deleteMeetup = async (
   await meetup.remove();
 
   return res.status(204).end();
+};
+
+export const getMeetupAttendees = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { meetup_id } = req.params;
+
+  const meetup = await Meetup.findOne({
+    select: {
+      tickets: {
+        id: true,
+        is_checked_in: true,
+        user: {
+          first_name: true,
+          last_name: true,
+          nick_name: true,
+          email: true,
+        },
+      },
+    },
+    relations: { tickets: { user: true } },
+    where: {
+      id: parseInt(meetup_id),
+    },
+  });
+
+  if (meetup == null) {
+    return res.status(404).json({ message: 'Invalid meetupID.' });
+  }
+
+  return res.json(meetup.tickets);
 };

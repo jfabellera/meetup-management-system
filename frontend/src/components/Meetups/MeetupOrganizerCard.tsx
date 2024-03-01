@@ -22,6 +22,7 @@ export interface MeetupOrganizerCardProps {
   imageUrl: string;
   ticketsAvailable: number;
   ticketsTotal: number;
+  onClick: () => void;
 }
 
 export const MeetupOrganizerCard = ({
@@ -30,9 +31,15 @@ export const MeetupOrganizerCard = ({
   imageUrl,
   ticketsAvailable,
   ticketsTotal,
+  onClick,
 }: MeetupOrganizerCardProps): JSX.Element => {
   return (
-    <Card background={'white'} direction={'row'} cursor={'pointer'}>
+    <Card
+      background={'white'}
+      direction={'row'}
+      cursor={'pointer'}
+      onClick={onClick}
+    >
       <AspectRatio
         ratio={{ base: 1 / 1, sm: 2 / 1 }}
         width={{ base: '33%', sm: '40%' }}

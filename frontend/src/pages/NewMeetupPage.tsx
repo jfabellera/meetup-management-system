@@ -15,27 +15,9 @@ import {
 } from '@chakra-ui/react';
 import { useFormik } from 'formik';
 import { useNavigate } from 'react-router-dom';
-import * as Yup from 'yup';
 import Page from '../components/Page/Page';
 import { useCreateMeetupMutation } from '../store/meetupSlice';
-
-const NewMeetupSchema = Yup.object().shape({
-  name: Yup.string()
-    .min(3, 'Name must be at least 3 characters')
-    .required('Required'),
-  date: Yup.date()
-    .min(new Date(), 'Date must be in the future')
-    .required('Required'),
-  startTime: Yup.string().required('Required'),
-  address: Yup.string().required('Required'),
-  duration: Yup.number()
-    .moreThan(0, 'Must be greater than 0')
-    .required('Required'),
-  capacity: Yup.number()
-    .moreThan(0, 'Must be greater than 0')
-    .required('Required'),
-  imageUrl: Yup.string().required('Required'),
-});
+import MeetupFormSchema from '../util/schemas/MeetupFormSchema';
 
 const NewMeetupPage = (): JSX.Element => {
   const [createMeetup] = useCreateMeetupMutation();
@@ -77,7 +59,7 @@ const NewMeetupPage = (): JSX.Element => {
         navigate('/organizer');
       }
     },
-    validationSchema: NewMeetupSchema,
+    validationSchema: MeetupFormSchema,
     validateOnMount: true,
   });
 
