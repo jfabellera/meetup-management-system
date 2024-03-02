@@ -44,13 +44,15 @@ export const MeetupOrganizerCard = ({
         ratio={{ base: 1 / 1, sm: 2 / 1 }}
         width={{ base: '33%', sm: '40%' }}
       >
-        {imageUrl != null ? (
-          <Image src={imageUrl} borderLeftRadius={'md'} />
-        ) : (
-          <Flex backgroundColor={'gray.200'} borderLeftRadius={'md'}>
-            <Icon as={FiImage} boxSize={8} />
-          </Flex>
-        )}
+        <Image
+          src={imageUrl}
+          borderLeftRadius={'md'}
+          fallback={
+            <Flex backgroundColor={'gray.200'}>
+              <Icon as={FiImage} boxSize={8} />
+            </Flex>
+          }
+        />
       </AspectRatio>
       <CardBody
         width={{ base: '67%', sm: '60%' }}
