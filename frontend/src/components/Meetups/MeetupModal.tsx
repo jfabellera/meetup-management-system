@@ -105,11 +105,10 @@ export const MeetupModal = ({
       <ModalOverlay />
       <ModalContent>
         <ModalBody padding={0}>
-          {meetup.image_url != null ? (
+          {meetup.image_url != null && meetup.image_url !== '' ? (
             <AspectRatio ratio={2 / 1}>
               <Image
                 src={meetup.image_url}
-                fallbackSrc="https://via.placeholder.com/150"
                 objectFit="cover"
                 borderTopRadius={'md'}
               />

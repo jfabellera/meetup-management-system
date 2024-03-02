@@ -37,17 +37,15 @@ export const MeetupCard = ({
       cursor={'pointer'}
     >
       <AspectRatio ratio={2 / 1}>
-        {meetup.image_url != null ? (
-          <Image
-            src={meetup.image_url}
-            fallbackSrc="https://via.placeholder.com/150"
-            objectFit="cover"
-          />
-        ) : (
-          <Flex backgroundColor={'gray.200'}>
-            <Icon as={FiImage} boxSize={8} />
-          </Flex>
-        )}
+        <Image
+          src={meetup.image_url}
+          fallback={
+            <Flex backgroundColor={'gray.200'}>
+              <Icon as={FiImage} boxSize={8} />
+            </Flex>
+          }
+          objectFit="cover"
+        />
       </AspectRatio>
       <CardHeader padding={'12px'}>
         <VStack spacing={2} align={'left'}>
