@@ -1,6 +1,7 @@
 import { Box, Flex, Heading, type BoxProps } from '@chakra-ui/react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { FiHome, FiSettings, FiUsers } from 'react-icons/fi';
+import { IoTicketOutline } from 'react-icons/io5';
 import { useLocation, useParams } from 'react-router-dom';
 import Page from '../components/Page/Page';
 import { type SidebarItem } from '../components/Sidebar/Sidebar';
@@ -24,6 +25,12 @@ const ManageMeetupPage = ({
       value: 'home',
       icon: FiHome,
       url: `/meetup/${meetupId}/manage`,
+    },
+    {
+      name: 'Check-in',
+      value: 'checkin',
+      icon: IoTicketOutline,
+      url: `/meetup/${meetupId}/manage/checkin`,
     },
     {
       name: 'Attendees',
