@@ -1,9 +1,47 @@
-import { Box, Flex, Heading, Input } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  Heading,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Stack,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+  useDisclosure,
+} from '@chakra-ui/react';
+import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { FiCheck } from 'react-icons/fi';
+import { useParams } from 'react-router-dom';
+import {
+  useCheckInAttendeeMutation,
+  useGetMeetupAttendeesQuery,
+} from '../store/organizerSlice';
 
 const CheckInPage = (): JSX.Element => {
+  const { meetupId: meetupIdParam } = useParams();
+  const meetupId = parseInt(meetupIdParam ?? '');
+  const { data: attendees } = useGetMeetupAttendeesQuery(meetupId);
+
   const [searchValue, setSearchValue] = useState<string>('');
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  const [ticketId, setTicketId] = useState<number | null>(null);
+  const [checkInAttendee] = useCheckInAttendeeMutation();
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
@@ -27,8 +65,24 @@ const CheckInPage = (): JSX.Element => {
     setSearchValue(event.target.value);
   };
 
+  const handleConfirm = (): void => {
+    void (async () => {
+      if (ticketId != null) {
+        await checkInAttendee(ticketId);
+      }
+      setTicketId(null);
+      setSearchValue('');
+      onClose();
+    })();
+  };
+
   return (
-    <Flex direction={'column'} textAlign={'center'} margin={'1rem'}>
+    <Stack
+      height={'100%'}
+      direction={'column'}
+      textAlign={'center'}
+      margin={'1rem'}
+    >
       <Heading
         size={'lg'}
         fontWeight={'medium'}
@@ -51,7 +105,91 @@ const CheckInPage = (): JSX.Element => {
           onChange={handleSearchChange}
         />
       </Box>
-    </Flex>
+      <Box
+        background={'white'}
+        borderRadius={'md'}
+        boxShadow={'sm'}
+        padding={'1rem'}
+      >
+        <TableContainer>
+          <Table variant={'simple'}>
+            <Thead>
+              <Tr>
+                <Th>Display Name</Th>
+                <Th>First Name</Th>
+                <Th>Last Name</Th>
+                <Th>Checked in?</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {attendees != null
+                ? attendees
+                    .filter(
+                      (attendee: any) =>
+                        Boolean(
+                          attendee.user.nick_name
+                            .toLowerCase()
+                            .includes(searchValue.toLowerCase()),
+                        ) ||
+                        Boolean(
+                          attendee.user.first_name
+                            .toLowerCase()
+                            .includes(searchValue.toLowerCase()),
+                        ) ||
+                        Boolean(
+                          attendee.user.last_name
+                            .toLowerCase()
+                            .includes(searchValue.toLowerCase()),
+                        ),
+                    )
+                    .map((attendee: any) => (
+                      <Tr
+                        key={attendee.id}
+                        cursor={'pointer'}
+                        _hover={{ bg: 'blue.400', color: 'white' }}
+                        onClick={() => {
+                          setTicketId(attendee.id);
+                          onOpen();
+                        }}
+                      >
+                        <Td>{attendee.user.nick_name}</Td>
+                        <Td>{attendee.user.first_name}</Td>
+                        <Td>{attendee.user.last_name}</Td>
+                        <Td>{attendee.is_checked_in ? <FiCheck /> : null}</Td>
+                      </Tr>
+                    ))
+                : null}
+            </Tbody>
+          </Table>
+        </TableContainer>
+
+        <Modal
+          initialFocusRef={confirmRef}
+          isOpen={isOpen}
+          onClose={() => {
+            setTicketId(null);
+            onClose();
+          }}
+        >
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Confirm check-in</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody></ModalBody>
+
+            <ModalFooter>
+              <Button
+                ref={confirmRef}
+                colorScheme="blue"
+                onClick={handleConfirm}
+              >
+                Confirm
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </Box>
+    </Stack>
   );
 };
 
