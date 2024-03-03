@@ -1,8 +1,8 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { MeetupInfo } from '../../../backend/src/controllers/meetups';
 import {
-  EditMeetupPayload,
   type CreateMeetupPayload,
+  type EditMeetupPayload,
 } from '../../../backend/src/util/validator';
 import config from '../config';
 import { type RootState } from './store';
@@ -62,12 +62,6 @@ export const meetupSlice = createApi({
       }),
       invalidatesTags: ['Meetup', 'Meetups'],
     }),
-    getMeetupAttendees: builder.query<any, number>({
-      query: (meetupId) => ({
-        url: `meetups/${meetupId}/attendees`,
-      }),
-      providesTags: ['Attendees'],
-    }),
   }),
 });
 
@@ -76,5 +70,4 @@ export const {
   useGetMeetupQuery,
   useCreateMeetupMutation,
   useEditMeetupMutation,
-  useGetMeetupAttendeesQuery,
 } = meetupSlice;

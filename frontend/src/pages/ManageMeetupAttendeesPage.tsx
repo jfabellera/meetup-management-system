@@ -11,7 +11,7 @@ import {
   Tr,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
-import { useGetMeetupAttendeesQuery } from '../store/meetupSlice';
+import { useGetMeetupAttendeesQuery } from '../store/organizerSlice';
 
 const ManageMeetupAttendeesPage = (): JSX.Element => {
   const { meetupId } = useParams();
