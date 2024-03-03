@@ -147,6 +147,9 @@ const CheckInPage = (): JSX.Element => {
                         key={attendee.id}
                         cursor={'pointer'}
                         _hover={{ bg: 'blue.400', color: 'white' }}
+                        transition={
+                          'background 100ms linear, color 100ms linear'
+                        }
                         onClick={() => {
                           setTicketId(attendee.id);
                           onOpen();
