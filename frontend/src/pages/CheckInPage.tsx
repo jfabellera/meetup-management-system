@@ -21,7 +21,7 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FiCheck } from 'react-icons/fi';
 import { useParams } from 'react-router-dom';
 import {
@@ -43,12 +43,68 @@ const CheckInPage = (): JSX.Element => {
   const [ticketId, setTicketId] = useState<number | null>(null);
   const [checkInAttendee] = useCheckInAttendeeMutation();
 
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
+  const filteredAttendees = useMemo(() => {
+    if (attendees == null) return [];
+    const filtered = attendees.filter(
+      (attendee: any) =>
+        Boolean(
+          attendee.user.nick_name
+            .toLowerCase()
+            .includes(searchValue.toLowerCase()),
+        ) ||
+        Boolean(
+          attendee.user.first_name
+            .toLowerCase()
+            .includes(searchValue.toLowerCase()),
+        ) ||
+        Boolean(
+          attendee.user.last_name
+            .toLowerCase()
+            .includes(searchValue.toLowerCase()),
+        ),
+    );
+
+    if (searchValue !== '' && filtered.length > 0) {
+      setFocusedIndex(0);
+    } else {
+      setFocusedIndex(null);
+    }
+
+    return filtered;
+  }, [attendees, searchValue]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
       searchRef.current?.focus();
 
       if (event.key === 'Escape') {
         setSearchValue('');
+      }
+
+      if (event.key === 'Enter') {
+        if (!isOpen && searchValue !== '') {
+          event.preventDefault();
+          setTicketId(filteredAttendees[0].id);
+          onOpen();
+        }
+      }
+
+      if (event.key === 'ArrowDown') {
+        if (focusedIndex != null) {
+          event.preventDefault();
+          setFocusedIndex(
+            Math.min(filteredAttendees.length - 1, focusedIndex + 1),
+          );
+        }
+      }
+
+      if (event.key === 'ArrowUp') {
+        if (focusedIndex != null) {
+          event.preventDefault();
+          setFocusedIndex(Math.max(0, focusedIndex - 1));
+        }
       }
     };
 
@@ -57,11 +113,12 @@ const CheckInPage = (): JSX.Element => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [focusedIndex, isOpen, searchValue, filteredAttendees]);
 
   const handleSearchChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ): void => {
+    setFocusedIndex(null);
     setSearchValue(event.target.value);
   };
 
@@ -122,45 +179,36 @@ const CheckInPage = (): JSX.Element => {
               </Tr>
             </Thead>
             <Tbody>
-              {attendees != null
-                ? attendees
-                    .filter(
-                      (attendee: any) =>
-                        Boolean(
-                          attendee.user.nick_name
-                            .toLowerCase()
-                            .includes(searchValue.toLowerCase()),
-                        ) ||
-                        Boolean(
-                          attendee.user.first_name
-                            .toLowerCase()
-                            .includes(searchValue.toLowerCase()),
-                        ) ||
-                        Boolean(
-                          attendee.user.last_name
-                            .toLowerCase()
-                            .includes(searchValue.toLowerCase()),
-                        ),
-                    )
-                    .map((attendee: any) => (
-                      <Tr
-                        key={attendee.id}
-                        cursor={'pointer'}
-                        _hover={{ bg: 'blue.400', color: 'white' }}
-                        transition={
-                          'background 100ms linear, color 100ms linear'
-                        }
-                        onClick={() => {
-                          setTicketId(attendee.id);
-                          onOpen();
-                        }}
-                      >
-                        <Td>{attendee.user.nick_name}</Td>
-                        <Td>{attendee.user.first_name}</Td>
-                        <Td>{attendee.user.last_name}</Td>
-                        <Td>{attendee.is_checked_in ? <FiCheck /> : null}</Td>
-                      </Tr>
-                    ))
+              {filteredAttendees != null
+                ? filteredAttendees.map((attendee: any) => (
+                    <Tr
+                      key={attendee.id}
+                      cursor={'pointer'}
+                      background={
+                        focusedIndex != null &&
+                        attendee.id === filteredAttendees[focusedIndex].id
+                          ? 'blue.400'
+                          : 'white'
+                      }
+                      color={
+                        focusedIndex != null &&
+                        attendee.id === filteredAttendees[focusedIndex].id
+                          ? 'white'
+                          : 'black'
+                      }
+                      _hover={{ bg: 'blue.400', color: 'white' }}
+                      transition={'background 100ms linear, color 100ms linear'}
+                      onClick={() => {
+                        setTicketId(attendee.id);
+                        onOpen();
+                      }}
+                    >
+                      <Td>{attendee.user.nick_name}</Td>
+                      <Td>{attendee.user.first_name}</Td>
+                      <Td>{attendee.user.last_name}</Td>
+                      <Td>{attendee.is_checked_in ? <FiCheck /> : null}</Td>
+                    </Tr>
+                  ))
                 : null}
             </Tbody>
           </Table>
