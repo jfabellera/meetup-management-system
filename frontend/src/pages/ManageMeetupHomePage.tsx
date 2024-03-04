@@ -6,12 +6,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import CountDownCard from '../components/DataDisplay/CountDownCard';
 import FractionCard from '../components/DataDisplay/FractionCard';
 import { useGetMeetupQuery } from '../store/meetupSlice';
+import { useGetMeetupAttendeesQuery } from '../store/organizerSlice';
 
 dayjs.extend(isBetween);
 
 const ManageMeetupHomePage = (): JSX.Element => {
   const { meetupId } = useParams();
   const { data: meetup } = useGetMeetupQuery(parseInt(meetupId ?? ''));
+  const { data: attendees } = useGetMeetupAttendeesQuery(
+    parseInt(meetupId ?? ''),
+  );
   const navigate = useNavigate();
 
   const hasMeetupStarted = useMemo(
@@ -29,24 +33,40 @@ const ManageMeetupHomePage = (): JSX.Element => {
     [meetup],
   );
 
+  const isMeetupNow = useMemo(
+    () => hasMeetupStarted && !hasMeetupEnded,
+    [hasMeetupStarted, hasMeetupEnded],
+  );
+
   return (
     <Flex margin={'1rem'} justify={'center'}>
-      {meetup != null ? (
+      {meetup != null && attendees != null ? (
         <HStack width={'100%'} spacing={3} maxWidth={'800px'}>
+          {/* Show how many have checked in if meetup is currently happening, otherwise show how many have signed up */}
           <FractionCard
             numerator={
-              (meetup.tickets?.total ?? 0) - (meetup.tickets?.available ?? 0)
+              isMeetupNow
+                ? attendees.filter((attendee) => attendee.is_checked_in).length
+                : (meetup.tickets?.total ?? 0) -
+                  (meetup.tickets?.available ?? 0)
             }
-            denominator={meetup.tickets?.total ?? 0}
-            label={'signed up'}
-            width={'50%'}
+            denominator={
+              isMeetupNow ? attendees.length : meetup.tickets?.total ?? 0
+            }
+            label={isMeetupNow ? 'checked in' : 'signed up'}
             onClick={() => {
-              navigate(`/meetup/${meetupId}/manage/attendees`);
+              navigate(
+                `/meetup/${meetupId}/manage/${
+                  isMeetupNow ? 'checkin' : 'attendees'
+                }`,
+              );
             }}
+            width={'50%'}
             _hover={{
               cursor: 'pointer',
             }}
           />
+          {/* Show detailed countdown until meetup end if meetup is currently happening, otherwise show relative time until start of meetup or end of meetup */}
           <CountDownCard
             date={
               hasMeetupStarted || hasMeetupEnded
