@@ -156,7 +156,7 @@ const CheckInPage = (): JSX.Element => {
       height={'100%'}
       direction={'column'}
       textAlign={'center'}
-      margin={'1rem'}
+      padding={'1rem'}
     >
       <Heading
         size={'lg'}
