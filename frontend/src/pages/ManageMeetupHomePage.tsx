@@ -7,6 +7,11 @@ import CountDownCard from '../components/DataDisplay/CountDownCard';
 import FractionCard from '../components/DataDisplay/FractionCard';
 import { useGetMeetupQuery } from '../store/meetupSlice';
 import { useGetMeetupAttendeesQuery } from '../store/organizerSlice';
+import {
+  hasMeetupEnded,
+  hasMeetupStarted,
+  isMeetupHappeningNow,
+} from '../util/timeUtil';
 
 dayjs.extend(isBetween);
 
@@ -18,24 +23,19 @@ const ManageMeetupHomePage = (): JSX.Element => {
   );
   const navigate = useNavigate();
 
-  const hasMeetupStarted = useMemo(
-    () => (meetup != null ? dayjs().isAfter(meetup.date) : false),
+  const hasStarted = useMemo(
+    () => (meetup != null ? hasMeetupStarted(meetup) : false),
     [meetup],
   );
 
-  const hasMeetupEnded = useMemo(
-    () =>
-      meetup != null
-        ? dayjs().isAfter(
-            dayjs(meetup.date).add(meetup.duration_hours ?? 0, 'hours'),
-          )
-        : false,
+  const hasEnded = useMemo(
+    () => (meetup != null ? hasMeetupEnded(meetup) : false),
     [meetup],
   );
 
-  const isMeetupNow = useMemo(
-    () => hasMeetupStarted && !hasMeetupEnded,
-    [hasMeetupStarted, hasMeetupEnded],
+  const isHappeningNow = useMemo(
+    () => (meetup != null ? isMeetupHappeningNow(meetup) : false),
+    [meetup],
   );
 
   return (
@@ -45,19 +45,19 @@ const ManageMeetupHomePage = (): JSX.Element => {
           {/* Show how many have checked in if meetup is currently happening, otherwise show how many have signed up */}
           <FractionCard
             numerator={
-              isMeetupNow
+              isHappeningNow
                 ? attendees.filter((attendee) => attendee.is_checked_in).length
                 : (meetup.tickets?.total ?? 0) -
                   (meetup.tickets?.available ?? 0)
             }
             denominator={
-              isMeetupNow ? attendees.length : meetup.tickets?.total ?? 0
+              isHappeningNow ? attendees.length : meetup.tickets?.total ?? 0
             }
-            label={isMeetupNow ? 'checked in' : 'signed up'}
+            label={isHappeningNow ? 'checked in' : 'signed up'}
             onClick={() => {
               navigate(
                 `/meetup/${meetupId}/manage/${
-                  isMeetupNow ? 'checkin' : 'attendees'
+                  isHappeningNow ? 'checkin' : 'attendees'
                 }`,
               );
             }}
@@ -69,14 +69,14 @@ const ManageMeetupHomePage = (): JSX.Element => {
           {/* Show detailed countdown until meetup end if meetup is currently happening, otherwise show relative time until start of meetup or end of meetup */}
           <CountDownCard
             date={
-              hasMeetupStarted || hasMeetupEnded
+              hasStarted || hasEnded
                 ? dayjs(meetup.date).add(meetup.duration_hours ?? 0, 'hours')
                 : dayjs(meetup.date)
             }
-            futureText={!hasMeetupStarted ? 'left' : 'until end'}
+            futureText={!hasStarted ? 'left' : 'until end'}
             pastText={'ago'}
             width={'50%'}
-            simple={!hasMeetupStarted || hasMeetupEnded}
+            simple={!isHappeningNow}
           />
         </HStack>
       ) : null}
