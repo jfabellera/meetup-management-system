@@ -153,3 +153,21 @@ export const getUserTickets = async (
 
   return res.json(ticketsInfo);
 };
+
+export const checkInTicket = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const ticket = res.locals.ticket as Ticket;
+
+  if (ticket.is_checked_in) {
+    return res
+      .status(200)
+      .json({ message: 'Ticket has already been checked in.' });
+  }
+
+  ticket.is_checked_in = true;
+  await ticket.save();
+
+  return res.status(200).end();
+};
