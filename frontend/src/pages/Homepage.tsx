@@ -6,6 +6,7 @@ import {
   Stack,
   useDisclosure,
 } from '@chakra-ui/react';
+import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { type MeetupInfo } from '../../../backend/src/controllers/meetups';
 import { type SimpleTicketInfo } from '../../../backend/src/controllers/tickets';
@@ -42,7 +43,10 @@ const Homepage = (): JSX.Element => {
   );
 
   const pastMeetups = useMemo(
-    () => meetups?.filter((meetup) => hasMeetupEnded(meetup)),
+    () =>
+      meetups
+        ?.filter((meetup) => hasMeetupEnded(meetup))
+        .sort((a, b) => (dayjs(a.date).isBefore(b.date) ? 1 : -1)),
     [meetups],
   );
 

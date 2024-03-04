@@ -7,6 +7,7 @@ import {
   Spacer,
   Stack,
 } from '@chakra-ui/react';
+import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type MeetupInfo } from '../../../backend/src/controllers/meetups';
@@ -43,7 +44,10 @@ const OrganizerDashboard = (): JSX.Element => {
   );
 
   const pastMeetups = useMemo(
-    () => meetups?.filter((meetup) => hasMeetupEnded(meetup)),
+    () =>
+      meetups
+        ?.filter((meetup) => hasMeetupEnded(meetup))
+        .sort((a, b) => (dayjs(a.date).isBefore(b.date) ? 1 : -1)),
     [meetups],
   );
 
