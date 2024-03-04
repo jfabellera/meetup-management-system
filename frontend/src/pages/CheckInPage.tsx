@@ -19,6 +19,7 @@ import {
   Thead,
   Tr,
   useDisclosure,
+  useToast,
 } from '@chakra-ui/react';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -42,6 +43,7 @@ const CheckInPage = (): JSX.Element => {
 
   const [ticket, setTicket] = useState<any | null>(null);
   const [checkInAttendee] = useCheckInAttendeeMutation();
+  const toast = useToast();
 
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
@@ -125,7 +127,23 @@ const CheckInPage = (): JSX.Element => {
   const handleConfirm = (): void => {
     void (async () => {
       if (ticket != null) {
-        await checkInAttendee(ticket.id);
+        const result = await checkInAttendee(ticket.id);
+
+        if ('error' in result) {
+          toast({
+            title: 'Error',
+            description: `Could not check ${ticket.user.nick_name} in`,
+            status: 'error',
+            isClosable: true,
+          });
+        } else {
+          toast({
+            title: 'Success',
+            description: `${ticket.user.nick_name} checked in`,
+            status: 'success',
+            isClosable: true,
+          });
+        }
       }
       setTicket(null);
       setSearchValue('');
