@@ -40,7 +40,7 @@ const CheckInPage = (): JSX.Element => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const confirmRef = useRef<HTMLButtonElement>(null);
 
-  const [ticketId, setTicketId] = useState<number | null>(null);
+  const [ticket, setTicket] = useState<any | null>(null);
   const [checkInAttendee] = useCheckInAttendeeMutation();
 
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
@@ -86,7 +86,7 @@ const CheckInPage = (): JSX.Element => {
       if (event.key === 'Enter') {
         if (!isOpen && searchValue !== '') {
           event.preventDefault();
-          setTicketId(filteredAttendees[0].id);
+          setTicket(filteredAttendees[0]);
           onOpen();
         }
       }
@@ -124,10 +124,10 @@ const CheckInPage = (): JSX.Element => {
 
   const handleConfirm = (): void => {
     void (async () => {
-      if (ticketId != null) {
-        await checkInAttendee(ticketId);
+      if (ticket != null) {
+        await checkInAttendee(ticket.id);
       }
-      setTicketId(null);
+      setTicket(null);
       setSearchValue('');
       onClose();
     })();
@@ -199,7 +199,7 @@ const CheckInPage = (): JSX.Element => {
                       _hover={{ bg: 'blue.400', color: 'white' }}
                       transition={'background 100ms linear, color 100ms linear'}
                       onClick={() => {
-                        setTicketId(attendee.id);
+                        setTicket(attendee);
                         onOpen();
                       }}
                     >
@@ -218,7 +218,7 @@ const CheckInPage = (): JSX.Element => {
           initialFocusRef={confirmRef}
           isOpen={isOpen}
           onClose={() => {
-            setTicketId(null);
+            setTicket(null);
             onClose();
           }}
         >
@@ -226,7 +226,9 @@ const CheckInPage = (): JSX.Element => {
           <ModalContent>
             <ModalHeader>Confirm check-in</ModalHeader>
             <ModalCloseButton />
-            <ModalBody></ModalBody>
+            <ModalBody>
+              Do you want to check {ticket?.user?.nick_name ?? 'user'} in?
+            </ModalBody>
 
             <ModalFooter>
               <Button
