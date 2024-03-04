@@ -84,9 +84,9 @@ const CheckInPage = (): JSX.Element => {
       }
 
       if (event.key === 'Enter') {
-        if (!isOpen && searchValue !== '') {
+        if (!isOpen && searchValue !== '' && focusedIndex != null) {
           event.preventDefault();
-          setTicket(filteredAttendees[0]);
+          setTicket(filteredAttendees[focusedIndex]);
           onOpen();
         }
       }
