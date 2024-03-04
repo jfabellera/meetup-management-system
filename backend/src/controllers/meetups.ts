@@ -56,6 +56,7 @@ const mapMeetupInfo = async (
     id: meetup.id,
     name: meetup.name,
     date: dayjs(meetup.date).utcOffset(meetup.utc_offset).format(),
+    duration_hours: meetup.duration_hours,
     location: {
       city: meetup.city,
       state: meetup.state,
@@ -66,7 +67,6 @@ const mapMeetupInfo = async (
 
   if (type === MeetupInfoDetailLevel.Detailed) {
     meetupInfo.location.full_address = meetup.address;
-    meetupInfo.duration_hours = meetup.duration_hours;
 
     meetupInfo.organizers = meetup.organizers.map(
       (organizer) => organizer.nick_name
