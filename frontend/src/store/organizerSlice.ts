@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { type TicketInfo } from '../../../backend/src/controllers/meetups';
 import config from '../config';
 import { type RootState } from './store';
 
@@ -18,7 +19,7 @@ export const organizerSlice = createApi({
     },
   }),
   endpoints: (builder) => ({
-    getMeetupAttendees: builder.query<any, number>({
+    getMeetupAttendees: builder.query<TicketInfo[], number>({
       query: (meetupId) => ({
         url: `meetups/${meetupId}/attendees`,
       }),

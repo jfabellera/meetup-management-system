@@ -25,6 +25,7 @@ import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FiCheck } from 'react-icons/fi';
 import { useParams } from 'react-router-dom';
+import { type TicketInfo } from '../../../backend/src/controllers/meetups';
 import {
   useCheckInAttendeeMutation,
   useGetMeetupAttendeesQuery,
@@ -41,7 +42,7 @@ const CheckInPage = (): JSX.Element => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const confirmRef = useRef<HTMLButtonElement>(null);
 
-  const [ticket, setTicket] = useState<any | null>(null);
+  const [ticket, setTicket] = useState<TicketInfo | null>(null);
   const [checkInAttendee] = useCheckInAttendeeMutation();
   const toast = useToast();
 
@@ -198,7 +199,7 @@ const CheckInPage = (): JSX.Element => {
             </Thead>
             <Tbody>
               {filteredAttendees != null
-                ? filteredAttendees.map((attendee: any) => (
+                ? filteredAttendees.map((attendee) => (
                     <Tr
                       key={attendee.id}
                       cursor={'pointer'}
@@ -245,7 +246,7 @@ const CheckInPage = (): JSX.Element => {
             <ModalHeader>Confirm check-in</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-              Do you want to check {ticket?.user?.nick_name ?? 'user'} in?
+              Do you want to check {ticket?.user.nick_name ?? 'user'} in?
             </ModalBody>
 
             <ModalFooter>

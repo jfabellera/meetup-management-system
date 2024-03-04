@@ -32,6 +32,17 @@ export interface MeetupInfo {
   image_url: string;
 }
 
+export interface TicketInfo {
+  id: number;
+  is_checked_in: boolean;
+  user: {
+    email: string;
+    first_name: string;
+    last_name: string;
+    nick_name: string;
+  };
+}
+
 enum MeetupInfoDetailLevel {
   Simple,
   Detailed,
@@ -406,5 +417,19 @@ export const getMeetupAttendees = async (
     return res.status(404).json({ message: 'Invalid meetupID.' });
   }
 
-  return res.json(meetup.tickets);
+  const response = meetup.tickets.map((ticket) => {
+    const ticketInfo: TicketInfo = {
+      id: ticket.id,
+      is_checked_in: ticket.is_checked_in,
+      user: {
+        email: ticket.user.email,
+        nick_name: ticket.user.nick_name,
+        first_name: ticket.user.first_name,
+        last_name: ticket.user.last_name,
+      },
+    };
+    return ticketInfo;
+  });
+
+  return res.json(response);
 };
