@@ -1,5 +1,13 @@
-import { Box, Grid, GridItem, Heading, useDisclosure } from '@chakra-ui/react';
-import { useState } from 'react';
+import {
+  Box,
+  Grid,
+  GridItem,
+  Heading,
+  Stack,
+  useDisclosure,
+} from '@chakra-ui/react';
+import { useMemo, useState } from 'react';
+import { type MeetupInfo } from '../../../backend/src/controllers/meetups';
 import { type SimpleTicketInfo } from '../../../backend/src/controllers/tickets';
 import { MeetupCard } from '../components/Meetups/MeetupCard';
 import { MeetupModal } from '../components/Meetups/MeetupModal';
@@ -7,6 +15,11 @@ import Page from '../components/Page/Page';
 import { useAppSelector } from '../store/hooks';
 import { useGetMeetupsQuery } from '../store/meetupSlice';
 import { useGetTicketsQuery } from '../store/ticketSlice';
+import {
+  hasMeetupEnded,
+  hasMeetupStarted,
+  isMeetupHappeningNow,
+} from '../util/timeUtil';
 
 const Homepage = (): JSX.Element => {
   const { isLoggedIn, user } = useAppSelector((state) => state.user);
@@ -17,6 +30,21 @@ const Homepage = (): JSX.Element => {
     skip: user == null,
   });
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const currentMeetups = useMemo(
+    () => meetups?.filter((meetup) => isMeetupHappeningNow(meetup)),
+    [meetups],
+  );
+
+  const futureMeetups = useMemo(
+    () => meetups?.filter((meetup) => !hasMeetupStarted(meetup)),
+    [meetups],
+  );
+
+  const pastMeetups = useMemo(
+    () => meetups?.filter((meetup) => hasMeetupEnded(meetup)),
+    [meetups],
+  );
 
   /**
    * Get ticket for a meetup if the logged in user is attending the meetup. Otherwise, return null.
@@ -43,52 +71,48 @@ const Homepage = (): JSX.Element => {
     }
   };
 
+  const meetupSection = (title: string, meetups: MeetupInfo[]): JSX.Element => {
+    return (
+      <Box>
+        <Heading fontSize="3xl" mb={'0.5em'}>
+          {title}
+        </Heading>
+        <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4}>
+          {meetups?.map((meetup) => (
+            <GridItem
+              key={meetup.id}
+              onClick={() => {
+                meetupCardOnClick(meetup.id);
+              }}
+            >
+              <MeetupCard
+                meetup={meetup}
+                attending={getTicketForMeetup(meetup.id) != null}
+              />
+            </GridItem>
+          ))}
+        </Grid>
+      </Box>
+    );
+  };
+
   return (
     <Page>
       {isLoading ? (
         <></>
       ) : (
-        <Box padding={'1rem'}>
-          <Heading fontSize="3xl" mb={'0.5em'}>
-            Upcoming Meetups
-          </Heading>
-          <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4}>
-            {meetups
-              ?.filter((meetup) => new Date(meetup.date) > new Date())
-              .map((meetup) => (
-                <GridItem
-                  key={meetup.id}
-                  onClick={() => {
-                    meetupCardOnClick(meetup.id);
-                  }}
-                >
-                  <MeetupCard
-                    meetup={meetup}
-                    attending={getTicketForMeetup(meetup.id) != null}
-                  />
-                </GridItem>
-              ))}
-          </Grid>
-          <Heading fontSize="3xl" my={'0.5em'}>
-            Previous Meetups
-          </Heading>
-          <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4}>
-            {meetups
-              ?.filter((meetup) => new Date(meetup.date) <= new Date())
-              .map((meetup) => (
-                <GridItem
-                  key={meetup.id}
-                  onClick={() => {
-                    meetupCardOnClick(meetup.id);
-                  }}
-                >
-                  <MeetupCard
-                    meetup={meetup}
-                    attending={getTicketForMeetup(meetup.id) != null}
-                  />
-                </GridItem>
-              ))}
-          </Grid>
+        <Stack padding={'1rem'} spacing={4}>
+          {currentMeetups != null && currentMeetups.length > 0
+            ? meetupSection('Happening now', currentMeetups)
+            : null}
+
+          {futureMeetups != null && futureMeetups.length > 0
+            ? meetupSection('Upcoming meetups', futureMeetups)
+            : null}
+
+          {pastMeetups != null && pastMeetups.length > 0
+            ? meetupSection('Past meetups', pastMeetups)
+            : null}
           <MeetupModal
             meetupId={meetupId}
             ticket={getTicketForMeetup(meetupId)}
@@ -97,7 +121,7 @@ const Homepage = (): JSX.Element => {
             onClose={onClose}
             onOpen={onOpen}
           />
-        </Box>
+        </Stack>
       )}
     </Page>
   );
