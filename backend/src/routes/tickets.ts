@@ -1,4 +1,5 @@
 import express, { type RequestHandler } from 'express';
+import { claimRaffleWinner } from '../controllers/raffles';
 import {
   checkInTicket,
   deleteTicket,
@@ -38,6 +39,12 @@ router.post(
   '/:ticket_id/checkin',
   authChecker([Rule.overrideMeetupOrganizer]) as RequestHandler,
   checkInTicket as RequestHandler
+);
+
+router.post(
+  '/:ticket_id/claim',
+  authChecker([Rule.overrideMeetupOrganizer]) as RequestHandler,
+  claimRaffleWinner as RequestHandler
 );
 
 export default router;

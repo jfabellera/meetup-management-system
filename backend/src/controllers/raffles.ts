@@ -46,3 +46,27 @@ export const rollRaffleWinner = async (
 
   return res.status(200).json({});
 };
+
+export const claimRaffleWinner = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const ticket = res.locals.ticket as Ticket;
+
+  if (ticket.raffle_entries <= 0) {
+    return res
+      .status(400)
+      .json({ message: 'Ticket does not have any raffle entries.' });
+  }
+
+  if (ticket.raffle_wins >= ticket.raffle_entries) {
+    return res
+      .status(400)
+      .json({ message: 'Ticket is not eligible for any more wins.' });
+  }
+
+  ticket.raffle_wins++;
+  await ticket.save();
+
+  return res.status(200).end();
+};
