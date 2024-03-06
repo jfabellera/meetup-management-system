@@ -15,6 +15,7 @@ import ManageMeetupPage from './pages/ManageMeetupPage';
 import ManageMeetupSettingsPage from './pages/ManageMeetupSettingsPage';
 import NewMeetupPage from './pages/NewMeetupPage';
 import OrganizerDashboard from './pages/OrganizerDashboard';
+import RafflePage from './pages/RafflePage';
 import RegisterPage from './pages/RegisterPage';
 
 import { Provider } from 'react-redux';
@@ -40,6 +41,7 @@ const App = (): JSX.Element => {
           >
             <Route path="" element={<ManageMeetupHomePage />} />
             <Route path="checkin" element={<CheckInPage />} />
+            <Route path="raffle" element={<RafflePage />} />
             <Route path="attendees" element={<ManageMeetupAttendeesPage />} />
             <Route path="settings" element={<ManageMeetupSettingsPage />} />
           </Route>
