@@ -44,7 +44,7 @@ export const rollRaffleWinner = async (
     return res.status(200).json(response);
   }
 
-  return res.status(200).json({});
+  return res.status(200).end();
 };
 
 export const claimRaffleWinner = async (
