@@ -1,4 +1,12 @@
-import { Box, Button, useToast } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  Flex,
+  Heading,
+  Text,
+  useToast,
+  VStack,
+} from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { type RaffleWinnerResponse } from '../../../backend/src/interfaces/rafflesInterfaces';
@@ -82,18 +90,49 @@ const RafflePage = (): JSX.Element => {
   }, [isRollError, isClaimError]);
 
   return (
-    <Box>
-      <Button onClick={handleRoll} isLoading={isRollLoading}>
-        {winner == null ? 'Roll winner' : winner.displayName}
-      </Button>
-      <Button
-        onClick={handleClaim}
-        isLoading={isClaimLoading}
-        isDisabled={winner == null}
+    <Flex justify={'center'} height={'100%'}>
+      <VStack
+        spacing={4}
+        height={'100%'}
+        padding={'1rem'}
+        width={'100%'}
+        maxWidth={'800px'}
       >
-        Claim
-      </Button>
-    </Box>
+        <Box textAlign={'center'} height={'6rem'}>
+          {winner != null ? (
+            <>
+              <Text>WINNER</Text>
+              <Heading size={'4xl'} fontWeight={'medium'}>
+                {winner.displayName ?? ''}
+              </Heading>
+            </>
+          ) : (
+            <Text lineHeight={'6rem'}>Click roll to select a winner</Text>
+          )}
+        </Box>
+        <Button
+          colorScheme={'green'}
+          height={'6rem'}
+          width={'100%'}
+          onClick={handleClaim}
+          isLoading={isClaimLoading}
+          isDisabled={winner == null}
+        >
+          CLAIM
+        </Button>
+        <Button
+          colorScheme={'blackAlpha'}
+          flexGrow={1}
+          width={'100%'}
+          onClick={handleRoll}
+          isLoading={isRollLoading}
+        >
+          <Heading size={'4xl'} fontWeight={'medium'}>
+            ROLL
+          </Heading>
+        </Button>
+      </VStack>
+    </Flex>
   );
 };
 
