@@ -21,7 +21,7 @@ export const rollRaffleWinner = async (
         id: meetup.id,
       },
       is_checked_in: true,
-      raffle_entries: MoreThan(1),
+      raffle_entries: MoreThan(0),
       raffle_wins: Raw((wins) => `${wins} < raffle_entries`),
     },
     select: {
