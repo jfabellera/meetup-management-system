@@ -34,7 +34,9 @@ export interface MeetupInfo {
 
 export interface TicketInfo {
   id: number;
+  created_at: Date;
   is_checked_in: boolean;
+  checked_in_at?: Date;
   user: {
     email: string;
     first_name: string;
@@ -398,7 +400,9 @@ export const getMeetupAttendees = async (
     select: {
       tickets: {
         id: true,
+        created_at: true,
         is_checked_in: true,
+        checked_in_at: true,
         user: {
           first_name: true,
           last_name: true,
@@ -420,6 +424,7 @@ export const getMeetupAttendees = async (
   const response = meetup.tickets.map((ticket) => {
     const ticketInfo: TicketInfo = {
       id: ticket.id,
+      created_at: ticket.created_at,
       is_checked_in: ticket.is_checked_in,
       user: {
         email: ticket.user.email,
@@ -428,6 +433,11 @@ export const getMeetupAttendees = async (
         last_name: ticket.user.last_name,
       },
     };
+
+    if (ticket.is_checked_in) {
+      ticketInfo.checked_in_at = ticket.checked_in_at;
+    }
+
     return ticketInfo;
   });
 
