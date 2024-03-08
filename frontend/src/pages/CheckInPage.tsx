@@ -50,24 +50,30 @@ const CheckInPage = (): JSX.Element => {
 
   const filteredAttendees = useMemo(() => {
     if (attendees == null) return [];
-    const filtered = attendees.filter(
-      (attendee: any) =>
-        Boolean(
-          attendee.user.nick_name
-            .toLowerCase()
-            .includes(searchValue.toLowerCase()),
-        ) ||
-        Boolean(
-          attendee.user.first_name
-            .toLowerCase()
-            .includes(searchValue.toLowerCase()),
-        ) ||
-        Boolean(
-          attendee.user.last_name
-            .toLowerCase()
-            .includes(searchValue.toLowerCase()),
-        ),
-    );
+    const filtered = attendees
+      .filter(
+        (attendee: any) =>
+          Boolean(
+            attendee.user.nick_name
+              .toLowerCase()
+              .includes(searchValue.toLowerCase()),
+          ) ||
+          Boolean(
+            attendee.user.first_name
+              .toLowerCase()
+              .includes(searchValue.toLowerCase()),
+          ) ||
+          Boolean(
+            attendee.user.last_name
+              .toLowerCase()
+              .includes(searchValue.toLowerCase()),
+          ),
+      )
+      .sort((a, b) =>
+        a.user.nick_name.toLowerCase() < b.user.nick_name.toLowerCase()
+          ? -1
+          : 1,
+      );
 
     if (searchValue !== '' && filtered.length > 0) {
       setFocusedIndex(0);
