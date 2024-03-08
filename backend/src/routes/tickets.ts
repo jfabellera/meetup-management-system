@@ -37,13 +37,19 @@ router.delete(
 
 router.post(
   '/:ticket_id/checkin',
-  authChecker([Rule.overrideMeetupOrganizer]) as RequestHandler,
+  authChecker([
+    Rule.requireOrganizer,
+    Rule.overrideMeetupOrganizer,
+  ]) as RequestHandler,
   checkInTicket as RequestHandler
 );
 
 router.post(
   '/:ticket_id/claim',
-  authChecker([Rule.overrideMeetupOrganizer]) as RequestHandler,
+  authChecker([
+    Rule.requireOrganizer,
+    Rule.overrideMeetupOrganizer,
+  ]) as RequestHandler,
   claimRaffleWinner as RequestHandler
 );
 
