@@ -30,4 +30,10 @@ export class Ticket extends BaseEntity {
 
   @Column({ type: 'int', default: 0 })
   raffle_wins: number;
+
+  @Column({ type: 'timestamptz', default: () => 'now()' })
+  created_at: Date;
+
+  @Column({ type: 'timestamptz', default: null, nullable: true })
+  checked_in_at: Date;
 }

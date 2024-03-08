@@ -167,6 +167,7 @@ export const checkInTicket = async (
   }
 
   ticket.is_checked_in = true;
+  ticket.checked_in_at = new Date();
   await ticket.save();
 
   return res.status(200).end();
