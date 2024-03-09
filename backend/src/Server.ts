@@ -2,6 +2,7 @@ import * as express from 'express';
 import config from './config';
 import { AppDataSource } from './datasource';
 import meetupRoutes from './routes/meetups';
+import oauth2Routes from './routes/oauth2';
 import ticketRoutes from './routes/tickets';
 import userRoutes from './routes/users';
 
@@ -37,6 +38,7 @@ class Server {
     this.express.use('/users', userRoutes);
     this.express.use('/meetups', meetupRoutes);
     this.express.use('/tickets', ticketRoutes);
+    this.express.use('/oauth2/', oauth2Routes);
 
     this.express.use('*', (req, res, next) => {
       res.send('Not a valid endpoint.');

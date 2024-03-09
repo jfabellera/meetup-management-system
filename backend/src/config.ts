@@ -14,6 +14,8 @@ interface Config {
   databasePassword: string;
   jwtSecret: string;
   gcpApiKey: string;
+  eventbriteApiKey: string;
+  eventbriteClientSecret: string;
 }
 
 const config: Config = {
@@ -28,6 +30,8 @@ const config: Config = {
   databasePassword: process.env.MMS_DATABASE_PASSWORD ?? '',
   jwtSecret: process.env.JWT_ACCESS_SECRET ?? '',
   gcpApiKey: process.env.GCP_API_KEY ?? '',
+  eventbriteApiKey: process.env.EVENTBRITE_API_KEY ?? '',
+  eventbriteClientSecret: process.env.EVENTBRITE_CLIENT_SECRET ?? '',
 };
 
 export default config;
