@@ -1,27 +1,35 @@
 import axios from 'axios';
 import { type Request, type Response } from 'express';
 import config from '../config';
+import { type User } from '../entity/User';
+import { encrypt } from '../util/security';
 
 export const eventbriteRedirect = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { code } = req.query;
+  const { access_code } = req.body;
 
-  const codeString = code as string;
+  const user = res.locals.requestor as User;
 
   const data = new FormData();
   data.append('grant_type', 'authorization_code');
   data.append('client_id', config.eventbriteApiKey);
   data.append('client_secret', config.eventbriteClientSecret);
-  data.append('code', codeString);
+  data.append('code', access_code);
 
-  const response = await axios.post(
-    'https://www.eventbrite.com/oauth/token',
-    data
-  );
+  try {
+    const response = await axios.post(
+      'https://www.eventbrite.com/oauth/token',
+      data
+    );
 
-  console.log(response.data);
+    user.encrypted_eventbrite_token = encrypt(response.data.access_token);
+
+    await user.save();
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message });
+  }
 
   return res.status(200).end();
 };
