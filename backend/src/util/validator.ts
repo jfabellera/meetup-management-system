@@ -12,6 +12,9 @@ export const createMeetupSchema = z.object({
   capacity: z.number().gt(0),
   image_url: z.string(),
   organizer_ids: z.array(z.number()).optional(),
+  eventbrite_event_id: z.number().optional(),
+  eventbrite_ticket_id: z.number().optional(),
+  eventbrite_question_id: z.number().optional(),
 });
 
 export type CreateMeetupPayload = z.infer<typeof createMeetupSchema>;

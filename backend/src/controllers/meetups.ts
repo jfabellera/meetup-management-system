@@ -3,6 +3,7 @@ import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
 import { type ParsedQs } from 'qs';
 import { ILike, type FindOptionsOrder, type FindOptionsWhere } from 'typeorm';
+import { EventbriteRecord } from '../entity/EventbriteRecord';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { geocode, getUtcOffset } from '../util/externalApis';
@@ -266,6 +267,22 @@ export const createMeetup = async (
     .toISOString();
 
   await newMeetup.save();
+
+  // Create Eventbrite record if necessary
+  if (
+    result.data.eventbrite_event_id != null &&
+    result.data.eventbrite_ticket_id != null &&
+    result.data.eventbrite_question_id != null
+  ) {
+    const newEventbriteRecord = EventbriteRecord.create({
+      event_id: result.data.eventbrite_event_id,
+      ticket_class_id: result.data.eventbrite_ticket_id,
+      display_name_question_id: result.data.eventbrite_question_id,
+      meetup: newMeetup,
+    });
+
+    await newEventbriteRecord.save();
+  }
 
   return res.status(201).json(newMeetup);
 };
