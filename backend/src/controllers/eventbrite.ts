@@ -5,6 +5,7 @@ import type {
   EventbriteEvent,
   EventbriteOrganization,
   EventbriteQuestion,
+  EventbriteTicket,
 } from '../interfaces/eventbriteInterfaces';
 import { decrypt } from '../util/security';
 
@@ -81,6 +82,42 @@ export const getEventbriteEvents = async (
     return res.status(200).json(events);
   } catch (error: any) {
     return res.status(500).json({ message: 'Unable to get events.' });
+  }
+};
+
+export const getEventbriteTickets = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  const { event_id } = req.params;
+  const user = res.locals.requestor as User;
+
+  if (user.encrypted_eventbrite_token == null) return rejectNoToken(res);
+
+  try {
+    const ebToken = decrypt(user.encrypted_eventbrite_token);
+
+    const response = await axios.get(
+      `https://www.eventbriteapi.com/v3/events/${event_id}/ticket_classes/`,
+      {
+        headers: {
+          Authorization: `Bearer ${ebToken}`,
+        },
+      },
+    );
+
+    const tickets: EventbriteTicket[] = response.data.ticket_classes?.map(
+      (ticket: any) => {
+        return {
+          name: ticket.name,
+          id: ticket.id,
+        } satisfies EventbriteTicket;
+      },
+    );
+
+    return res.status(200).json(tickets);
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Unable to get ticket classes.' });
   }
 };
 

@@ -8,6 +8,11 @@ export interface EventbriteEvent {
   id: number;
 }
 
+export interface EventbriteTicket {
+  name: string;
+  id: number;
+}
+
 export interface EventbriteQuestion {
   name: string;
   id: number;

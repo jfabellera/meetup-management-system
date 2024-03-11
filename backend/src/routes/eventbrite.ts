@@ -3,6 +3,7 @@ import {
   getEventbriteEvents,
   getEventbriteOrganizations,
   getEventbriteQuestions,
+  getEventbriteTickets,
 } from '../controllers/eventbrite';
 import { authChecker, Rule } from '../middleware/authChecker';
 
@@ -24,6 +25,12 @@ router.get(
   '/events/:event_id/questions',
   authChecker([Rule.overrideOrganizer]) as RequestHandler,
   getEventbriteQuestions as RequestHandler
+);
+
+router.get(
+  '/events/:event_id/tickets',
+  authChecker([Rule.overrideOrganizer]) as RequestHandler,
+  getEventbriteTickets as RequestHandler
 );
 
 export default router;
