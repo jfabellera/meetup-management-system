@@ -37,5 +37,5 @@ export class User extends BaseEntity {
   tickets: Ticket[];
 
   @Column({ type: 'varchar', length: 96, nullable: true })
-  encrypted_eventbrite_token: string;
+  encrypted_eventbrite_token?: string;
 }
