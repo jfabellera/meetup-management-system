@@ -52,3 +52,35 @@ export const getEventbriteAttendees = async (
     return [];
   }
 };
+
+export const getEventbriteAttendee = async (
+  accessToken: string,
+  eventId: number,
+  attendeeId: number,
+  questionId: number
+): Promise<EventbriteAttendee | null> => {
+  try {
+    const response = await axios.get(
+      `https://www.eventbriteapi.com/v3/events/${eventId}/attendees/${attendeeId}/`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    const attendee = response.data;
+
+    return {
+      id: attendee.id,
+      displayName: attendee.answers.find(
+        (question: any) => question.question_id === questionId
+      ).answer,
+      firstName: attendee.profile.first_name,
+      lastName: attendee.profile.last_name,
+      email: attendee.profile.email,
+      createdAt: attendee.created,
+      isCheckedIn: attendee.checked_in,
+    } satisfies EventbriteAttendee;
+  } catch (error: any) {
+    return null;
+  }
+};
