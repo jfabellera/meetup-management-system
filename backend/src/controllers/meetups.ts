@@ -6,7 +6,7 @@ import { ILike, type FindOptionsOrder, type FindOptionsWhere } from 'typeorm';
 import { EventbriteRecord } from '../entity/EventbriteRecord';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
-import { User } from '../entity/User';
+import { type User } from '../entity/User';
 import { getEventbriteAttendees } from '../util/eventbriteApi';
 import { geocode, getUtcOffset } from '../util/externalApis';
 import { decrypt } from '../util/security';
@@ -457,7 +457,7 @@ export const getMeetupAttendees = async (
 
     const response = ebAttendees.map((attendee) => {
       const ticketInfo: TicketInfo = {
-        id: parseInt(attendee.id), // TODO(jan): Use MMS ticket id?
+        id: attendee.id, // TODO(jan): Use MMS ticket id?
         created_at: attendee.createdAt,
         is_checked_in: attendee.isCheckedIn,
         user: {
@@ -495,4 +495,56 @@ export const getMeetupAttendees = async (
   });
 
   return res.json(response);
+};
+
+export const syncEventbriteAttendees = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const meetup = res.locals.meetup as Meetup;
+  const user = res.locals.requestor as User;
+
+  if (
+    meetup.eventbriteRecord == null ||
+    user.encrypted_eventbrite_token == null
+  ) {
+    return res
+      .status(400)
+      .json({ message: 'Unable to retrieve Eventbrite data.' });
+  }
+
+  const ebToken = decrypt(user.encrypted_eventbrite_token);
+  const ebAttendees = await getEventbriteAttendees(
+    ebToken,
+    meetup.eventbriteRecord.event_id,
+    meetup.eventbriteRecord.ticket_class_id,
+    meetup.eventbriteRecord.display_name_question_id
+  );
+
+  ebAttendees.forEach((attendee) => {
+    void (async () => {
+      const existingTicket = await Ticket.findOne({
+        where: { eventbrite_attendee_id: attendee.id },
+      });
+
+      if (existingTicket != null) {
+        // Update checked in status
+        if (existingTicket.is_checked_in !== attendee.isCheckedIn) {
+          existingTicket.is_checked_in = attendee.isCheckedIn;
+          await existingTicket.save();
+        }
+        return;
+      }
+
+      // Create new ticket
+      const newTicket = Ticket.create({
+        meetup,
+        eventbrite_attendee_id: attendee.id,
+        created_at: attendee.createdAt,
+      });
+
+      await newTicket.save();
+    })();
+  });
+  return res.status(200).end();
 };

@@ -19,7 +19,7 @@ export interface EventbriteQuestion {
 }
 
 export interface EventbriteAttendee {
-  id: string;
+  id: number;
   displayName: string;
   firstName: string;
   lastName: string;

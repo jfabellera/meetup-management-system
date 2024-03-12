@@ -5,6 +5,7 @@ import {
   getAllMeetups,
   getMeetup,
   getMeetupAttendees,
+  syncEventbriteAttendees,
   updateMeetup,
 } from '../controllers/meetups';
 import { rollRaffleWinner } from '../controllers/raffles';
@@ -51,6 +52,12 @@ router.post(
   '/:meetup_id/raffle',
   authChecker([Rule.requireOrganizer]) as RequestHandler,
   rollRaffleWinner as RequestHandler
+);
+
+router.post(
+  '/:meetup_id/sync-eventbrite',
+  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  syncEventbriteAttendees as RequestHandler
 );
 
 export default router;

@@ -151,6 +151,7 @@ export const authChecker =
         const meetup = await Meetup.findOne({
           relations: {
             organizers: true,
+            eventbriteRecord: true,
           },
           where: {
             id: parseInt(req.params.meetup_id),
