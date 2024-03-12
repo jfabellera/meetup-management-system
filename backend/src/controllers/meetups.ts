@@ -6,7 +6,10 @@ import { ILike, type FindOptionsOrder, type FindOptionsWhere } from 'typeorm';
 import { EventbriteRecord } from '../entity/EventbriteRecord';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
+import { User } from '../entity/User';
+import { getEventbriteAttendees } from '../util/eventbriteApi';
 import { geocode, getUtcOffset } from '../util/externalApis';
+import { decrypt } from '../util/security';
 import { createMeetupSchema, editMeetupSchema } from '../util/validator';
 
 dayjs.extend(utc);
@@ -412,6 +415,7 @@ export const getMeetupAttendees = async (
   res: Response
 ): Promise<Response> => {
   const { meetup_id } = req.params;
+  const user = res.locals.requestor as User;
 
   const meetup = await Meetup.findOne({
     select: {
@@ -428,7 +432,7 @@ export const getMeetupAttendees = async (
         },
       },
     },
-    relations: { tickets: { user: true } },
+    relations: { tickets: { user: true }, eventbriteRecord: true },
     where: {
       id: parseInt(meetup_id),
     },
@@ -436,6 +440,38 @@ export const getMeetupAttendees = async (
 
   if (meetup == null) {
     return res.status(404).json({ message: 'Invalid meetupID.' });
+  }
+
+  // Get attendee list from Eventbrite if meetup is setup with Eventbrite
+  if (
+    meetup.eventbriteRecord != null &&
+    user.encrypted_eventbrite_token != null
+  ) {
+    const ebToken = decrypt(user.encrypted_eventbrite_token);
+    const ebAttendees = await getEventbriteAttendees(
+      ebToken,
+      meetup.eventbriteRecord.event_id,
+      meetup.eventbriteRecord.ticket_class_id,
+      meetup.eventbriteRecord.display_name_question_id
+    );
+
+    const response = ebAttendees.map((attendee) => {
+      const ticketInfo: TicketInfo = {
+        id: parseInt(attendee.id), // TODO(jan): Use MMS ticket id?
+        created_at: attendee.createdAt,
+        is_checked_in: attendee.isCheckedIn,
+        user: {
+          email: attendee.email,
+          nick_name: attendee.displayName,
+          first_name: attendee.firstName,
+          last_name: attendee.lastName,
+        },
+      };
+
+      return ticketInfo;
+    });
+
+    return res.json(response);
   }
 
   const response = meetup.tickets.map((ticket) => {
