@@ -6,7 +6,7 @@ export const getEventbriteAttendees = async (
   eventId: number,
   ticketClassId: number,
   questionId: number
-): Promise<any> => {
+): Promise<EventbriteAttendee[]> => {
   let hasMoreItems = false;
   let attendees: EventbriteAttendee[] = [];
   let page = 1;
@@ -29,7 +29,7 @@ export const getEventbriteAttendees = async (
           .filter(
             (attendee: any) =>
               attendee.ticket_class_id === ticketClassId &&
-              attendee.status === 'Attending'
+              attendee.cancelled === false
           )
           .map((attendee: any) => {
             return {
@@ -41,6 +41,7 @@ export const getEventbriteAttendees = async (
               lastName: attendee.profile.last_name,
               email: attendee.profile.email,
               createdAt: attendee.created,
+              isCheckedIn: attendee.checked_in,
             } satisfies EventbriteAttendee;
           })
       );

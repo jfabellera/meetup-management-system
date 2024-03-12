@@ -25,4 +25,5 @@ export interface EventbriteAttendee {
   lastName: string;
   email: string;
   createdAt: Date;
+  isCheckedIn: boolean;
 }
