@@ -160,6 +160,12 @@ export const checkInTicket = async (
 ): Promise<Response> => {
   const ticket = res.locals.ticket as Ticket;
 
+  if (ticket.eventbrite_attendee_id != null) {
+    return res.status(400).json({
+      message: 'Ticket must be checked in via Eventbrite.',
+    });
+  }
+
   if (ticket.is_checked_in) {
     return res
       .status(200)
