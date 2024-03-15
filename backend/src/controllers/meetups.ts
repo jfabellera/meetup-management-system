@@ -7,6 +7,7 @@ import { EventbriteRecord } from '../entity/EventbriteRecord';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { type User } from '../entity/User';
+import { EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
 import { getEventbriteAttendees } from '../util/eventbriteApi';
 import { geocode, getUtcOffset } from '../util/externalApis';
 import { decrypt } from '../util/security';
@@ -41,12 +42,17 @@ export interface TicketInfo {
   created_at: Date;
   is_checked_in: boolean;
   checked_in_at?: Date;
-  user: {
+  user?: {
     email: string;
     first_name: string;
     last_name: string;
     nick_name: string;
   };
+}
+
+enum TicketInfoDetailLevel {
+  Simple,
+  Detailed,
 }
 
 enum MeetupInfoDetailLevel {
@@ -415,7 +421,14 @@ export const getMeetupAttendees = async (
   res: Response
 ): Promise<Response> => {
   const { meetup_id } = req.params;
+  const { detail_level } = req.query;
   const user = res.locals.requestor as User;
+
+  const detailLevel =
+    detail_level != null &&
+    (detail_level as string).toLowerCase() === 'detailed'
+      ? TicketInfoDetailLevel.Detailed
+      : TicketInfoDetailLevel.Simple;
 
   const meetup = await Meetup.findOne({
     select: {
@@ -430,6 +443,7 @@ export const getMeetupAttendees = async (
           nick_name: true,
           email: true,
         },
+        eventbrite_attendee_id: true,
       },
     },
     relations: { tickets: { user: true }, eventbriteRecord: true },
@@ -443,35 +457,19 @@ export const getMeetupAttendees = async (
   }
 
   // Get attendee list from Eventbrite if meetup is setup with Eventbrite
+  let ebAttendees: EventbriteAttendee[];
   if (
+    detailLevel === TicketInfoDetailLevel.Detailed &&
     meetup.eventbriteRecord != null &&
     user.encrypted_eventbrite_token != null
   ) {
     const ebToken = decrypt(user.encrypted_eventbrite_token);
-    const ebAttendees = await getEventbriteAttendees(
+    ebAttendees = await getEventbriteAttendees(
       ebToken,
       meetup.eventbriteRecord.event_id,
       meetup.eventbriteRecord.ticket_class_id,
       meetup.eventbriteRecord.display_name_question_id
     );
-
-    const response = ebAttendees.map((attendee) => {
-      const ticketInfo: TicketInfo = {
-        id: attendee.id, // TODO(jan): Use MMS ticket id?
-        created_at: attendee.createdAt,
-        is_checked_in: attendee.isCheckedIn,
-        user: {
-          email: attendee.email,
-          nick_name: attendee.displayName,
-          first_name: attendee.firstName,
-          last_name: attendee.lastName,
-        },
-      };
-
-      return ticketInfo;
-    });
-
-    return res.json(response);
   }
 
   const response = meetup.tickets.map((ticket) => {
@@ -479,13 +477,31 @@ export const getMeetupAttendees = async (
       id: ticket.id,
       created_at: ticket.created_at,
       is_checked_in: ticket.is_checked_in,
-      user: {
-        email: ticket.user.email,
-        nick_name: ticket.user.nick_name,
-        first_name: ticket.user.first_name,
-        last_name: ticket.user.last_name,
-      },
     };
+
+    if (detailLevel === TicketInfoDetailLevel.Detailed) {
+      if (ticket.eventbrite_attendee_id == null) {
+        ticketInfo.user = {
+          email: ticket.user.email,
+          nick_name: ticket.user.nick_name,
+          first_name: ticket.user.first_name,
+          last_name: ticket.user.last_name,
+        };
+      } else {
+        const ebAttendee = ebAttendees.find(
+          (attendee) => attendee.id === ticket.eventbrite_attendee_id
+        );
+
+        if (ebAttendee != null) {
+          ticketInfo.user = {
+            email: ebAttendee.email,
+            nick_name: ebAttendee.displayName,
+            first_name: ebAttendee.firstName,
+            last_name: ebAttendee.lastName,
+          };
+        }
+      }
+    }
 
     if (ticket.is_checked_in) {
       ticketInfo.checked_in_at = ticket.checked_in_at;

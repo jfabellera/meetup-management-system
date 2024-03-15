@@ -18,16 +18,19 @@ import { useGetMeetupAttendeesQuery } from '../store/organizerSlice';
 
 const ManageMeetupAttendeesPage = (): JSX.Element => {
   const { meetupId } = useParams();
-  const { data: attendees } = useGetMeetupAttendeesQuery(
-    parseInt(meetupId ?? '0'),
-  );
+  const { data: attendees } = useGetMeetupAttendeesQuery({
+    meetup_id: parseInt(meetupId ?? '0'),
+    params: {
+      detail_level: 'detailed',
+    },
+  });
 
   const sortedAttendees = useMemo(
     () =>
       attendees
         ?.slice()
         .sort((a, b) => (dayjs(a.created_at).isBefore(b.created_at) ? 1 : -1)),
-    [attendees],
+    [attendees]
   );
 
   return (
@@ -57,10 +60,10 @@ const ManageMeetupAttendeesPage = (): JSX.Element => {
             {sortedAttendees != null
               ? sortedAttendees.map((attendee: TicketInfo) => (
                   <Tr key={attendee.id}>
-                    <Td>{attendee.user.nick_name}</Td>
+                    <Td>{attendee.user?.nick_name}</Td>
                     <Show above={'md'}>
-                      <Td>{attendee.user.first_name}</Td>
-                      <Td>{attendee.user.last_name}</Td>
+                      <Td>{attendee.user?.first_name}</Td>
+                      <Td>{attendee.user?.last_name}</Td>
                     </Show>
                     <Td>
                       {dayjs(attendee.created_at).format('M/D/YY hh:mm A')}
