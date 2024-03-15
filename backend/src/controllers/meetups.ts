@@ -8,7 +8,11 @@ import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { type User } from '../entity/User';
 import { EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
-import { getEventbriteAttendees } from '../util/eventbriteApi';
+import {
+  getEventbriteAttendees,
+  getEventbriteEvent,
+  getEventbriteTicket,
+} from '../util/eventbriteApi';
 import { geocode, getUtcOffset } from '../util/externalApis';
 import { decrypt } from '../util/security';
 import { createMeetupSchema, editMeetupSchema } from '../util/validator';
@@ -530,6 +534,27 @@ export const syncEventbriteAttendees = async (
   }
 
   const ebToken = decrypt(user.encrypted_eventbrite_token);
+  // Update meetup
+  const ebEvent = await getEventbriteEvent(
+    ebToken,
+    meetup.eventbriteRecord.event_id
+  );
+
+  if (ebEvent?.name != null) meetup.name = ebEvent.name;
+  if (ebEvent?.imageUrl != null) meetup.image_url = ebEvent.imageUrl;
+  if (ebEvent?.date != null) meetup.date = ebEvent.date;
+
+  const ebTicketClass = await getEventbriteTicket(
+    ebToken,
+    meetup.eventbriteRecord.event_id,
+    meetup.eventbriteRecord.ticket_class_id
+  );
+
+  if (ebTicketClass?.total != null) meetup.capacity = ebTicketClass.total;
+
+  await meetup.save();
+
+  // Update tickets
   const ebAttendees = await getEventbriteAttendees(
     ebToken,
     meetup.eventbriteRecord.event_id,

@@ -6,11 +6,15 @@ export interface EventbriteOrganization {
 export interface EventbriteEvent {
   name: string;
   id: number;
+  imageUrl?: string;
+  date?: string;
 }
 
 export interface EventbriteTicket {
   name: string;
   id: number;
+  total?: number;
+  sold?: number;
 }
 
 export interface EventbriteQuestion {

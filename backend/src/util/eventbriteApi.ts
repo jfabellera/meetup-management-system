@@ -59,6 +59,31 @@ export const getEventbriteEvents = async (
   }
 };
 
+export const getEventbriteEvent = async (
+  accessToken: string,
+  eventId: number
+): Promise<EventbriteEvent | undefined> => {
+  try {
+    const response = await axios.get(
+      `https://www.eventbriteapi.com/v3/events/${eventId}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    const event = response.data;
+
+    return {
+      id: event.id,
+      name: event.name?.text,
+      imageUrl: event.logo?.original?.url,
+      date: event.start?.utc,
+    } satisfies EventbriteEvent;
+  } catch (error: any) {
+    return undefined;
+  }
+};
+
 export const getEventbriteTickets = async (
   accessToken: string,
   eventId: number
@@ -85,6 +110,32 @@ export const getEventbriteTickets = async (
     return tickets;
   } catch (error: any) {
     return [];
+  }
+};
+
+export const getEventbriteTicket = async (
+  accessToken: string,
+  eventId: number,
+  ticketId: number
+): Promise<EventbriteTicket | undefined> => {
+  try {
+    const response = await axios.get(
+      `https://www.eventbriteapi.com/v3/events/${eventId}/ticket_classes/${ticketId}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    const ticket = response.data;
+
+    return {
+      id: ticket.id,
+      name: ticket.name,
+      total: ticket.quantity_total,
+      sold: ticket.quantity_sold,
+    } satisfies EventbriteTicket;
+  } catch (error: any) {
+    return undefined;
   }
 };
 
