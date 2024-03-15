@@ -251,3 +251,32 @@ export const getEventbriteAttendee = async (
     return null;
   }
 };
+
+// TODO(jan): Reduce code duplication
+export const getEventbriteAttendeeByUri = async (
+  accessToken: string,
+  resourceUri: string,
+  questionId: number
+): Promise<EventbriteAttendee | undefined> => {
+  try {
+    const response = await axios.get(resourceUri, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    const attendee = response.data;
+
+    return {
+      id: attendee.id,
+      displayName: attendee.answers.find(
+        (question: any) => question.question_id === questionId
+      ).answer,
+      firstName: attendee.profile.first_name,
+      lastName: attendee.profile.last_name,
+      email: attendee.profile.email,
+      createdAt: attendee.created,
+      isCheckedIn: attendee.checked_in,
+    } satisfies EventbriteAttendee;
+  } catch (error: any) {
+    return undefined;
+  }
+};

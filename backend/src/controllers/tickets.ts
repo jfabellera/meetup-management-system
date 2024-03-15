@@ -1,5 +1,7 @@
 import { type Request, type Response } from 'express';
+import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
+import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
 import { createTicketSchema, editTicketSchema } from '../util/validator';
 
 export interface SimpleTicketInfo {
@@ -177,4 +179,44 @@ export const checkInTicket = async (
   await ticket.save();
 
   return res.status(200).end();
+};
+
+export const updateTicketViaWebhook = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { meetup_id } = req.params;
+  const { token } = req.query;
+  const { api_url } = req.body;
+
+  try {
+    const meetup = await Meetup.findOne({
+      relations: { eventbriteRecord: true },
+      where: { id: parseInt(meetup_id) },
+      select: { eventbriteRecord: { display_name_question_id: true } },
+    });
+
+    if (meetup?.eventbriteRecord == null) return res.status(404).end();
+
+    const attendee = await getEventbriteAttendeeByUri(
+      String(token),
+      api_url,
+      meetup.eventbriteRecord.display_name_question_id
+    );
+
+    if (attendee == null) return res.status(400).end();
+
+    const ticket = await Ticket.findOne({
+      where: { eventbrite_attendee_id: attendee?.id },
+    });
+
+    if (ticket == null) return res.status(404).end();
+
+    ticket.is_checked_in = attendee.isCheckedIn;
+    await ticket.save();
+
+    return res.status(200).end();
+  } catch (error: any) {
+    return res.status(400).end();
+  }
 };

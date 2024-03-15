@@ -9,7 +9,7 @@ import {
   updateMeetup,
 } from '../controllers/meetups';
 import { rollRaffleWinner } from '../controllers/raffles';
-import { createTicket } from '../controllers/tickets';
+import { createTicket, updateTicketViaWebhook } from '../controllers/tickets';
 import { authChecker, Rule } from '../middleware/authChecker';
 
 const router = express.Router();
@@ -58,6 +58,11 @@ router.post(
   '/:meetup_id/sync-eventbrite',
   authChecker([Rule.requireOrganizer]) as RequestHandler,
   syncEventbriteAttendees as RequestHandler
+);
+
+router.post(
+  '/:meetup_id/attendee-webhook',
+  updateTicketViaWebhook as RequestHandler
 );
 
 export default router;
