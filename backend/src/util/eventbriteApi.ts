@@ -1,5 +1,121 @@
 import axios from 'axios';
-import { type EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
+import {
+  type EventbriteAttendee,
+  type EventbriteEvent,
+  type EventbriteOrganization,
+  type EventbriteQuestion,
+  type EventbriteTicket,
+} from '../interfaces/eventbriteInterfaces';
+
+export const getEventbriteOrganizations = async (
+  accessToken: string
+): Promise<EventbriteOrganization[]> => {
+  try {
+    const response = await axios.get(
+      'https://www.eventbriteapi.com/v3/users/me/organizations/',
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    const organizations: EventbriteOrganization[] =
+      response.data.organizations?.map((organization: any) => {
+        return {
+          name: organization.name,
+          id: organization.id,
+        } satisfies EventbriteOrganization;
+      });
+
+    return organizations;
+  } catch (error: any) {
+    return [];
+  }
+};
+
+export const getEventbriteEvents = async (
+  accessToken: string,
+  organizationId: number
+): Promise<EventbriteEvent[]> => {
+  try {
+    const response = await axios.get(
+      `https://www.eventbriteapi.com/v3/organizations/${organizationId}/events/`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    const events: EventbriteEvent[] = response.data.events?.map(
+      (event: any) => {
+        return {
+          name: event.name.text,
+          id: event.id,
+        } satisfies EventbriteEvent;
+      }
+    );
+
+    return events;
+  } catch (error: any) {
+    return [];
+  }
+};
+
+export const getEventbriteTickets = async (
+  accessToken: string,
+  eventId: number
+): Promise<EventbriteTicket[]> => {
+  try {
+    const response = await axios.get(
+      `https://www.eventbriteapi.com/v3/events/${eventId}/ticket_classes/`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    const tickets: EventbriteTicket[] = response.data.ticket_classes?.map(
+      (ticket: any) => {
+        return {
+          name: ticket.name,
+          id: ticket.id,
+        } satisfies EventbriteTicket;
+      }
+    );
+
+    return tickets;
+  } catch (error: any) {
+    return [];
+  }
+};
+
+export const getEventbriteQuestions = async (
+  accessToken: string,
+  eventId: number
+): Promise<EventbriteQuestion[]> => {
+  try {
+    const response = await axios.get(
+      `https://www.eventbriteapi.com/v3/events/${eventId}/questions/`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    const questions: EventbriteQuestion[] = response.data.questions?.map(
+      (question: any) => {
+        return {
+          name: question.question.text,
+          id: question.id,
+        } satisfies EventbriteQuestion;
+      }
+    );
+
+    return questions;
+  } catch (error: any) {
+    return [];
+  }
+};
 
 export const getEventbriteAttendees = async (
   accessToken: string,

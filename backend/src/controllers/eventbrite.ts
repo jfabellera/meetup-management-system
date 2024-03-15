@@ -1,12 +1,11 @@
-import axios from 'axios';
 import { type Request, type Response } from 'express';
 import { type User } from '../entity/User';
-import type {
-  EventbriteEvent,
-  EventbriteOrganization,
-  EventbriteQuestion,
-  EventbriteTicket,
-} from '../interfaces/eventbriteInterfaces';
+import {
+  getEventbriteEvents,
+  getEventbriteOrganizations,
+  getEventbriteQuestions,
+  getEventbriteTickets,
+} from '../util/eventbriteApi';
 import { decrypt } from '../util/security';
 
 const rejectNoToken = (res: Response): Response => {
@@ -15,9 +14,9 @@ const rejectNoToken = (res: Response): Response => {
     .json({ message: 'No Eventbrite access token tied to user.' });
 };
 
-export const getEventbriteOrganizations = async (
+export const getEventbriteOrganizationsEndpoint = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   const user = res.locals.requestor as User;
 
@@ -25,23 +24,7 @@ export const getEventbriteOrganizations = async (
 
   try {
     const ebToken = decrypt(user.encrypted_eventbrite_token);
-
-    const response = await axios.get(
-      'https://www.eventbriteapi.com/v3/users/me/organizations/',
-      {
-        headers: {
-          Authorization: `Bearer ${ebToken}`,
-        },
-      },
-    );
-
-    const organizations: EventbriteOrganization[] =
-      response.data.organizations?.map((organization: any) => {
-        return {
-          name: organization.name,
-          id: organization.id,
-        } satisfies EventbriteOrganization;
-      });
+    const organizations = await getEventbriteOrganizations(ebToken);
 
     return res.status(200).json(organizations);
   } catch (error: any) {
@@ -49,9 +32,9 @@ export const getEventbriteOrganizations = async (
   }
 };
 
-export const getEventbriteEvents = async (
+export const getEventbriteEventsEndpoint = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   const { organization_id } = req.params;
   const user = res.locals.requestor as User;
@@ -60,23 +43,9 @@ export const getEventbriteEvents = async (
 
   try {
     const ebToken = decrypt(user.encrypted_eventbrite_token);
-
-    const response = await axios.get(
-      `https://www.eventbriteapi.com/v3/organizations/${organization_id}/events/`,
-      {
-        headers: {
-          Authorization: `Bearer ${ebToken}`,
-        },
-      },
-    );
-
-    const events: EventbriteEvent[] = response.data.events?.map(
-      (event: any) => {
-        return {
-          name: event.name.text,
-          id: event.id,
-        } satisfies EventbriteEvent;
-      },
+    const events = await getEventbriteEvents(
+      ebToken,
+      parseInt(organization_id)
     );
 
     return res.status(200).json(events);
@@ -85,9 +54,9 @@ export const getEventbriteEvents = async (
   }
 };
 
-export const getEventbriteTickets = async (
+export const getEventbriteTicketsEndpoint = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   const { event_id } = req.params;
   const user = res.locals.requestor as User;
@@ -96,24 +65,7 @@ export const getEventbriteTickets = async (
 
   try {
     const ebToken = decrypt(user.encrypted_eventbrite_token);
-
-    const response = await axios.get(
-      `https://www.eventbriteapi.com/v3/events/${event_id}/ticket_classes/`,
-      {
-        headers: {
-          Authorization: `Bearer ${ebToken}`,
-        },
-      },
-    );
-
-    const tickets: EventbriteTicket[] = response.data.ticket_classes?.map(
-      (ticket: any) => {
-        return {
-          name: ticket.name,
-          id: ticket.id,
-        } satisfies EventbriteTicket;
-      },
-    );
+    const tickets = await getEventbriteTickets(ebToken, parseInt(event_id));
 
     return res.status(200).json(tickets);
   } catch (error: any) {
@@ -121,9 +73,9 @@ export const getEventbriteTickets = async (
   }
 };
 
-export const getEventbriteQuestions = async (
+export const getEventbriteQuestionsEndpoint = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   const { event_id } = req.params;
   const user = res.locals.requestor as User;
@@ -132,24 +84,7 @@ export const getEventbriteQuestions = async (
 
   try {
     const ebToken = decrypt(user.encrypted_eventbrite_token);
-
-    const response = await axios.get(
-      `https://www.eventbriteapi.com/v3/events/${event_id}/questions/`,
-      {
-        headers: {
-          Authorization: `Bearer ${ebToken}`,
-        },
-      },
-    );
-
-    const questions: EventbriteQuestion[] = response.data.questions?.map(
-      (question: any) => {
-        return {
-          name: question.question.text,
-          id: question.id,
-        } satisfies EventbriteQuestion;
-      },
-    );
+    const questions = await getEventbriteQuestions(ebToken, parseInt(event_id));
 
     return res.status(200).json(questions);
   } catch (error: any) {
