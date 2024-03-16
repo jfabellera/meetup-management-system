@@ -220,6 +220,7 @@ export const createMeetup = async (
   res: Response
 ): Promise<Response> => {
   const result = createMeetupSchema.safeParse(req.body);
+  const user = res.locals.requestor as User;
 
   if (!result.success) {
     return res.status(400).json(result.error);
@@ -279,22 +280,37 @@ export const createMeetup = async (
     .subtract(newMeetup.utc_offset, 'hour')
     .toISOString();
 
-  await newMeetup.save();
-
   // Create Eventbrite record if necessary
   if (
     result.data.eventbrite_event_id != null &&
     result.data.eventbrite_ticket_id != null &&
-    result.data.eventbrite_question_id != null
+    result.data.eventbrite_question_id != null &&
+    user.encrypted_eventbrite_token != null
   ) {
+    // TODO(jan): Validate these
     const newEventbriteRecord = EventbriteRecord.create({
       event_id: result.data.eventbrite_event_id,
       ticket_class_id: result.data.eventbrite_ticket_id,
       display_name_question_id: result.data.eventbrite_question_id,
-      meetup: newMeetup,
     });
 
+    const ebEvent = await getEventbriteEvent(
+      decrypt(user.encrypted_eventbrite_token),
+      result.data.eventbrite_event_id
+    );
+
+    if (ebEvent == null) {
+      return res
+        .status(400)
+        .json({ message: 'Unable to get Eventbrite info.' });
+    }
+
+    newEventbriteRecord.url = ebEvent.url ?? '';
+    newEventbriteRecord.meetup = await newMeetup.save();
+
     await newEventbriteRecord.save();
+  } else {
+    await newMeetup.save();
   }
 
   return res.status(201).json(newMeetup);

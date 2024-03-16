@@ -22,6 +22,9 @@ export class EventbriteRecord extends BaseEntity {
   @Column({ type: 'bigint' })
   display_name_question_id: number;
 
+  @Column({ type: 'varchar', length: 255 })
+  url: string;
+
   @OneToOne(() => Meetup, (meetup) => meetup.id)
   @JoinColumn({ name: 'meetup_id' })
   meetup: Meetup;

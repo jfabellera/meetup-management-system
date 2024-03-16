@@ -8,6 +8,7 @@ export interface EventbriteEvent {
   id: number;
   imageUrl?: string;
   date?: string;
+  url?: string;
 }
 
 export interface EventbriteTicket {

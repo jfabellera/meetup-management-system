@@ -78,6 +78,7 @@ export const getEventbriteEvent = async (
       name: event.name?.text,
       imageUrl: event.logo?.original?.url,
       date: event.start?.utc,
+      url: event.url,
     } satisfies EventbriteEvent;
   } catch (error: any) {
     return undefined;
