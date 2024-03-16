@@ -7,8 +7,10 @@ export interface EventbriteEvent {
   name: string;
   id: number;
   imageUrl?: string;
-  date?: string;
+  startTime?: string;
+  endTime?: string;
   url?: string;
+  venueId?: number;
 }
 
 export interface EventbriteVenue {

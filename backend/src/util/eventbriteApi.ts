@@ -78,8 +78,10 @@ export const getEventbriteEvent = async (
       id: event.id,
       name: event.name?.text,
       imageUrl: event.logo?.original?.url,
-      date: event.start?.utc,
+      startTime: event.start?.utc,
+      endTime: event.end?.utc,
       url: event.url,
+      venueId: event.venue_id,
     } satisfies EventbriteEvent;
   } catch (error: any) {
     return undefined;

@@ -1,6 +1,7 @@
 import express, { type RequestHandler } from 'express';
 import {
   createMeetup,
+  createMeetupFromEventbrite,
   deleteMeetup,
   getAllMeetups,
   getMeetup,
@@ -22,6 +23,12 @@ router.post(
   '/',
   authChecker([Rule.requireOrganizer]) as RequestHandler,
   createMeetup as RequestHandler
+);
+
+router.post(
+  '/eventbrite',
+  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  createMeetupFromEventbrite as RequestHandler
 );
 
 router.put(
