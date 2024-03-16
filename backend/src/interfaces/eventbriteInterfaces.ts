@@ -11,6 +11,12 @@ export interface EventbriteEvent {
   url?: string;
 }
 
+export interface EventbriteVenue {
+  id: number;
+  name: string;
+  address: string;
+}
+
 export interface EventbriteTicket {
   name: string;
   id: number;

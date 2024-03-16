@@ -5,6 +5,7 @@ import {
   type EventbriteOrganization,
   type EventbriteQuestion,
   type EventbriteTicket,
+  type EventbriteVenue,
 } from '../interfaces/eventbriteInterfaces';
 
 export const getEventbriteOrganizations = async (
@@ -80,6 +81,28 @@ export const getEventbriteEvent = async (
       date: event.start?.utc,
       url: event.url,
     } satisfies EventbriteEvent;
+  } catch (error: any) {
+    return undefined;
+  }
+};
+
+export const getEventbriteVenue = async (
+  accessToken: string,
+  venueId: number
+): Promise<EventbriteVenue | undefined> => {
+  try {
+    const response = await axios.get(
+      `https://www.eventbriteapi.com/v3/venues/${venueId}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    const venue = response.data;
+
+    return {
+      id: venue.id,
+      name: venue.name,
+      address: venue.address?.localized_address_display,
+    } satisfies EventbriteVenue;
   } catch (error: any) {
     return undefined;
   }
