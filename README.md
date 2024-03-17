@@ -58,8 +58,12 @@ This project is split into two portions:
    MMS_DATABASE_PASSWORD=
 
    JWT_ACCESS_SECRET=
-
+   AES_KEY=
    GCP_API_KEY=
+   EVENTBRITE_API_KEY=
+   EVENTBRITE_CLIENT_SECRET=
+
+   MMS_API_URL=
    ```
 
 3. Start the authentication server.
