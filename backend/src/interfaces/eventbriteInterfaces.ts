@@ -11,6 +11,7 @@ export interface EventbriteEvent {
   endTime?: string;
   url?: string;
   venueId?: number;
+  organizationId?: number;
 }
 
 export interface EventbriteVenue {
@@ -39,4 +40,8 @@ export interface EventbriteAttendee {
   email: string;
   createdAt: Date;
   isCheckedIn: boolean;
+}
+
+export interface EventbriteWebhook {
+  id: number;
 }

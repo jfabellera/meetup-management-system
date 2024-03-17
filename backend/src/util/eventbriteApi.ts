@@ -6,6 +6,7 @@ import {
   type EventbriteQuestion,
   type EventbriteTicket,
   type EventbriteVenue,
+  type EventbriteWebhook,
 } from '../interfaces/eventbriteInterfaces';
 
 export const getEventbriteOrganizations = async (
@@ -82,6 +83,7 @@ export const getEventbriteEvent = async (
       endTime: event.end?.utc,
       url: event.url,
       venueId: event.venue_id,
+      organizationId: event.organization_id,
     } satisfies EventbriteEvent;
   } catch (error: any) {
     return undefined;
@@ -302,6 +304,37 @@ export const getEventbriteAttendeeByUri = async (
       createdAt: attendee.created,
       isCheckedIn: attendee.checked_in,
     } satisfies EventbriteAttendee;
+  } catch (error: any) {
+    return undefined;
+  }
+};
+
+export const createEventbriteWebhook = async (
+  accessToken: string,
+  organizationId: number,
+  eventId: number,
+  endpointUrl: string,
+  actions: Array<'attendee.checked_in' | 'attendee.checked_out'>
+): Promise<EventbriteWebhook | undefined> => {
+  try {
+    const data = new FormData();
+    data.append('event_id', String(eventId));
+    data.append('endpoint_url', endpointUrl);
+    data.append('actions', actions.join(','));
+
+    const response = await axios.post(
+      `https://www.eventbriteapi.com/v3/organizations/${organizationId}/webhooks/`,
+      data,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    const webhook = response.data;
+
+    return {
+      id: webhook.id,
+    } satisfies EventbriteWebhook;
   } catch (error: any) {
     return undefined;
   }

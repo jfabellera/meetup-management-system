@@ -17,6 +17,7 @@ interface Config {
   gcpApiKey: string;
   eventbriteApiKey: string;
   eventbriteClientSecret: string;
+  apiUrl: string;
 }
 
 const config: Config = {
@@ -34,6 +35,7 @@ const config: Config = {
   gcpApiKey: process.env.GCP_API_KEY ?? '',
   eventbriteApiKey: process.env.EVENTBRITE_API_KEY ?? '',
   eventbriteClientSecret: process.env.EVENTBRITE_CLIENT_SECRET ?? '',
+  apiUrl: process.env.MMS_API_URL ?? '',
 };
 
 export default config;

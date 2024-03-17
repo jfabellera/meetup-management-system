@@ -25,6 +25,9 @@ export class EventbriteRecord extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   url: string;
 
+  @Column({ type: 'bigint' })
+  webhook_id: number;
+
   @OneToOne(() => Meetup, (meetup) => meetup.id)
   @JoinColumn({ name: 'meetup_id' })
   meetup: Meetup;

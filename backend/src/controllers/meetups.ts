@@ -3,12 +3,14 @@ import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
 import { type ParsedQs } from 'qs';
 import { ILike, type FindOptionsOrder, type FindOptionsWhere } from 'typeorm';
+import config from '../config';
 import { EventbriteRecord } from '../entity/EventbriteRecord';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { type User } from '../entity/User';
 import { type EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
 import {
+  createEventbriteWebhook,
   getEventbriteAttendees,
   getEventbriteEvent,
   getEventbriteTicket,
@@ -331,7 +333,12 @@ export const createMeetupFromEventbrite = async (
   );
 
   // Reject if any are null
-  if (ebEvent?.startTime == null || ebVenue == null || ebTicketClass == null)
+  if (
+    ebEvent?.startTime == null ||
+    ebEvent?.organizationId == null ||
+    ebVenue == null ||
+    ebTicketClass == null
+  )
     return res
       .status(500)
       .json({ message: 'Unable to get Eventbrite details.' });
@@ -382,6 +389,16 @@ export const createMeetupFromEventbrite = async (
       url: ebEvent?.url,
       meetup: newMeetup,
     });
+
+    const ebWebhook = await createEventbriteWebhook(
+      decrypt(user.encrypted_eventbrite_token),
+      ebEvent.organizationId,
+      ebEvent.id,
+      `${config.apiUrl}/meetups/${newMeetup.id}/attendee-webhook?token=${decrypt(user.encrypted_eventbrite_token)}`,
+      ['attendee.checked_in', 'attendee.checked_out']
+    );
+
+    if (ebWebhook != null) newEventbriteRecord.webhook_id = ebWebhook.id;
 
     await newEventbriteRecord.save();
   } catch (error: any) {
