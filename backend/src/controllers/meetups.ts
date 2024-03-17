@@ -14,7 +14,11 @@ import {
   getEventbriteTicket,
   getEventbriteVenue,
 } from '../util/eventbriteApi';
-import { geocode, getUtcOffset } from '../util/externalApis';
+import {
+  geocode,
+  getUtcOffset,
+  type GeocodeResults,
+} from '../util/externalApis';
 import { decrypt } from '../util/security';
 import {
   createMeetupFromEventbriteSchema,
@@ -308,7 +312,10 @@ export const createMeetupFromEventbrite = async (
     result.data.eventbrite_event_id
   );
 
-  if (ebEvent?.venueId == null) return res.status(400).end();
+  if (ebEvent?.venueId == null)
+    return res
+      .status(500)
+      .json({ message: 'Unable to get Eventbrite details.' });
 
   // Get venue details
   const ebVenue = await getEventbriteVenue(
@@ -324,49 +331,64 @@ export const createMeetupFromEventbrite = async (
   );
 
   // Reject if any are null
-  if (ebEvent == null || ebVenue == null || ebTicketClass == null)
+  if (ebEvent?.startTime == null || ebVenue == null || ebTicketClass == null)
     return res
-      .status(400)
-      .json({ message: 'Unable to get Eventbrite details' });
+      .status(500)
+      .json({ message: 'Unable to get Eventbrite details.' });
 
-  // Get geocode details
-  const geocodeResult = await geocode(ebVenue.address);
+  let geocodeResult: GeocodeResults;
+  let utcOffset: number;
+  try {
+    // Get geocode details
+    geocodeResult = await geocode(ebVenue.address);
+    utcOffset = await getUtcOffset(
+      geocodeResult.latitude,
+      geocodeResult.longitude,
+      new Date(ebEvent.startTime)
+    );
+  } catch (error: any) {
+    return res
+      .status(500)
+      .json({ message: 'There was an error verifying the address.' });
+  }
 
-  // Create meetup
-  const newMeetup = Meetup.create({
-    name: ebEvent.name,
-    date: ebEvent.startTime,
-    address: geocodeResult.fullAddress,
-    city: geocodeResult.city,
-    state: geocodeResult.state,
-    country: geocodeResult.country,
-    capacity: ebTicketClass.total,
-    duration_hours: dayjs(ebEvent.endTime).diff(ebEvent.startTime, 'hours'),
-    image_url: ebEvent.imageUrl,
-    organizers: [],
-    has_raffle: result.data.has_raffle,
-  });
+  try {
+    // Create meetup
+    const newMeetup = Meetup.create({
+      name: ebEvent.name,
+      date: ebEvent.startTime,
+      address: geocodeResult.fullAddress,
+      city: geocodeResult.city,
+      state: geocodeResult.state,
+      country: geocodeResult.country,
+      capacity: ebTicketClass.total,
+      duration_hours: dayjs(ebEvent.endTime).diff(ebEvent.startTime, 'hours'),
+      image_url: ebEvent.imageUrl,
+      organizers: [],
+      has_raffle: result.data.has_raffle,
+    });
 
-  newMeetup.organizers.unshift(user);
-  newMeetup.organizers = Array.from(new Set(newMeetup.organizers));
-  newMeetup.utc_offset = await getUtcOffset(
-    geocodeResult.latitude,
-    geocodeResult.longitude,
-    new Date(newMeetup.date)
-  );
+    newMeetup.organizers.unshift(user);
+    newMeetup.organizers = Array.from(new Set(newMeetup.organizers));
+    newMeetup.utc_offset = utcOffset;
 
-  await newMeetup.save();
+    await newMeetup.save();
 
-  // Create Eventbrite record
-  const newEventbriteRecord = EventbriteRecord.create({
-    event_id: result.data.eventbrite_event_id,
-    ticket_class_id: result.data.eventbrite_ticket_id,
-    display_name_question_id: result.data.eventbrite_question_id,
-    url: ebEvent?.url,
-    meetup: newMeetup,
-  });
+    // Create Eventbrite record
+    const newEventbriteRecord = EventbriteRecord.create({
+      event_id: result.data.eventbrite_event_id,
+      ticket_class_id: result.data.eventbrite_ticket_id,
+      display_name_question_id: result.data.eventbrite_question_id,
+      url: ebEvent?.url,
+      meetup: newMeetup,
+    });
 
-  await newEventbriteRecord.save();
+    await newEventbriteRecord.save();
+  } catch (error: any) {
+    return res
+      .status(500)
+      .json({ message: 'There was an error creating meetup.' });
+  }
 
   return res.status(201).end();
 };
@@ -538,13 +560,19 @@ export const getMeetupAttendees = async (
     meetup.eventbriteRecord != null &&
     user.encrypted_eventbrite_token != null
   ) {
-    const ebToken = decrypt(user.encrypted_eventbrite_token);
-    ebAttendees = await getEventbriteAttendees(
-      ebToken,
-      meetup.eventbriteRecord.event_id,
-      meetup.eventbriteRecord.ticket_class_id,
-      meetup.eventbriteRecord.display_name_question_id
-    );
+    try {
+      const ebToken = decrypt(user.encrypted_eventbrite_token);
+      ebAttendees = await getEventbriteAttendees(
+        ebToken,
+        meetup.eventbriteRecord.event_id,
+        meetup.eventbriteRecord.ticket_class_id,
+        meetup.eventbriteRecord.display_name_question_id
+      );
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({ message: 'Unable to get Eventbrite details.' });
+    }
   }
 
   const response = meetup.tickets.map((ticket) => {
@@ -604,34 +632,18 @@ export const syncEventbriteAttendees = async (
       .json({ message: 'Unable to retrieve Eventbrite data.' });
   }
 
-  const ebToken = decrypt(user.encrypted_eventbrite_token);
-  // Update meetup
-  const ebEvent = await getEventbriteEvent(
-    ebToken,
-    meetup.eventbriteRecord.event_id
-  );
-
-  if (ebEvent?.name != null) meetup.name = ebEvent.name;
-  if (ebEvent?.imageUrl != null) meetup.image_url = ebEvent.imageUrl;
-  if (ebEvent?.startTime != null) meetup.date = ebEvent.startTime;
-
-  const ebTicketClass = await getEventbriteTicket(
-    ebToken,
-    meetup.eventbriteRecord.event_id,
-    meetup.eventbriteRecord.ticket_class_id
-  );
-
-  if (ebTicketClass?.total != null) meetup.capacity = ebTicketClass.total;
-
-  await meetup.save();
-
-  // Update tickets
-  const ebAttendees = await getEventbriteAttendees(
-    ebToken,
-    meetup.eventbriteRecord.event_id,
-    meetup.eventbriteRecord.ticket_class_id,
-    meetup.eventbriteRecord.display_name_question_id
-  );
+  let ebAttendees: EventbriteAttendee[];
+  try {
+    const ebToken = decrypt(user.encrypted_eventbrite_token);
+    ebAttendees = await getEventbriteAttendees(
+      ebToken,
+      meetup.eventbriteRecord.event_id,
+      meetup.eventbriteRecord.ticket_class_id,
+      meetup.eventbriteRecord.display_name_question_id
+    );
+  } catch (error: any) {
+    return res.status(500).json('Unable to get Eventbrite details.');
+  }
 
   ebAttendees.forEach((attendee) => {
     void (async () => {

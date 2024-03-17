@@ -48,15 +48,21 @@ export const rollRaffleWinner = async (
       meetup.eventbriteRecord != null &&
       user.encrypted_eventbrite_token != null
     ) {
-      const attendee = await getEventbriteAttendee(
-        decrypt(user.encrypted_eventbrite_token),
-        meetup.eventbriteRecord.event_id,
-        winnerTicket.eventbrite_attendee_id,
-        meetup.eventbriteRecord.display_name_question_id
-      );
+      try {
+        const attendee = await getEventbriteAttendee(
+          decrypt(user.encrypted_eventbrite_token),
+          meetup.eventbriteRecord.event_id,
+          winnerTicket.eventbrite_attendee_id,
+          meetup.eventbriteRecord.display_name_question_id
+        );
 
-      displayName =
-        attendee?.displayName ?? String(winnerTicket.eventbrite_attendee_id);
+        displayName =
+          attendee?.displayName ?? String(winnerTicket.eventbrite_attendee_id);
+      } catch (error: any) {
+        return res
+          .status(500)
+          .json({ message: 'Unable to get Eventbrite details.' });
+      }
     } else {
       displayName = winnerTicket.user.nick_name;
     }

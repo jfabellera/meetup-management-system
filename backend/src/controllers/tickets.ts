@@ -1,6 +1,7 @@
 import { type Request, type Response } from 'express';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
+import { type EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
 import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
 import { createTicketSchema, editTicketSchema } from '../util/validator';
 
@@ -198,11 +199,18 @@ export const updateTicketViaWebhook = async (
 
     if (meetup?.eventbriteRecord == null) return res.status(404).end();
 
-    const attendee = await getEventbriteAttendeeByUri(
-      String(token),
-      api_url,
-      meetup.eventbriteRecord.display_name_question_id
-    );
+    let attendee: EventbriteAttendee | undefined;
+    try {
+      attendee = await getEventbriteAttendeeByUri(
+        String(token),
+        api_url,
+        meetup.eventbriteRecord.display_name_question_id
+      );
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({ message: 'Unable to get Eventbrite details' });
+    }
 
     if (attendee == null) return res.status(400).end();
 
