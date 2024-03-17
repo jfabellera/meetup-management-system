@@ -7,7 +7,7 @@ import { EventbriteRecord } from '../entity/EventbriteRecord';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { type User } from '../entity/User';
-import { EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
+import { type EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
 import {
   getEventbriteAttendees,
   getEventbriteEvent,
