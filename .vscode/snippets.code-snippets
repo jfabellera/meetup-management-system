@@ -22,5 +22,24 @@
 			"@Column({ type: '$1', $2 })",
 			"$3: $4;"
 		]
-	}
+	},
+	"Express Endpoint": {
+		"prefix": "endpoint",
+		"body": [
+			"export const $1 = (req: Request, res: Response): Response => {",
+			"  return res;",
+			"};"
+		]
+	},
+	"Express Async Endpoint": {
+		"prefix": "asyncEndpoint",
+		"body": [
+			"export const $1 = async (",
+			"  req: Request,",
+			"  res: Response",
+			"): Promise<Response> => {",
+			"  return res;",
+			"};"
+		]
+	},
 }
