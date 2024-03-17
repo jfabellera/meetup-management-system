@@ -34,7 +34,10 @@ import {
 const CheckInPage = (): JSX.Element => {
   const { meetupId: meetupIdParam } = useParams();
   const meetupId = parseInt(meetupIdParam ?? '');
-  const { data: attendees } = useGetMeetupAttendeesQuery(meetupId);
+  const { data: attendees } = useGetMeetupAttendeesQuery({
+    meetup_id: meetupId,
+    params: { detail_level: 'detailed' },
+  });
 
   const [searchValue, setSearchValue] = useState<string>('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -52,28 +55,29 @@ const CheckInPage = (): JSX.Element => {
     if (attendees == null) return [];
     const filtered = attendees
       .filter(
-        (attendee: any) =>
+        (attendee: TicketInfo) =>
           Boolean(
-            attendee.user.nick_name
+            attendee.user?.nick_name
               .toLowerCase()
-              .includes(searchValue.toLowerCase()),
+              .includes(searchValue.toLowerCase())
           ) ||
           Boolean(
-            attendee.user.first_name
+            attendee.user?.first_name
               .toLowerCase()
-              .includes(searchValue.toLowerCase()),
+              .includes(searchValue.toLowerCase())
           ) ||
           Boolean(
-            attendee.user.last_name
+            attendee.user?.last_name
               .toLowerCase()
-              .includes(searchValue.toLowerCase()),
-          ),
+              .includes(searchValue.toLowerCase())
+          )
       )
-      .sort((a, b) =>
-        a.user.nick_name.toLowerCase() < b.user.nick_name.toLowerCase()
+      .sort((a, b) => {
+        if (a.user == null || b.user == null) return 0;
+        return a.user.nick_name.toLowerCase() < b.user.nick_name.toLowerCase()
           ? -1
-          : 1,
-      );
+          : 1;
+      });
 
     if (searchValue !== '' && filtered.length > 0) {
       setFocusedIndex(0);
@@ -104,7 +108,7 @@ const CheckInPage = (): JSX.Element => {
         if (focusedIndex != null) {
           event.preventDefault();
           setFocusedIndex(
-            Math.min(filteredAttendees.length - 1, focusedIndex + 1),
+            Math.min(filteredAttendees.length - 1, focusedIndex + 1)
           );
         }
       }
@@ -125,7 +129,7 @@ const CheckInPage = (): JSX.Element => {
   }, [focusedIndex, isOpen, searchValue, filteredAttendees]);
 
   const handleSearchChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
+    event: React.ChangeEvent<HTMLInputElement>
   ): void => {
     setFocusedIndex(null);
     setSearchValue(event.target.value);
@@ -139,14 +143,14 @@ const CheckInPage = (): JSX.Element => {
         if ('error' in result) {
           toast({
             title: 'Error',
-            description: `Could not check ${ticket.user.nick_name} in`,
+            description: `Could not check ${ticket.user?.nick_name} in`,
             status: 'error',
             isClosable: true,
           });
         } else {
           toast({
             title: 'Success',
-            description: `${ticket.user.nick_name} checked in`,
+            description: `${ticket.user?.nick_name} checked in`,
             status: 'success',
             isClosable: true,
           });
@@ -228,9 +232,9 @@ const CheckInPage = (): JSX.Element => {
                         onOpen();
                       }}
                     >
-                      <Td>{attendee.user.nick_name}</Td>
-                      <Td>{attendee.user.first_name}</Td>
-                      <Td>{attendee.user.last_name}</Td>
+                      <Td>{attendee.user?.nick_name}</Td>
+                      <Td>{attendee.user?.first_name}</Td>
+                      <Td>{attendee.user?.last_name}</Td>
                       <Td>{attendee.is_checked_in ? <FiCheck /> : null}</Td>
                     </Tr>
                   ))
@@ -252,7 +256,7 @@ const CheckInPage = (): JSX.Element => {
             <ModalHeader>Confirm check-in</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-              Do you want to check {ticket?.user.nick_name ?? 'user'} in?
+              Do you want to check {ticket?.user?.nick_name ?? 'user'} in?
             </ModalBody>
 
             <ModalFooter>

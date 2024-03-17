@@ -18,24 +18,24 @@ dayjs.extend(isBetween);
 const ManageMeetupHomePage = (): JSX.Element => {
   const { meetupId } = useParams();
   const { data: meetup } = useGetMeetupQuery(parseInt(meetupId ?? ''));
-  const { data: attendees } = useGetMeetupAttendeesQuery(
-    parseInt(meetupId ?? ''),
-  );
+  const { data: attendees } = useGetMeetupAttendeesQuery({
+    meetup_id: parseInt(meetupId ?? ''),
+  });
   const navigate = useNavigate();
 
   const hasStarted = useMemo(
     () => (meetup != null ? hasMeetupStarted(meetup) : false),
-    [meetup],
+    [meetup]
   );
 
   const hasEnded = useMemo(
     () => (meetup != null ? hasMeetupEnded(meetup) : false),
-    [meetup],
+    [meetup]
   );
 
   const isHappeningNow = useMemo(
     () => (meetup != null ? isMeetupHappeningNow(meetup) : false),
-    [meetup],
+    [meetup]
   );
 
   return (
@@ -58,7 +58,7 @@ const ManageMeetupHomePage = (): JSX.Element => {
               navigate(
                 `/meetup/${meetupId}/manage/${
                   isHappeningNow ? 'checkin' : 'attendees'
-                }`,
+                }`
               );
             }}
             width={'50%'}

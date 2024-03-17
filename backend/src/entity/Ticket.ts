@@ -36,4 +36,7 @@ export class Ticket extends BaseEntity {
 
   @Column({ type: 'timestamptz', default: null, nullable: true })
   checked_in_at: Date;
+
+  @Column({ type: 'bigint', default: null, nullable: true })
+  eventbrite_attendee_id?: number;
 }

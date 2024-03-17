@@ -1,14 +1,16 @@
 import express, { type RequestHandler } from 'express';
 import {
   createMeetup,
+  createMeetupFromEventbrite,
   deleteMeetup,
   getAllMeetups,
   getMeetup,
   getMeetupAttendees,
+  syncEventbriteAttendees,
   updateMeetup,
 } from '../controllers/meetups';
 import { rollRaffleWinner } from '../controllers/raffles';
-import { createTicket } from '../controllers/tickets';
+import { createTicket, updateTicketViaWebhook } from '../controllers/tickets';
 import { authChecker, Rule } from '../middleware/authChecker';
 
 const router = express.Router();
@@ -21,6 +23,12 @@ router.post(
   '/',
   authChecker([Rule.requireOrganizer]) as RequestHandler,
   createMeetup as RequestHandler
+);
+
+router.post(
+  '/eventbrite',
+  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  createMeetupFromEventbrite as RequestHandler
 );
 
 router.put(
@@ -51,6 +59,17 @@ router.post(
   '/:meetup_id/raffle',
   authChecker([Rule.requireOrganizer]) as RequestHandler,
   rollRaffleWinner as RequestHandler
+);
+
+router.post(
+  '/:meetup_id/sync-eventbrite',
+  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  syncEventbriteAttendees as RequestHandler
+);
+
+router.post(
+  '/:meetup_id/attendee-webhook',
+  updateTicketViaWebhook as RequestHandler
 );
 
 export default router;

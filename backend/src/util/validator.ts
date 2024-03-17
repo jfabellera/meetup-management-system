@@ -16,6 +16,17 @@ export const createMeetupSchema = z.object({
 
 export type CreateMeetupPayload = z.infer<typeof createMeetupSchema>;
 
+export const createMeetupFromEventbriteSchema = z.object({
+  eventbrite_event_id: z.number(),
+  eventbrite_ticket_id: z.number(),
+  eventbrite_question_id: z.number(),
+  has_raffle: z.boolean(),
+});
+
+export type CreateMeetupFromEventbritePayload = z.infer<
+  typeof createMeetupFromEventbriteSchema
+>;
+
 export const editMeetupSchema = z.object({
   name: z.string().min(3).optional(),
   date: z
