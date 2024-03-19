@@ -218,9 +218,43 @@ export const updateTicketViaWebhook = async (
       where: { eventbrite_attendee_id: attendee?.id },
     });
 
-    if (ticket == null) return res.status(404).end();
+    if (ticket == null) {
+      if (!(attendee.isAttending ?? true)) {
+        // Don't do anything if no ticket exists and user isn't attending
+        return res.status(200).end();
+      }
 
+      // Create ticket for new attendee
+      const newTicket = Ticket.create({
+        meetup,
+        eventbrite_attendee_id: attendee.id,
+        created_at: attendee.createdAt,
+      });
+
+      await newTicket.save();
+      return res.status(200).end();
+    }
+
+    // Remove ticket if user is no longer attending
+    if (!(attendee.isAttending ?? true)) {
+      await ticket.remove();
+      return res.status(200).end();
+    }
+
+    // Update checked in timestamp on first check in
+    if (
+      !ticket.is_checked_in &&
+      attendee.isCheckedIn &&
+      ticket.checked_in_at == null
+    ) {
+      ticket.checked_in_at = attendee.checkInStatusUpdatedAt;
+    }
+
+    // TODO(jan): Handle timestamp for checkout
+
+    // Sync checked in status regardless of check in or check out
     ticket.is_checked_in = attendee.isCheckedIn;
+
     await ticket.save();
 
     return res.status(200).end();

@@ -237,6 +237,7 @@ export const getEventbriteAttendees = async (
               email: attendee.profile.email,
               createdAt: attendee.created,
               isCheckedIn: attendee.checked_in,
+              checkInStatusUpdatedAt: attendee.barcodes[0].changed,
             } satisfies EventbriteAttendee;
           })
       );
@@ -274,6 +275,7 @@ export const getEventbriteAttendee = async (
       email: attendee.profile.email,
       createdAt: attendee.created,
       isCheckedIn: attendee.checked_in,
+      checkInStatusUpdatedAt: attendee.barcodes[0].changed,
     } satisfies EventbriteAttendee;
   } catch (error: any) {
     return null;
@@ -303,6 +305,8 @@ export const getEventbriteAttendeeByUri = async (
       email: attendee.profile.email,
       createdAt: attendee.created,
       isCheckedIn: attendee.checked_in,
+      checkInStatusUpdatedAt: attendee.barcodes[0].changed,
+      isAttending: attendee.cancelled === false,
     } satisfies EventbriteAttendee;
   } catch (error: any) {
     return undefined;
@@ -314,7 +318,9 @@ export const createEventbriteWebhook = async (
   organizationId: number,
   eventId: number,
   endpointUrl: string,
-  actions: Array<'attendee.checked_in' | 'attendee.checked_out'>
+  actions: Array<
+    'attendee.checked_in' | 'attendee.checked_out' | 'attendee.updated'
+  >
 ): Promise<EventbriteWebhook | undefined> => {
   try {
     const data = new FormData();

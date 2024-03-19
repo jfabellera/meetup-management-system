@@ -395,7 +395,7 @@ export const createMeetupFromEventbrite = async (
       ebEvent.organizationId,
       ebEvent.id,
       `${config.apiUrl}/meetups/${newMeetup.id}/attendee-webhook?token=${decrypt(user.encrypted_eventbrite_token)}`,
-      ['attendee.checked_in', 'attendee.checked_out']
+      ['attendee.updated']
     );
 
     if (ebWebhook != null) newEventbriteRecord.webhook_id = ebWebhook.id;
