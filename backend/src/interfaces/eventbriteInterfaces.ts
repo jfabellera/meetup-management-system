@@ -41,7 +41,7 @@ export interface EventbriteAttendee {
   createdAt: Date;
   isCheckedIn: boolean;
   checkInStatusUpdatedAt: Date;
-  isAttending?: boolean;
+  isAttending: boolean;
 }
 
 export interface EventbriteWebhook {

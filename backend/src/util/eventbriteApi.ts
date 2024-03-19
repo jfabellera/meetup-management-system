@@ -221,11 +221,7 @@ export const getEventbriteAttendees = async (
 
       attendees = attendees.concat(
         response.data.attendees
-          .filter(
-            (attendee: any) =>
-              attendee.ticket_class_id === ticketClassId &&
-              attendee.cancelled === false
-          )
+          .filter((attendee: any) => attendee.ticket_class_id === ticketClassId)
           .map((attendee: any) => {
             return {
               id: attendee.id,
@@ -238,6 +234,7 @@ export const getEventbriteAttendees = async (
               createdAt: attendee.created,
               isCheckedIn: attendee.checked_in,
               checkInStatusUpdatedAt: attendee.barcodes[0].changed,
+              isAttending: attendee.cancelled === false,
             } satisfies EventbriteAttendee;
           })
       );
@@ -276,6 +273,7 @@ export const getEventbriteAttendee = async (
       createdAt: attendee.created,
       isCheckedIn: attendee.checked_in,
       checkInStatusUpdatedAt: attendee.barcodes[0].changed,
+      isAttending: attendee.cancelled === false,
     } satisfies EventbriteAttendee;
   } catch (error: any) {
     return null;

@@ -182,6 +182,57 @@ export const checkInTicket = async (
   return res.status(200).end();
 };
 
+export const syncEventbriteAttendee = async (
+  attendee: EventbriteAttendee,
+  meetup: Meetup
+): Promise<void> => {
+  const ticket = await Ticket.findOne({
+    where: { eventbrite_attendee_id: attendee.id },
+  });
+
+  if (ticket == null) {
+    if (!attendee.isAttending) {
+      // Don't do anything if no ticket exists and user isn't attending
+      return;
+    }
+
+    // Create ticket for new attendee
+    const newTicket = Ticket.create({
+      meetup,
+      eventbrite_attendee_id: attendee.id,
+      created_at: attendee.createdAt,
+    });
+
+    await newTicket.save();
+    return;
+  }
+
+  // Remove ticket if user is no longer attending
+  if (!attendee.isAttending) {
+    await ticket.remove();
+    return;
+  }
+
+  // Update checked in timestamp on first check in
+  if (
+    !ticket.is_checked_in &&
+    attendee.isCheckedIn &&
+    ticket.checked_in_at == null
+  ) {
+    ticket.checked_in_at = attendee.checkInStatusUpdatedAt;
+  }
+
+  // Update checked out timestamp on latest check out
+  if (ticket.is_checked_in && !attendee.isCheckedIn) {
+    ticket.checked_out_at = attendee.checkInStatusUpdatedAt;
+  }
+
+  // Sync checked in status regardless of check in or check out
+  ticket.is_checked_in = attendee.isCheckedIn;
+
+  await ticket.save();
+};
+
 export const updateTicketViaWebhook = async (
   req: Request,
   res: Response
@@ -214,51 +265,7 @@ export const updateTicketViaWebhook = async (
 
     if (attendee == null) return res.status(400).end();
 
-    const ticket = await Ticket.findOne({
-      where: { eventbrite_attendee_id: attendee?.id },
-    });
-
-    if (ticket == null) {
-      if (!(attendee.isAttending ?? true)) {
-        // Don't do anything if no ticket exists and user isn't attending
-        return res.status(200).end();
-      }
-
-      // Create ticket for new attendee
-      const newTicket = Ticket.create({
-        meetup,
-        eventbrite_attendee_id: attendee.id,
-        created_at: attendee.createdAt,
-      });
-
-      await newTicket.save();
-      return res.status(200).end();
-    }
-
-    // Remove ticket if user is no longer attending
-    if (!(attendee.isAttending ?? true)) {
-      await ticket.remove();
-      return res.status(200).end();
-    }
-
-    // Update checked in timestamp on first check in
-    if (
-      !ticket.is_checked_in &&
-      attendee.isCheckedIn &&
-      ticket.checked_in_at == null
-    ) {
-      ticket.checked_in_at = attendee.checkInStatusUpdatedAt;
-    }
-
-    // Update checked out timestamp on latest check out
-    if (ticket.is_checked_in && !attendee.isCheckedIn) {
-      ticket.checked_out_at = attendee.checkInStatusUpdatedAt;
-    }
-
-    // Sync checked in status regardless of check in or check out
-    ticket.is_checked_in = attendee.isCheckedIn;
-
-    await ticket.save();
+    await syncEventbriteAttendee(attendee, meetup);
 
     return res.status(200).end();
   } catch (error: any) {

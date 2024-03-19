@@ -27,6 +27,7 @@ import {
   createMeetupSchema,
   editMeetupSchema,
 } from '../util/validator';
+import { syncEventbriteAttendee } from './tickets';
 
 dayjs.extend(utc);
 
@@ -664,27 +665,7 @@ export const syncEventbriteAttendees = async (
 
   ebAttendees.forEach((attendee) => {
     void (async () => {
-      const existingTicket = await Ticket.findOne({
-        where: { eventbrite_attendee_id: attendee.id },
-      });
-
-      if (existingTicket != null) {
-        // Update checked in status
-        if (existingTicket.is_checked_in !== attendee.isCheckedIn) {
-          existingTicket.is_checked_in = attendee.isCheckedIn;
-          await existingTicket.save();
-        }
-        return;
-      }
-
-      // Create new ticket
-      const newTicket = Ticket.create({
-        meetup,
-        eventbrite_attendee_id: attendee.id,
-        created_at: attendee.createdAt,
-      });
-
-      await newTicket.save();
+      await syncEventbriteAttendee(attendee, meetup);
     })();
   });
   return res.status(200).end();
