@@ -250,7 +250,10 @@ export const updateTicketViaWebhook = async (
       ticket.checked_in_at = attendee.checkInStatusUpdatedAt;
     }
 
-    // TODO(jan): Handle timestamp for checkout
+    // Update checked out timestamp on latest check out
+    if (ticket.is_checked_in && !attendee.isCheckedIn) {
+      ticket.checked_out_at = attendee.checkInStatusUpdatedAt;
+    }
 
     // Sync checked in status regardless of check in or check out
     ticket.is_checked_in = attendee.isCheckedIn;
