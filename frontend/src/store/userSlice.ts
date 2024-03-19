@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { type User } from '../../../backend/src/interfaces/userInterfaces';
 import config from '../config';
 import { type RootState } from './store';
 
@@ -18,6 +19,12 @@ export const userSlice = createApi({
     },
   }),
   endpoints: (builder) => ({
+    getUser: builder.query<User, number>({
+      query: (userId) => ({
+        url: `/users/${userId}`,
+      }),
+      providesTags: ['User'],
+    }),
     authorizeEventbrite: builder.mutation<void, string>({
       query: (accessCode) => ({
         url: `/oauth2/eventbrite`,
@@ -26,8 +33,9 @@ export const userSlice = createApi({
           access_code: accessCode,
         },
       }),
+      invalidatesTags: ['User'],
     }),
   }),
 });
 
-export const { useAuthorizeEventbriteMutation } = userSlice;
+export const { useGetUserQuery, useAuthorizeEventbriteMutation } = userSlice;
