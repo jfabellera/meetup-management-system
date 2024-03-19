@@ -40,6 +40,8 @@ export interface EventbriteAttendee {
   email: string;
   createdAt: Date;
   isCheckedIn: boolean;
+  checkInStatusUpdatedAt: Date;
+  isAttending: boolean;
 }
 
 export interface EventbriteWebhook {
