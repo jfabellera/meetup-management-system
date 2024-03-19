@@ -4,6 +4,16 @@ import config from '../config';
 import { type User } from '../entity/User';
 import { encrypt } from '../util/security';
 
+export const eventbriteAuthorize = (req: Request, res: Response): void => {
+  const { redirect_uri } = req.query;
+
+  const redirectUri = redirect_uri as string;
+
+  res.redirect(
+    `https://www.eventbrite.com/oauth/authorize?response_type=code&client_id=${config.eventbriteApiKey}&redirect_uri=${redirectUri}`
+  );
+};
+
 export const eventbriteRedirect = async (
   req: Request,
   res: Response

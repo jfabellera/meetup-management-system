@@ -19,6 +19,8 @@ import RafflePage from './pages/RafflePage';
 import RegisterPage from './pages/RegisterPage';
 
 import { Provider } from 'react-redux';
+import AccountPage from './pages/AccountPage';
+import AuthorizeEventbritePage from './pages/AuthorizeEventbritePage';
 import { store } from './store/store';
 
 const App = (): JSX.Element => {
@@ -45,6 +47,11 @@ const App = (): JSX.Element => {
             <Route path="attendees" element={<ManageMeetupAttendeesPage />} />
             <Route path="settings" element={<ManageMeetupSettingsPage />} />
           </Route>
+          <Route
+            path="/account/authorize-eventbrite"
+            element={<AuthorizeEventbritePage />}
+          />
+          <Route path="/account" element={<AccountPage />} />
         </Routes>
       </Router>
     </Provider>
