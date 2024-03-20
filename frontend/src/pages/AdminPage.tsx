@@ -1,47 +1,46 @@
 'use client';
 
-import { Avatar, Badge, Box, Flex, Heading, IconButton, Stack, StackDivider, Text, VStack, } from '@chakra-ui/react';
+import { Flex, Heading, Stack, StackDivider, VStack, } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import Page from '../components/Page/Page';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { FaFrown, FaGrinBeamSweat, FaGrinStars } from 'react-icons/all';
 import { useGetMeetupsQuery } from '../store/meetupSlice';
 
 
-// const AdminPage = (): JSX.Element => {
-//     const { data: requests } = useGetMeetupsQuery();
-//     const dispatch = useAppDispatch();
-//     const { loading, error } = useAppSelector((state) => state.user);
-//     const navigate = useNavigate();
-//
-//     return (
-//         <Page>
-//             <Flex align={'center'} justify={'center'}>
-//                 <Stack spacing={8} mx={'auto'} maxW={'lg'} py={6} px={6}>
-//                     <Stack align={'center'}>
-//                         <Heading fontSize={'4xl'} textAlign={'center'}>
-//                             Admin Dashboard
-//                         </Heading>
-//                     </Stack>
-//                     <VStack
-//                         divider={<StackDivider borderColor='gray.200' />}
-//                         spacing={4}
-//                         align='stretch'>
-//                         {
-//                             <RequestUserProfile>
-//                                 user:{}
-//                                 request:{}
-//                             </RequestUserProfile>
-//                         }
-//                     </VStack>
-//
-//                 </Stack>
-//             </Flex>
-//         </Page>
-//     );
-// };
+const AdminPage = (): JSX.Element => {
+    const { data: requests } = useGetMeetupsQuery();
+    const dispatch = useAppDispatch();
+    const { loading, error } = useAppSelector((state) => state.user);
+    const navigate = useNavigate();
 
-// export default AdminPage;
+    return (
+        <Page>
+            <Flex align={'center'} justify={'center'}>
+                <Stack spacing={8} mx={'auto'} maxW={'lg'} py={6} px={6}>
+                    <Stack align={'center'}>
+                        <Heading fontSize={'4xl'} textAlign={'center'}>
+                            Admin Dashboard
+                        </Heading>
+                    </Stack>
+                    <VStack
+                        divider={<StackDivider borderColor='gray.200' />}
+                        spacing={4}
+                        align='stretch'>
+                        {
+                            // <RequestUserProfile>
+                            //     user:{}
+                            //     request:{}
+                            // </RequestUserProfile>
+                        }
+                    </VStack>
+
+                </Stack>
+            </Flex>
+        </Page>
+    );
+};
+
+export default AdminPage;
 
 // const RequestUserProfile = ({} : RequestProps) : JSX.Element => {
 //     return (<Flex>

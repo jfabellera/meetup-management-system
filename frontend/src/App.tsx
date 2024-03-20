@@ -7,7 +7,7 @@ import {
 import './App.css';
 
 import CheckInPage from './pages/CheckInPage';
-// import AdminPage from './pages/AdminPage';
+import AdminPage from './pages/AdminPage';
 import Homepage from './pages/Homepage';
 import LoginPage from './pages/LoginPage';
 import ManageMeetupAttendeesPage from './pages/ManageMeetupAttendeesPage';
@@ -34,6 +34,7 @@ const App = (): JSX.Element => {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/organizer" element={<OrganizerDashboard />} />
           <Route path="/newmeetup" element={<NewMeetupPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route
             path="/meetup/:meetupId/manage/"
             element={
@@ -47,7 +48,6 @@ const App = (): JSX.Element => {
             <Route path="raffle" element={<RafflePage />} />
             <Route path="attendees" element={<ManageMeetupAttendeesPage />} />
             <Route path="settings" element={<ManageMeetupSettingsPage />} />
-            {/*<Route path="admin" element={<AdminPage />} />*/}
           </Route>
           <Route
             path="/account/authorize-eventbrite"

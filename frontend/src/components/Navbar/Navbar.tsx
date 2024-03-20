@@ -5,15 +5,13 @@ import {
   Button,
   Center,
   Flex,
-  HStack,
   type FlexProps,
+  HStack,
   Icon,
-  IconButton,
   Link,
   Menu,
   MenuButton,
   MenuDivider,
-  MenuItem,
   MenuList,
   Show,
   Spacer,
@@ -27,8 +25,7 @@ import { MdDashboardCustomize } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../store/authSlice';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { HamburgerIcon } from '@chakra-ui/icons';
-import { MdAdminPanelSettings } from 'react-icons/all';
+import { FcAssistant } from 'react-icons/fc';
 
 /**
  * Adapted from https://chakra-templates.dev/navigation/navbar
@@ -50,6 +47,12 @@ const LinkItems: LinkItemProps[] = [
     name: 'Organizer Dashboard',
     url: '/organizer',
     icon: MdDashboardCustomize,
+    organizerOnly: true,
+  },
+  {
+    name: 'Admin Dashboard',
+    url: '/admin',
+    icon: FcAssistant,
     organizerOnly: true,
   },
   {
