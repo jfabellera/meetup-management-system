@@ -73,7 +73,7 @@ export const editUserSchema = z.object({
 export type EditUserPayload = z.infer<typeof editUserSchema>;
 
 
-const organizerRequestSchema = Joi.object({
-  id: Joi.number().required(),
-  user_id: Joi.number().required(),
+const organizerRequestSchema = z.object({
+  id: z.number(),
+  user_id: z.number(),
 });
