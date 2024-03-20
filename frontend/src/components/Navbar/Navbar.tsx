@@ -75,19 +75,6 @@ const Nav = ({ sidebar, onOpen }: NavbarProps): JSX.Element => {
         borderBottom="1px"
         borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
       >
-        <Menu>
-            <MenuButton
-                as={IconButton}
-                aria-label='Options'
-                icon={<HamburgerIcon />}
-                variant='outline'
-            />
-            <MenuList>
-                <MenuItem icon={<MdAdminPanelSettings />} onClick={() => {navigate('/admin');}}>
-                    Admin Dashboard
-                </MenuItem>
-            </MenuList>
-        </Menu>
         <HStack flexGrow={1} gap={1}>
           {sidebar != null && sidebar ? (
             <Show below={'md'}>

@@ -77,3 +77,5 @@ const organizerRequestSchema = z.object({
   id: z.number(),
   user_id: z.number(),
 });
+
+export type OrganizerRequestPayload = z.infer<typeof organizerRequestSchema>;
