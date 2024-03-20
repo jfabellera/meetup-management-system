@@ -3,10 +3,31 @@ import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
 import { type ParsedQs } from 'qs';
 import { ILike, type FindOptionsOrder, type FindOptionsWhere } from 'typeorm';
+import config from '../config';
+import { EventbriteRecord } from '../entity/EventbriteRecord';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
-import { geocode, getUtcOffset } from '../util/externalApis';
-import { createMeetupSchema, editMeetupSchema } from '../util/validator';
+import { type User } from '../entity/User';
+import { type EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
+import {
+  createEventbriteWebhook,
+  getEventbriteAttendees,
+  getEventbriteEvent,
+  getEventbriteTicket,
+  getEventbriteVenue,
+} from '../util/eventbriteApi';
+import {
+  geocode,
+  getUtcOffset,
+  type GeocodeResults,
+} from '../util/externalApis';
+import { decrypt } from '../util/security';
+import {
+  createMeetupFromEventbriteSchema,
+  createMeetupSchema,
+  editMeetupSchema,
+} from '../util/validator';
+import { syncEventbriteAttendee } from './tickets';
 
 dayjs.extend(utc);
 
@@ -37,12 +58,17 @@ export interface TicketInfo {
   created_at: Date;
   is_checked_in: boolean;
   checked_in_at?: Date;
-  user: {
+  user?: {
     email: string;
     first_name: string;
     last_name: string;
     nick_name: string;
   };
+}
+
+enum TicketInfoDetailLevel {
+  Simple,
+  Detailed,
 }
 
 enum MeetupInfoDetailLevel {
@@ -270,6 +296,121 @@ export const createMeetup = async (
   return res.status(201).json(newMeetup);
 };
 
+export const createMeetupFromEventbrite = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const result = createMeetupFromEventbriteSchema.safeParse(req.body);
+  const user = res.locals.requestor as User;
+
+  if (!result.success) return res.status(400).json(result.error);
+  if (user.encrypted_eventbrite_token == null)
+    return res
+      .status(401)
+      .json({ message: 'No Eventbrite token found for user.' });
+
+  // Get event details
+  const ebEvent = await getEventbriteEvent(
+    decrypt(user.encrypted_eventbrite_token),
+    result.data.eventbrite_event_id
+  );
+
+  if (ebEvent?.venueId == null)
+    return res
+      .status(500)
+      .json({ message: 'Unable to get Eventbrite details.' });
+
+  // Get venue details
+  const ebVenue = await getEventbriteVenue(
+    decrypt(user.encrypted_eventbrite_token),
+    ebEvent.venueId
+  );
+
+  // Get ticket details
+  const ebTicketClass = await getEventbriteTicket(
+    decrypt(user.encrypted_eventbrite_token),
+    result.data.eventbrite_event_id,
+    result.data.eventbrite_ticket_id
+  );
+
+  // Reject if any are null
+  if (
+    ebEvent?.startTime == null ||
+    ebEvent?.organizationId == null ||
+    ebVenue == null ||
+    ebTicketClass == null
+  )
+    return res
+      .status(500)
+      .json({ message: 'Unable to get Eventbrite details.' });
+
+  let geocodeResult: GeocodeResults;
+  let utcOffset: number;
+  try {
+    // Get geocode details
+    geocodeResult = await geocode(ebVenue.address);
+    utcOffset = await getUtcOffset(
+      geocodeResult.latitude,
+      geocodeResult.longitude,
+      new Date(ebEvent.startTime)
+    );
+  } catch (error: any) {
+    return res
+      .status(500)
+      .json({ message: 'There was an error verifying the address.' });
+  }
+
+  try {
+    // Create meetup
+    const newMeetup = Meetup.create({
+      name: ebEvent.name,
+      date: ebEvent.startTime,
+      address: geocodeResult.fullAddress,
+      city: geocodeResult.city,
+      state: geocodeResult.state,
+      country: geocodeResult.country,
+      capacity: ebTicketClass.total,
+      duration_hours: dayjs(ebEvent.endTime).diff(ebEvent.startTime, 'hours'),
+      image_url: ebEvent.imageUrl,
+      organizers: [],
+      has_raffle: result.data.has_raffle,
+    });
+
+    newMeetup.organizers.unshift(user);
+    newMeetup.organizers = Array.from(new Set(newMeetup.organizers));
+    newMeetup.utc_offset = utcOffset;
+
+    await newMeetup.save();
+
+    // Create Eventbrite record
+    const newEventbriteRecord = EventbriteRecord.create({
+      event_id: result.data.eventbrite_event_id,
+      ticket_class_id: result.data.eventbrite_ticket_id,
+      display_name_question_id: result.data.eventbrite_question_id,
+      url: ebEvent?.url,
+      meetup: newMeetup,
+    });
+
+    const ebWebhook = await createEventbriteWebhook(
+      decrypt(user.encrypted_eventbrite_token),
+      ebEvent.organizationId,
+      ebEvent.id,
+      `${config.apiUrl}/meetups/${newMeetup.id}/attendee-webhook?token=${decrypt(user.encrypted_eventbrite_token)}`,
+      ['attendee.updated']
+    );
+
+    if (ebWebhook != null) newEventbriteRecord.webhook_id = ebWebhook.id;
+
+    await newEventbriteRecord.save();
+  } catch (error: any) {
+    return res
+      .status(500)
+      .json({ message: 'There was an error creating meetup.' });
+  }
+
+  return res.status(201).end();
+};
+
 export const updateMeetup = async (
   req: Request,
   res: Response
@@ -395,6 +536,14 @@ export const getMeetupAttendees = async (
   res: Response
 ): Promise<Response> => {
   const { meetup_id } = req.params;
+  const { detail_level } = req.query;
+  const user = res.locals.requestor as User;
+
+  const detailLevel =
+    detail_level != null &&
+    (detail_level as string).toLowerCase() === 'detailed'
+      ? TicketInfoDetailLevel.Detailed
+      : TicketInfoDetailLevel.Simple;
 
   const meetup = await Meetup.findOne({
     select: {
@@ -409,9 +558,10 @@ export const getMeetupAttendees = async (
           nick_name: true,
           email: true,
         },
+        eventbrite_attendee_id: true,
       },
     },
-    relations: { tickets: { user: true } },
+    relations: { tickets: { user: true }, eventbriteRecord: true },
     where: {
       id: parseInt(meetup_id),
     },
@@ -421,18 +571,58 @@ export const getMeetupAttendees = async (
     return res.status(404).json({ message: 'Invalid meetupID.' });
   }
 
+  // Get attendee list from Eventbrite if meetup is setup with Eventbrite
+  let ebAttendees: EventbriteAttendee[];
+  if (
+    detailLevel === TicketInfoDetailLevel.Detailed &&
+    meetup.eventbriteRecord != null &&
+    user.encrypted_eventbrite_token != null
+  ) {
+    try {
+      const ebToken = decrypt(user.encrypted_eventbrite_token);
+      ebAttendees = await getEventbriteAttendees(
+        ebToken,
+        meetup.eventbriteRecord.event_id,
+        meetup.eventbriteRecord.ticket_class_id,
+        meetup.eventbriteRecord.display_name_question_id
+      );
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({ message: 'Unable to get Eventbrite details.' });
+    }
+  }
+
   const response = meetup.tickets.map((ticket) => {
     const ticketInfo: TicketInfo = {
       id: ticket.id,
       created_at: ticket.created_at,
       is_checked_in: ticket.is_checked_in,
-      user: {
-        email: ticket.user.email,
-        nick_name: ticket.user.nick_name,
-        first_name: ticket.user.first_name,
-        last_name: ticket.user.last_name,
-      },
     };
+
+    if (detailLevel === TicketInfoDetailLevel.Detailed) {
+      if (ticket.eventbrite_attendee_id == null) {
+        ticketInfo.user = {
+          email: ticket.user.email,
+          nick_name: ticket.user.nick_name,
+          first_name: ticket.user.first_name,
+          last_name: ticket.user.last_name,
+        };
+      } else {
+        const ebAttendee = ebAttendees.find(
+          (attendee) => attendee.id === ticket.eventbrite_attendee_id
+        );
+
+        if (ebAttendee != null) {
+          ticketInfo.user = {
+            email: ebAttendee.email,
+            nick_name: ebAttendee.displayName,
+            first_name: ebAttendee.firstName,
+            last_name: ebAttendee.lastName,
+          };
+        }
+      }
+    }
 
     if (ticket.is_checked_in) {
       ticketInfo.checked_in_at = ticket.checked_in_at;
@@ -442,4 +632,41 @@ export const getMeetupAttendees = async (
   });
 
   return res.json(response);
+};
+
+export const syncEventbriteAttendees = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const meetup = res.locals.meetup as Meetup;
+  const user = res.locals.requestor as User;
+
+  if (
+    meetup.eventbriteRecord == null ||
+    user.encrypted_eventbrite_token == null
+  ) {
+    return res
+      .status(400)
+      .json({ message: 'Unable to retrieve Eventbrite data.' });
+  }
+
+  let ebAttendees: EventbriteAttendee[];
+  try {
+    const ebToken = decrypt(user.encrypted_eventbrite_token);
+    ebAttendees = await getEventbriteAttendees(
+      ebToken,
+      meetup.eventbriteRecord.event_id,
+      meetup.eventbriteRecord.ticket_class_id,
+      meetup.eventbriteRecord.display_name_question_id
+    );
+  } catch (error: any) {
+    return res.status(500).json('Unable to get Eventbrite details.');
+  }
+
+  ebAttendees.forEach((attendee) => {
+    void (async () => {
+      await syncEventbriteAttendee(attendee, meetup);
+    })();
+  });
+  return res.status(200).end();
 };

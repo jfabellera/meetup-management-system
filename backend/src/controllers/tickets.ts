@@ -1,5 +1,8 @@
 import { type Request, type Response } from 'express';
+import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
+import { type EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
+import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
 import { createTicketSchema, editTicketSchema } from '../util/validator';
 
 export interface SimpleTicketInfo {
@@ -160,6 +163,12 @@ export const checkInTicket = async (
 ): Promise<Response> => {
   const ticket = res.locals.ticket as Ticket;
 
+  if (ticket.eventbrite_attendee_id != null) {
+    return res.status(400).json({
+      message: 'Ticket must be checked in via Eventbrite.',
+    });
+  }
+
   if (ticket.is_checked_in) {
     return res
       .status(200)
@@ -171,4 +180,95 @@ export const checkInTicket = async (
   await ticket.save();
 
   return res.status(200).end();
+};
+
+export const syncEventbriteAttendee = async (
+  attendee: EventbriteAttendee,
+  meetup: Meetup
+): Promise<void> => {
+  const ticket = await Ticket.findOne({
+    where: { eventbrite_attendee_id: attendee.id },
+  });
+
+  if (ticket == null) {
+    if (!attendee.isAttending) {
+      // Don't do anything if no ticket exists and user isn't attending
+      return;
+    }
+
+    // Create ticket for new attendee
+    const newTicket = Ticket.create({
+      meetup,
+      eventbrite_attendee_id: attendee.id,
+      created_at: attendee.createdAt,
+    });
+
+    await newTicket.save();
+    return;
+  }
+
+  // Remove ticket if user is no longer attending
+  if (!attendee.isAttending) {
+    await ticket.remove();
+    return;
+  }
+
+  // Update checked in timestamp on first check in
+  if (
+    !ticket.is_checked_in &&
+    attendee.isCheckedIn &&
+    ticket.checked_in_at == null
+  ) {
+    ticket.checked_in_at = attendee.checkInStatusUpdatedAt;
+  }
+
+  // Update checked out timestamp on latest check out
+  if (ticket.is_checked_in && !attendee.isCheckedIn) {
+    ticket.checked_out_at = attendee.checkInStatusUpdatedAt;
+  }
+
+  // Sync checked in status regardless of check in or check out
+  ticket.is_checked_in = attendee.isCheckedIn;
+
+  await ticket.save();
+};
+
+export const updateTicketViaWebhook = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { meetup_id } = req.params;
+  const { token } = req.query;
+  const { api_url } = req.body;
+
+  try {
+    const meetup = await Meetup.findOne({
+      relations: { eventbriteRecord: true },
+      where: { id: parseInt(meetup_id) },
+      select: { eventbriteRecord: { display_name_question_id: true } },
+    });
+
+    if (meetup?.eventbriteRecord == null) return res.status(404).end();
+
+    let attendee: EventbriteAttendee | undefined;
+    try {
+      attendee = await getEventbriteAttendeeByUri(
+        String(token),
+        api_url,
+        meetup.eventbriteRecord.display_name_question_id
+      );
+    } catch (error: any) {
+      return res
+        .status(500)
+        .json({ message: 'Unable to get Eventbrite details' });
+    }
+
+    if (attendee == null) return res.status(400).end();
+
+    await syncEventbriteAttendee(attendee, meetup);
+
+    return res.status(200).end();
+  } catch (error: any) {
+    return res.status(400).end();
+  }
 };

@@ -5,8 +5,10 @@ import {
   JoinTable,
   ManyToMany,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { EventbriteRecord } from './EventbriteRecord';
 import { Ticket } from './Ticket';
 import { User } from './User';
 
@@ -54,4 +56,7 @@ export class Meetup extends BaseEntity {
 
   @OneToMany(() => Ticket, (ticket) => ticket.meetup)
   tickets: Ticket[];
+
+  @OneToOne(() => EventbriteRecord, (ebRecord) => ebRecord.meetup)
+  eventbriteRecord?: EventbriteRecord;
 }

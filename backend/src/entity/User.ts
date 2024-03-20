@@ -35,4 +35,7 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Ticket, (ticket) => ticket.user)
   tickets: Ticket[];
+
+  @Column({ type: 'varchar', length: 96, nullable: true })
+  encrypted_eventbrite_token?: string;
 }

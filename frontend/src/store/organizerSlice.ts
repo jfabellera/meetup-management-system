@@ -4,6 +4,13 @@ import { type RaffleWinnerResponse } from '../../../backend/src/interfaces/raffl
 import config from '../config';
 import { type RootState } from './store';
 
+export interface GetMeetupAttendeesOptions {
+  meetup_id: number;
+  params?: {
+    detail_level?: string;
+  };
+}
+
 export const organizerSlice = createApi({
   reducerPath: 'organizerSlice',
   tagTypes: ['Attendees'],
@@ -20,9 +27,10 @@ export const organizerSlice = createApi({
     },
   }),
   endpoints: (builder) => ({
-    getMeetupAttendees: builder.query<TicketInfo[], number>({
-      query: (meetupId) => ({
-        url: `meetups/${meetupId}/attendees`,
+    getMeetupAttendees: builder.query<TicketInfo[], GetMeetupAttendeesOptions>({
+      query: (options) => ({
+        url: `meetups/${options.meetup_id}/attendees`,
+        params: options.params,
       }),
       providesTags: ['Attendees'],
     }),

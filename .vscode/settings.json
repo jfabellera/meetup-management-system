@@ -2,5 +2,23 @@
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
         "source.organizeImports": true
-    }
+    },
+    "restoreTerminals.terminals": [
+        {
+          "splitTerminals": [
+            {
+              "name": "api",
+              "commands": ["cd backend", "npm run dev"]
+            },
+            {
+              "name": "auth",
+              "commands": ["cd backend", "npm run devAuth"]
+            },
+            {
+              "name": "frontend",
+              "commands": ["cd frontend", "npm run dev"]
+            }
+          ]
+        },
+    ],
 }

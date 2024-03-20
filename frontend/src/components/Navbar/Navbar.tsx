@@ -22,7 +22,7 @@ import {
 } from '@chakra-ui/react';
 import { type ReactNode } from 'react';
 import { type IconType } from 'react-icons';
-import { FiLogOut, FiMenu } from 'react-icons/fi';
+import { FiLogOut, FiMenu, FiUser } from 'react-icons/fi';
 import { MdDashboardCustomize } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../store/authSlice';
@@ -51,6 +51,11 @@ const LinkItems: LinkItemProps[] = [
     url: '/organizer',
     icon: MdDashboardCustomize,
     organizerOnly: true,
+  },
+  {
+    name: 'Account',
+    url: '/account',
+    icon: FiUser,
   },
 ];
 

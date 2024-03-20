@@ -1,7 +1,9 @@
 import * as express from 'express';
 import config from './config';
 import { AppDataSource } from './datasource';
+import eventbriteRoutes from './routes/eventbrite';
 import meetupRoutes from './routes/meetups';
+import oauth2Routes from './routes/oauth2';
 import organizerRequests from './routes/organizerRequests';
 import ticketRoutes from './routes/tickets';
 import userRoutes from './routes/users';
@@ -38,6 +40,8 @@ class Server {
     this.express.use('/users', userRoutes);
     this.express.use('/meetups', meetupRoutes);
     this.express.use('/tickets', ticketRoutes);
+    this.express.use('/oauth2/', oauth2Routes);
+    this.express.use('/eventbrite', eventbriteRoutes);
     this.express.use('/organizerRequests', organizerRequests);
 
     this.express.use('*', (req, res, next) => {
