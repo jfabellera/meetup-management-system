@@ -63,8 +63,8 @@ const LoginPage = (): JSX.Element => {
 
   return (
     <Page>
-      <Flex align={'center'} justify={'center'}>
-        <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
+      <Flex padding={'1rem'} align={'center'} justify={'center'}>
+        <Stack spacing={8} mx={'auto'} maxW={'lg'}>
           <Stack align={'center'}>
             <Heading fontSize={'4xl'}>Sign in</Heading>
           </Stack>

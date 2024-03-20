@@ -1,6 +1,6 @@
 import { type Request, type Response } from 'express';
 import { Ticket } from '../entity/Ticket';
-import { validateTicket } from '../util/validator';
+import { createTicketSchema, editTicketSchema } from '../util/validator';
 
 export interface SimpleTicketInfo {
   id: number;
@@ -40,26 +40,32 @@ export const createTicket = async (
   const meetup_id = parseInt(req.params.meetup_id);
   const user_id = parseInt(res.locals.requestor.id);
 
-  const { error, value } = validateTicket({
-    meetup_id,
-    user_id,
-  });
+  const result = createTicketSchema.safeParse({ meetup_id, user_id });
 
-  if (error != null) {
-    return res.status(400).json(error.details);
+  if (!result.success) {
+    return res.status(400).json(result.error);
   }
 
   // Check if ticket already exists
   const existingTicket = await Ticket.findOneBy({
-    meetup_id: value.meetup_id,
-    user_id: value.user_id,
+    meetup: { id: meetup_id },
+    user: {
+      id: user_id,
+    },
   });
 
   if (existingTicket != null) {
     return res.status(409).json({ message: 'Ticket already exists.' });
   }
 
-  const newTicket = Ticket.create(value);
+  const newTicket = Ticket.create({
+    meetup: {
+      id: meetup_id,
+    },
+    user: {
+      id: user_id,
+    },
+  });
   await newTicket.save();
 
   return res.status(201).json(newTicket);
@@ -70,7 +76,12 @@ export const updateTicket = async (
   res: Response
 ): Promise<Response> => {
   const { ticket_id } = req.params;
-  const { is_checked_in, raffle_entries, raffle_wins } = req.body;
+
+  const result = editTicketSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
 
   const ticket = await Ticket.findOneBy({
     id: parseInt(ticket_id),
@@ -81,15 +92,9 @@ export const updateTicket = async (
   }
 
   // TODO(jan): Do we want to throw an error when meetup_id or user_id is found in req.body?
-  ticket.is_checked_in = is_checked_in ?? ticket.is_checked_in;
-  ticket.raffle_entries = raffle_entries ?? ticket.raffle_entries;
-  ticket.raffle_wins = raffle_wins ?? ticket.raffle_wins;
-
-  const { error } = validateTicket(ticket);
-
-  if (error != null) {
-    return res.status(400).json(error.details);
-  }
+  ticket.is_checked_in = req.body.is_checked_in ?? ticket.is_checked_in;
+  ticket.raffle_entries = req.body.raffle_entries ?? ticket.raffle_entries;
+  ticket.raffle_wins = req.body.raffle_wins ?? ticket.raffle_wins;
 
   await ticket.save();
 
@@ -121,12 +126,49 @@ export const getUserTickets = async (
 ): Promise<Response> => {
   const { user_id } = req.params;
 
-  const tickets: SimpleTicketInfo[] = await Ticket.find({
-    select: ['id', 'meetup_id'],
+  // TODO(jan): make this better
+
+  const tickets = await Ticket.find({
+    relations: { meetup: true },
+    select: {
+      id: true,
+      meetup: {
+        id: true,
+      },
+    },
     where: {
-      user_id: parseInt(user_id),
+      user: {
+        id: parseInt(user_id),
+      },
     },
   });
 
-  return res.json(tickets);
+  const ticketsInfo: SimpleTicketInfo[] = tickets.map((ticket) => {
+    const ticketInfo: SimpleTicketInfo = {
+      id: ticket.id,
+      meetup_id: ticket.meetup.id,
+    };
+    return ticketInfo;
+  });
+
+  return res.json(ticketsInfo);
+};
+
+export const checkInTicket = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const ticket = res.locals.ticket as Ticket;
+
+  if (ticket.is_checked_in) {
+    return res
+      .status(200)
+      .json({ message: 'Ticket has already been checked in.' });
+  }
+
+  ticket.is_checked_in = true;
+  ticket.checked_in_at = new Date();
+  await ticket.save();
+
+  return res.status(200).end();
 };

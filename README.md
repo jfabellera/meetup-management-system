@@ -46,8 +46,10 @@ This project is split into two portions:
 2. Create a `.env` file in `backend/` in the following format (Ports may change depending on database used/personal preference):
 
    ```bash
-   MMS_API_SERVER_URL=http://localhost
+   MMS_API_SERVER_HOSTNAME=localhost
    MMS_API_SERVER_PORT=3000
+   MMS_AUTH_SERVER_HOSTNAME=localhost
+   MMS_AUTH_SERVER_PORT=3000
 
    MMS_DATABASE_HOST=localhost
    MMS_DATABASE_PORT=5432
@@ -85,10 +87,10 @@ This project is split into two portions:
    **Make sure your API URL matches the API Server URL and port you specified in your backend .env file above.**
 
    ```bash
-   MMS_API_SERVER_URL=http://localhost
-   MMS_API_SERVER_PORT=3000
-   MMS_AUTH_SERVER_URL=http://localhost
-   MMS_AUTH_SERVER_PORT=3001
+   VITE_MMS_API_SERVER_URL=http://localhost
+   VITE_MMS_API_SERVER_PORT=3000
+   VITE_MMS_AUTH_SERVER_URL=http://localhost
+   VITE_MMS_AUTH_SERVER_PORT=3001
    ```
 
 3. Run the app.

@@ -1,9 +1,22 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Outlet,
+  Route,
+  Routes,
+} from 'react-router-dom';
 import './App.css';
 
+import CheckInPage from './pages/CheckInPage';
 import AdminPage from './pages/AdminPage';
 import Homepage from './pages/Homepage';
 import LoginPage from './pages/LoginPage';
+import ManageMeetupAttendeesPage from './pages/ManageMeetupAttendeesPage';
+import ManageMeetupHomePage from './pages/ManageMeetupHomePage';
+import ManageMeetupPage from './pages/ManageMeetupPage';
+import ManageMeetupSettingsPage from './pages/ManageMeetupSettingsPage';
+import NewMeetupPage from './pages/NewMeetupPage';
+import OrganizerDashboard from './pages/OrganizerDashboard';
+import RafflePage from './pages/RafflePage';
 import RegisterPage from './pages/RegisterPage';
 
 import { Provider } from 'react-redux';
@@ -17,7 +30,23 @@ const App = (): JSX.Element => {
           <Route path="/" element={<Homepage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/organizer" element={<OrganizerDashboard />} />
+          <Route path="/newmeetup" element={<NewMeetupPage />} />
+          <Route
+            path="/meetup/:meetupId/manage/"
+            element={
+              <ManageMeetupPage>
+                <Outlet />
+              </ManageMeetupPage>
+            }
+          >
+            <Route path="" element={<ManageMeetupHomePage />} />
+            <Route path="checkin" element={<CheckInPage />} />
+            <Route path="raffle" element={<RafflePage />} />
+            <Route path="attendees" element={<ManageMeetupAttendeesPage />} />
+            <Route path="settings" element={<ManageMeetupSettingsPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+          </Route>
         </Routes>
       </Router>
     </Provider>

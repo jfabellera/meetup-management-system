@@ -5,6 +5,7 @@ import {
   Button,
   Center,
   Flex,
+  HStack,
   type FlexProps,
   Icon,
   IconButton,
@@ -14,12 +15,15 @@ import {
   MenuDivider,
   MenuItem,
   MenuList,
+  Show,
+  Spacer,
   Stack,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { type ReactNode } from 'react';
 import { type IconType } from 'react-icons';
-import { FiLogOut } from 'react-icons/fi';
+import { FiLogOut, FiMenu } from 'react-icons/fi';
+import { MdDashboardCustomize } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../store/authSlice';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -34,6 +38,7 @@ interface LinkItemProps {
   name: string;
   url: string;
   icon: IconType;
+  organizerOnly?: boolean;
 }
 
 /**
@@ -41,9 +46,20 @@ interface LinkItemProps {
  */
 const LinkItems: LinkItemProps[] = [
   // { name: 'Home', url: '.', icon: FiHome },
+  {
+    name: 'Organizer Dashboard',
+    url: '/organizer',
+    icon: MdDashboardCustomize,
+    organizerOnly: true,
+  },
 ];
 
-const Nav = (): JSX.Element => {
+interface NavbarProps {
+  sidebar?: boolean;
+  onOpen?: () => void;
+}
+
+const Nav = ({ sidebar, onOpen }: NavbarProps): JSX.Element => {
   const { isLoggedIn, user } = useAppSelector((state) => state.user);
   const navigate = useNavigate();
 
@@ -60,31 +76,41 @@ const Nav = (): JSX.Element => {
         borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
       >
         <Menu>
-          <MenuButton
-              as={IconButton}
-              aria-label='Options'
-              icon={<HamburgerIcon />}
-              variant='outline'
-          />
-          <MenuList>
-            <MenuItem icon={<MdAdminPanelSettings />} onClick={() => {navigate('/admin');}}>
-              Admin Dashboard
-            </MenuItem>
-          </MenuList>
+            <MenuButton
+                as={IconButton}
+                aria-label='Options'
+                icon={<HamburgerIcon />}
+                variant='outline'
+            />
+            <MenuList>
+                <MenuItem icon={<MdAdminPanelSettings />} onClick={() => {navigate('/admin');}}>
+                    Admin Dashboard
+                </MenuItem>
+            </MenuList>
         </Menu>
-        <Link
-          onClick={() => {
-            navigate('/');
-          }}
-        >
-          <Box>Meetup Management System</Box>
-        </Link>
-        {/* TODO(jan): Make dependent on logged in state */}
-        {isLoggedIn ? (
-          <NavbarDropdown nickname={user?.displayName} />
-        ) : (
-          <GuestButtons />
-        )}
+        <HStack flexGrow={1} gap={1}>
+          {sidebar != null && sidebar ? (
+            <Show below={'md'}>
+              <Icon as={FiMenu} onClick={onOpen} />
+            </Show>
+          ) : null}
+          <Link
+            onClick={() => {
+              navigate('/');
+            }}
+          >
+            <Box>Meetup Management System</Box>
+          </Link>
+          <Spacer />
+          {isLoggedIn && user != null ? (
+            <NavbarDropdown
+              nickname={user.displayName}
+              isOrganizer={user.isOrganizer}
+            />
+          ) : (
+            <GuestButtons />
+          )}
+        </HStack>
       </Flex>
     </>
   );
@@ -135,10 +161,11 @@ const GuestButtons = (): JSX.Element => {
 
 interface NavbarDropdownProps extends BoxProps {
   nickname: string;
+  isOrganizer: boolean;
 }
 
 const NavbarDropdown = (props: NavbarDropdownProps): JSX.Element => {
-  const { nickname } = props;
+  const { nickname, isOrganizer } = props;
   const dispatch = useAppDispatch();
 
   return (
@@ -171,11 +198,14 @@ const NavbarDropdown = (props: NavbarDropdownProps): JSX.Element => {
             </Center>
             <br />
             <MenuDivider />
-            {LinkItems.map((link) => (
-              <NavItem key={link.name} icon={link.icon} url={link.url}>
-                {link.name}
-              </NavItem>
-            ))}
+            {LinkItems.map((link) =>
+              link.organizerOnly == null ||
+              (link.organizerOnly && isOrganizer) ? (
+                <NavItem key={link.name} icon={link.icon} url={link.url}>
+                  {link.name}
+                </NavItem>
+              ) : null,
+            )}
             <NavItem
               key="logout"
               icon={FiLogOut}
@@ -240,36 +270,5 @@ const NavItem = ({
     </Link>
   );
 };
-
-// interface MobileProps extends FlexProps {
-//   onOpen: () => void;
-// }
-
-// const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
-//   return (
-//     <Flex
-//       ml={{ base: 0, md: 60 }}
-//       px={{ base: 4, md: 24 }}
-//       height="20"
-//       alignItems="center"
-//       bg={useColorModeValue('white', 'gray.900')}
-//       borderBottomWidth="1px"
-//       borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
-//       justifyContent="flex-start"
-//       {...rest}
-//     >
-//       <IconButton
-//         variant="outline"
-//         onClick={onOpen}
-//         aria-label="open menu"
-//         icon={<FiMenu />}
-//       />
-
-//       <Text fontSize="xl" ml="8" fontWeight="bold">
-//         {import.meta.env.VITE_APP_TITLE}
-//       </Text>
-//     </Flex>
-//   );
-// };
 
 export default Nav;

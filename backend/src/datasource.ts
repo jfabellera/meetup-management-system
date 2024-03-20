@@ -14,6 +14,6 @@ export const AppDataSource = new DataSource({
   password: config.databasePassword,
   database: config.databaseName,
   entities: [User, Meetup, Ticket, OrganizerRequests],
-  synchronize: false,
+  synchronize: true,
   logging: false,
 });

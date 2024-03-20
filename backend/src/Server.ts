@@ -45,9 +45,9 @@ class Server {
     });
   }
 
-  public start = (port: number): void => {
+  public start = (port: number, hostname: string): void => {
     this.express
-      .listen(port, () => {
+      .listen(port, hostname, () => {
         console.log(`Running on port ${port}`);
       })
       .on('error', (err) => {
@@ -57,5 +57,6 @@ class Server {
 }
 
 const port = parseInt(config.apiPort);
+const hostname = config.apiHostname;
 const server = new Server();
-server.start(port);
+server.start(port, hostname);
