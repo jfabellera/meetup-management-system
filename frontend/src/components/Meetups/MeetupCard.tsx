@@ -15,12 +15,12 @@ import {
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { FiImage } from 'react-icons/fi';
-import type { SimpleMeetupInfo } from '../../../../backend/src/controllers/meetups';
+import type { MeetupInfo } from '../../../../backend/src/controllers/meetups';
 
 dayjs.extend(customParseFormat);
 
 export interface MeetupCardProps {
-  meetup: SimpleMeetupInfo;
+  meetup: MeetupInfo;
   attending?: boolean;
 }
 
@@ -52,7 +52,7 @@ export const MeetupCard = ({
           <HStack>
             <Text fontWeight={'semibold'} color={'gray.600'}>
               {dayjs(meetup.date, 'YYYY-MM-DDTHH:mm:ss').format(
-                'MMMM DD, YYYY',
+                'MMMM DD, YYYY'
               )}
             </Text>
             <Spacer />

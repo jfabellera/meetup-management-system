@@ -149,12 +149,15 @@ export const MeetupModal = ({
               </HStack>
 
               {/* Organizers */}
-              <HStack>
-                <Icon as={FiUser} />
-                <Text>
-                  Organized by {new Intl.ListFormat().format(meetup.organizers)}
-                </Text>
-              </HStack>
+              {meetup.organizers != null ? (
+                <HStack>
+                  <Icon as={FiUser} />
+                  <Text>
+                    Organized by{' '}
+                    {new Intl.ListFormat().format(meetup.organizers)}
+                  </Text>
+                </HStack>
+              ) : null}
             </Flex>
 
             {/* Description */}
@@ -172,10 +175,12 @@ export const MeetupModal = ({
         </ModalBody>
 
         <ModalFooter>
-          <MeetupCapacityStatus
-            available={meetup.tickets.available}
-            total={meetup.tickets.total}
-          />
+          {meetup.tickets != null ? (
+            <MeetupCapacityStatus
+              available={meetup.tickets.available}
+              total={meetup.tickets.total}
+            />
+          ) : null}
           <Spacer />
           {meetup.eventbrite_url != null ? (
             <Link href={meetup.eventbrite_url} isExternal mr={3}>
