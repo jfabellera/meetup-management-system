@@ -1,0 +1,36 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - '*'
+
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [frontend, backend]
+    runs-on: ubuntu-latest
+    name: Build ${{ matrix.package }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Nodejs
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install dependencies
+      working-directory: ./${{ matrix.package }}
+      run: npm install
+
+    - name: Build
+      working-directory: ./${{ matrix.package }}
+      run: npm run build
