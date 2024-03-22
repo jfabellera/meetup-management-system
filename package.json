@@ -8,11 +8,11 @@
     "url": "git+https://github.com/jfabellera/meetup-management-system.git"
   },
   "scripts": {
-    "install:backend": "cd ./backend/api && npm install && cd ../../",
-    "install:frontend": "cd ./frontend && npm install && cd ../",
+    "install:backend": "cd ./backend && npm install",
+    "install:frontend": "cd ./frontend && npm install",
     "install:all": "npm run install:backend && npm run install:frontend",
-    "build:backend": "cd ./backend/api && npm run build && cd ../../",
-    "build:frontend": "cd ./frontend && npm run build && cd ../",
+    "build:backend": "cd ./backend && npm run build",
+    "build:frontend": "cd ./frontend && npm run build",
     "build:all": "npm run build:backend && npm run build:frontend",
     "style:all": "npx prettier --write ."
   },
