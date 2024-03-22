@@ -1,5 +1,17 @@
-import { Button, Select } from '@chakra-ui/react';
+import {
+  Button,
+  FormControl,
+  FormLabel,
+  Select,
+  type SelectProps,
+} from '@chakra-ui/react';
 import { useFormik } from 'formik';
+import {
+  type EventbriteEvent,
+  type EventbriteOrganization,
+  type EventbriteQuestion,
+  type EventbriteTicket,
+} from '../../../backend/src/interfaces/eventbriteInterfaces';
 import Page from '../components/Page/Page';
 import {
   useGetCustomQuestionsQuery,
@@ -12,10 +24,10 @@ import { useCreateMeetupFromEventbriteMutation } from '../store/meetupSlice';
 const NewMeetupFromEventbritePage = (): JSX.Element => {
   const formik = useFormik({
     initialValues: {
-      organizationId: NaN,
-      eventId: NaN,
-      ticketClassId: NaN,
-      customQuestionId: NaN,
+      organizationId: '',
+      eventId: '',
+      ticketClassId: '',
+      customQuestionId: '',
       hasRaffle: false,
     },
     onSubmit: async (values) => {
@@ -27,8 +39,6 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
         console.log('invalid');
         return;
       }
-
-      console.log(values);
 
       await createMeetupFromEventbrite({
         eventbrite_event_id: Number(values.eventId),
@@ -60,61 +70,75 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
   );
   const [createMeetupFromEventbrite] = useCreateMeetupFromEventbriteMutation();
 
+  interface FormSelectProps extends SelectProps {
+    name: string;
+    id: string;
+    options:
+      | EventbriteOrganization[]
+      | EventbriteEvent[]
+      | EventbriteTicket[]
+      | EventbriteQuestion[]
+      | undefined;
+  }
+
+  const FormSelect = ({
+    name,
+    id,
+    options,
+    onChange,
+    value,
+  }: FormSelectProps): JSX.Element => {
+    return (
+      <FormControl id={id}>
+        <FormLabel>{name}</FormLabel>
+        <Select
+          onChange={onChange}
+          placeholder={'Select'}
+          value={Number.isNaN(value) ? '' : value}
+        >
+          {options != null
+            ? options.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))
+            : null}
+        </Select>
+      </FormControl>
+    );
+  };
+
   return (
     <Page>
       <form onSubmit={formik.handleSubmit} noValidate>
-        <Select
+        <FormSelect
+          name={'Organization'}
           id={'organizationId'}
+          options={organizations}
+          value={formik.values.organizationId}
           onChange={formik.handleChange}
-          placeholder={'Select organization'}
-        >
-          {organizations != null
-            ? organizations.map((organization) => (
-                <option key={organization.id} value={organization.id}>
-                  {organization.name}
-                </option>
-              ))
-            : null}
-        </Select>
-        <Select
+        />
+        <FormSelect
+          name={'Event'}
           id={'eventId'}
+          options={events}
+          value={formik.values.eventId}
           onChange={formik.handleChange}
-          placeholder={'Select event'}
-        >
-          {events != null
-            ? events.map((event) => (
-                <option key={event.id} value={event.id}>
-                  {event.name}
-                </option>
-              ))
-            : null}
-        </Select>
-        <Select
+        />
+        <FormSelect
+          name={'Ticket Class'}
           id={'ticketClassId'}
+          options={ticketClasses}
+          value={formik.values.ticketClassId}
           onChange={formik.handleChange}
-          placeholder={'Select ticket class'}
-        >
-          {ticketClasses != null
-            ? ticketClasses.map((ticketClass) => (
-                <option key={ticketClass.id} value={ticketClass.id}>
-                  {ticketClass.name}
-                </option>
-              ))
-            : null}
-        </Select>
-        <Select
+        />
+        <FormSelect
+          name={'Custom Question'}
           id={'customQuestionId'}
+          options={customQuestions}
+          value={formik.values.customQuestionId}
           onChange={formik.handleChange}
-          placeholder={'Select display name question'}
-        >
-          {customQuestions != null
-            ? customQuestions.map((customQuestion) => (
-                <option key={customQuestion.id} value={customQuestion.id}>
-                  {customQuestion.name}
-                </option>
-              ))
-            : null}
-        </Select>
+        />
         <Button type={'submit'}>Submit</Button>
       </form>
     </Page>
