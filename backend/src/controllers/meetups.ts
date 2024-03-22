@@ -51,6 +51,7 @@ export interface MeetupInfo {
   };
   duration_hours?: number;
   image_url: string;
+  eventbrite_url?: string;
 }
 
 export interface TicketInfo {
@@ -92,6 +93,10 @@ const mapMeetupInfo = async (
     },
     image_url: meetup.image_url,
   };
+
+  if (meetup.eventbriteRecord != null) {
+    meetupInfo.eventbrite_url = meetup.eventbriteRecord.url;
+  }
 
   if (type === MeetupInfoDetailLevel.Detailed) {
     meetupInfo.location.full_address = meetup.address;
@@ -185,6 +190,7 @@ export const getAllMeetups = async (
     await Meetup.find({
       relations: {
         organizers: true,
+        eventbriteRecord: true,
       },
       where: findOptionsWhere,
       order: findOptionsOrder,
@@ -212,6 +218,7 @@ export const getMeetup = async (
   const meetup = await Meetup.findOne({
     relations: {
       organizers: true,
+      eventbriteRecord: true,
     },
     where: {
       id: parseInt(meetup_id),
