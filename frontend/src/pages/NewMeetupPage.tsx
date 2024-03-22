@@ -87,7 +87,9 @@ const NewMeetupPage = (): JSX.Element => {
               <Stack spacing={4}>
                 <Link
                   alignSelf={'end'}
-                  href={'/new-meetup/eventbrite'}
+                  onClick={() => {
+                    navigate('/new-meetup/eventbrite');
+                  }}
                   textDecoration={'underline'}
                 >
                   Use Eventbrite

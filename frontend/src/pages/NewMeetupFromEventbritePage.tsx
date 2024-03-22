@@ -156,7 +156,9 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
             <VStack spacing={4}>
               <Link
                 alignSelf={'end'}
-                href={'/new-meetup'}
+                onClick={() => {
+                  navigate('/new-meetup');
+                }}
                 textDecoration={'underline'}
               >
                 Use native
