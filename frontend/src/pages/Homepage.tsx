@@ -34,12 +34,12 @@ const Homepage = (): JSX.Element => {
 
   const currentMeetups = useMemo(
     () => meetups?.filter((meetup) => isMeetupHappeningNow(meetup)),
-    [meetups],
+    [meetups]
   );
 
   const futureMeetups = useMemo(
     () => meetups?.filter((meetup) => !hasMeetupStarted(meetup)),
-    [meetups],
+    [meetups]
   );
 
   const pastMeetups = useMemo(
@@ -47,7 +47,7 @@ const Homepage = (): JSX.Element => {
       meetups
         ?.filter((meetup) => hasMeetupEnded(meetup))
         .sort((a, b) => (dayjs(a.date).isBefore(b.date) ? 1 : -1)),
-    [meetups],
+    [meetups]
   );
 
   /**
@@ -59,7 +59,7 @@ const Homepage = (): JSX.Element => {
   const getTicketForMeetup = (meetupId: number): SimpleTicketInfo | null => {
     if (user != null && tickets != null) {
       const ticket = tickets.filter(
-        (ticket) => ticket.meetup_id === meetupId,
+        (ticket) => ticket.meetup_id === meetupId
       )[0];
       return ticket ?? null;
     }

@@ -192,7 +192,7 @@ const NavbarDropdown = (props: NavbarDropdownProps): JSX.Element => {
                 <NavItem key={link.name} icon={link.icon} url={link.url}>
                   {link.name}
                 </NavItem>
-              ) : null,
+              ) : null
             )}
             <NavItem
               key="logout"

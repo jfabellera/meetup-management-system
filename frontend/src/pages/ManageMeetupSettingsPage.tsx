@@ -99,7 +99,7 @@ const ManageMeetupSettingsPage = (): JSX.Element => {
         formik.initialValues.startTime !== values.startTime
       )
         payload.date = new Date(
-          `${values.date}T${values.startTime}Z`,
+          `${values.date}T${values.startTime}Z`
         ).toISOString();
       if (formik.initialValues.address !== values.address)
         payload.address = values.address;
@@ -188,7 +188,7 @@ const ManageMeetupSettingsPage = (): JSX.Element => {
         <FieldDisplay
           name={'Date'}
           value={dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format(
-            'YYYY-MM-DD',
+            'YYYY-MM-DD'
           )}
           editable={editable}
           id={'date'}
