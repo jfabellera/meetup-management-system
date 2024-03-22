@@ -6,6 +6,7 @@ import {
   HStack,
   Icon,
   Image,
+  Link,
   Modal,
   ModalBody,
   ModalContent,
@@ -20,6 +21,7 @@ import { useEffect } from 'react';
 import {
   FiCalendar,
   FiClock,
+  FiExternalLink,
   FiMapPin,
   FiUser,
   FiUserCheck,
@@ -126,7 +128,7 @@ export const MeetupModal = ({
                 <Icon as={FiCalendar} />
                 <Text>
                   {dayjs(meetup.date, 'YYYY-MM-DDTHH:mm:ss').format(
-                    'MMMM DD, YYYY',
+                    'MMMM DD, YYYY'
                   )}
                 </Text>
               </HStack>
@@ -175,7 +177,11 @@ export const MeetupModal = ({
             total={meetup.tickets.total}
           />
           <Spacer />
-          {ticket != null ? (
+          {meetup.eventbrite_url != null ? (
+            <Link href={meetup.eventbrite_url} isExternal mr={3}>
+              <Button leftIcon={<FiExternalLink />}>RSVP</Button>
+            </Link>
+          ) : ticket != null ? (
             <Button
               leftIcon={<FiUserX />}
               colorScheme={'red'}
