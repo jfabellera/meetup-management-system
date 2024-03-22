@@ -143,14 +143,14 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
     <Page>
       <VStack spacing={4} marginX={'0.5rem'} marginTop={'1rem'}>
         <Box textAlign={'center'}>
-          <Heading>Create Meetup</Heading>
+          <Heading>New Meetup</Heading>
           <Text>From Eventbrite Event</Text>
         </Box>
         <Container
-          padding={'1rem'}
+          padding={'2rem'}
           background={'white'}
-          borderRadius={'md'}
-          boxShadow={'sm'}
+          borderRadius={'lg'}
+          boxShadow={'lg'}
         >
           <form onSubmit={formik.handleSubmit} noValidate>
             <VStack spacing={4}>
