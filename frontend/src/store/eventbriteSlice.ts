@@ -7,7 +7,7 @@ export const eventbriteSlice = createApi({
   reducerPath: 'eventbriteSlice',
   tagTypes: ['Organizations', 'Events', 'Custom Questions', 'Ticket Classes'],
   baseQuery: fetchBaseQuery({
-    baseUrl: `${config.apiUrl}:${config.apiPort}/`,
+    baseUrl: `${config.apiUrl}/`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).user.user?.token;
 

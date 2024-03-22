@@ -7,7 +7,7 @@ export const userSlice = createApi({
   reducerPath: 'userSlice',
   tagTypes: ['User'],
   baseQuery: fetchBaseQuery({
-    baseUrl: `${config.apiUrl}:${config.apiPort}/`,
+    baseUrl: `${config.apiUrl}/`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).user.user?.token;
 
