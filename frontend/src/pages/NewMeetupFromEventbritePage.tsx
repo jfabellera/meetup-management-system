@@ -7,10 +7,12 @@ import {
   Heading,
   Select,
   Text,
+  useToast,
   VStack,
   type SelectProps,
 } from '@chakra-ui/react';
 import { useFormik } from 'formik';
+import { useNavigate } from 'react-router-dom';
 import {
   type EventbriteEvent,
   type EventbriteOrganization,
@@ -28,6 +30,8 @@ import { useCreateMeetupFromEventbriteMutation } from '../store/meetupSlice';
 import MeetupFromEventbriteFormSchema from '../util/schemas/MeetupFromEventbriteFormSchema';
 
 const NewMeetupFromEventbritePage = (): JSX.Element => {
+  const toast = useToast();
+  const navigate = useNavigate();
   const formik = useFormik({
     initialValues: {
       organizationId: NaN,
@@ -46,12 +50,27 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
         return;
       }
 
-      await createMeetupFromEventbrite({
+      const response = await createMeetupFromEventbrite({
         eventbrite_event_id: Number(values.eventId),
         eventbrite_ticket_id: Number(values.ticketClassId),
         eventbrite_question_id: Number(values.customQuestionId),
         has_raffle: values.hasRaffle,
       });
+
+      if ('error' in response) {
+        toast({
+          title: 'Error',
+          description: 'Unable to create meetup',
+          status: 'error',
+        });
+      } else {
+        toast({
+          title: 'Success',
+          description: 'Meetup created successfully',
+          status: 'success',
+        });
+        navigate('/organizer');
+      }
     },
     validationSchema: MeetupFromEventbriteFormSchema,
     validateOnMount: true,
