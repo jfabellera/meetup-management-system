@@ -1,8 +1,13 @@
 import {
+  Box,
   Button,
+  Container,
   FormControl,
   FormLabel,
+  Heading,
   Select,
+  Text,
+  VStack,
   type SelectProps,
 } from '@chakra-ui/react';
 import { useFormik } from 'formik';
@@ -110,37 +115,52 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
 
   return (
     <Page>
-      <form onSubmit={formik.handleSubmit} noValidate>
-        <FormSelect
-          name={'Organization'}
-          id={'organizationId'}
-          options={organizations}
-          value={formik.values.organizationId}
-          onChange={formik.handleChange}
-        />
-        <FormSelect
-          name={'Event'}
-          id={'eventId'}
-          options={events}
-          value={formik.values.eventId}
-          onChange={formik.handleChange}
-        />
-        <FormSelect
-          name={'Ticket Class'}
-          id={'ticketClassId'}
-          options={ticketClasses}
-          value={formik.values.ticketClassId}
-          onChange={formik.handleChange}
-        />
-        <FormSelect
-          name={'Custom Question'}
-          id={'customQuestionId'}
-          options={customQuestions}
-          value={formik.values.customQuestionId}
-          onChange={formik.handleChange}
-        />
-        <Button type={'submit'}>Submit</Button>
-      </form>
+      <VStack spacing={4} marginX={'0.5rem'} marginTop={'1rem'}>
+        <Box textAlign={'center'}>
+          <Heading>Create Meetup</Heading>
+          <Text>From Eventbrite Event</Text>
+        </Box>
+        <Container
+          padding={'1rem'}
+          background={'white'}
+          borderRadius={'md'}
+          boxShadow={'sm'}
+        >
+          <form onSubmit={formik.handleSubmit} noValidate>
+            <VStack spacing={4}>
+              <FormSelect
+                name={'Organization'}
+                id={'organizationId'}
+                options={organizations}
+                value={formik.values.organizationId}
+                onChange={formik.handleChange}
+              />
+              <FormSelect
+                name={'Event'}
+                id={'eventId'}
+                options={events}
+                value={formik.values.eventId}
+                onChange={formik.handleChange}
+              />
+              <FormSelect
+                name={'Ticket Class'}
+                id={'ticketClassId'}
+                options={ticketClasses}
+                value={formik.values.ticketClassId}
+                onChange={formik.handleChange}
+              />
+              <FormSelect
+                name={'Custom Question'}
+                id={'customQuestionId'}
+                options={customQuestions}
+                value={formik.values.customQuestionId}
+                onChange={formik.handleChange}
+              />
+              <Button type={'submit'}>Submit</Button>
+            </VStack>
+          </form>
+        </Container>
+      </VStack>
     </Page>
   );
 };
