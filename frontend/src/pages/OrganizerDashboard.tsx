@@ -30,17 +30,17 @@ const OrganizerDashboard = (): JSX.Element => {
   const navigate = useNavigate();
 
   const newMeetupOnClick = (): void => {
-    navigate('/newmeetup');
+    navigate('/new-meetup');
   };
 
   const currentMeetups = useMemo(
     () => meetups?.filter((meetup) => isMeetupHappeningNow(meetup)),
-    [meetups],
+    [meetups]
   );
 
   const futureMeetups = useMemo(
     () => meetups?.filter((meetup) => !hasMeetupStarted(meetup)),
-    [meetups],
+    [meetups]
   );
 
   const pastMeetups = useMemo(
@@ -48,7 +48,7 @@ const OrganizerDashboard = (): JSX.Element => {
       meetups
         ?.filter((meetup) => hasMeetupEnded(meetup))
         .sort((a, b) => (dayjs(a.date).isBefore(b.date) ? 1 : -1)),
-    [meetups],
+    [meetups]
   );
 
   const mapMeetupToCard = (meetup: MeetupInfo): JSX.Element => {
