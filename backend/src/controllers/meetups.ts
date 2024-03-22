@@ -94,8 +94,6 @@ const mapMeetupInfo = async (
     image_url: meetup.image_url,
   };
 
-  console.log(meetup);
-
   if (meetup.eventbriteRecord != null) {
     meetupInfo.eventbrite_url = meetup.eventbriteRecord.url;
   }
