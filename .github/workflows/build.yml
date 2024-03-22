@@ -8,16 +8,9 @@ on:
     branches:
       - '*'
 
-
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        package: [frontend, backend]
     runs-on: ubuntu-latest
-    name: Build ${{ matrix.package }}
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -28,9 +21,10 @@ jobs:
         node-version: 20
 
     - name: Install dependencies
-      working-directory: ./${{ matrix.package }}
-      run: npm install
+      run: npm run install:all
 
-    - name: Build
-      working-directory: ./${{ matrix.package }}
-      run: npm run build
+    - name: Build backend
+      run: npm run build:backend
+
+    - name: Build frontend
+      run: npm run build:frontend
