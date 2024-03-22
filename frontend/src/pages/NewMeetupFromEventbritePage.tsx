@@ -25,14 +25,15 @@ import {
   useGetTicketClassesQuery,
 } from '../store/eventbriteSlice';
 import { useCreateMeetupFromEventbriteMutation } from '../store/meetupSlice';
+import MeetupFromEventbriteFormSchema from '../util/schemas/MeetupFromEventbriteFormSchema';
 
 const NewMeetupFromEventbritePage = (): JSX.Element => {
   const formik = useFormik({
     initialValues: {
-      organizationId: '',
-      eventId: '',
-      ticketClassId: '',
-      customQuestionId: '',
+      organizationId: NaN,
+      eventId: NaN,
+      ticketClassId: NaN,
+      customQuestionId: NaN,
       hasRaffle: false,
     },
     onSubmit: async (values) => {
@@ -52,6 +53,8 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
         has_raffle: values.hasRaffle,
       });
     },
+    validationSchema: MeetupFromEventbriteFormSchema,
+    validateOnMount: true,
   });
 
   const { data: organizations } = useGetOrganizationsQuery();
@@ -73,7 +76,8 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
       skip: Number.isNaN(formik.values.eventId),
     }
   );
-  const [createMeetupFromEventbrite] = useCreateMeetupFromEventbriteMutation();
+  const [createMeetupFromEventbrite, { isLoading }] =
+    useCreateMeetupFromEventbriteMutation();
 
   interface FormSelectProps extends SelectProps {
     name: string;
@@ -92,6 +96,7 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
     options,
     onChange,
     value,
+    isDisabled,
   }: FormSelectProps): JSX.Element => {
     return (
       <FormControl id={id}>
@@ -100,6 +105,7 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
           onChange={onChange}
           placeholder={'Select'}
           value={Number.isNaN(value) ? '' : value}
+          isDisabled={isDisabled}
         >
           {options != null
             ? options.map((option) => (
@@ -141,6 +147,7 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
                 options={events}
                 value={formik.values.eventId}
                 onChange={formik.handleChange}
+                isDisabled={events == null}
               />
               <FormSelect
                 name={'Ticket Class'}
@@ -148,6 +155,7 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
                 options={ticketClasses}
                 value={formik.values.ticketClassId}
                 onChange={formik.handleChange}
+                isDisabled={ticketClasses == null}
               />
               <FormSelect
                 name={'Custom Question'}
@@ -155,8 +163,16 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
                 options={customQuestions}
                 value={formik.values.customQuestionId}
                 onChange={formik.handleChange}
+                isDisabled={customQuestions == null}
               />
-              <Button type={'submit'}>Submit</Button>
+              <Button
+                type={'submit'}
+                isDisabled={!formik.isValid}
+                isLoading={isLoading}
+                colorScheme={'green'}
+              >
+                Submit
+              </Button>
             </VStack>
           </form>
         </Container>
