@@ -5,6 +5,7 @@ import {
   FormControl,
   FormLabel,
   Heading,
+  Link,
   Select,
   Text,
   useToast,
@@ -153,6 +154,13 @@ const NewMeetupFromEventbritePage = (): JSX.Element => {
         >
           <form onSubmit={formik.handleSubmit} noValidate>
             <VStack spacing={4}>
+              <Link
+                alignSelf={'end'}
+                href={'/new-meetup'}
+                textDecoration={'underline'}
+              >
+                Use native
+              </Link>
               <FormSelect
                 name={'Organization'}
                 id={'organizationId'}

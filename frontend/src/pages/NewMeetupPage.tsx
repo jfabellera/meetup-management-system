@@ -8,6 +8,7 @@ import {
   Heading,
   HStack,
   Input,
+  Link,
   Stack,
   useColorModeValue,
   useToast,
@@ -37,7 +38,7 @@ const NewMeetupPage = (): JSX.Element => {
       const result = await createMeetup({
         name: formik.values.name,
         date: new Date(
-          `${formik.values.date}T${formik.values.startTime}Z`,
+          `${formik.values.date}T${formik.values.startTime}Z`
         ).toISOString(),
         address: formik.values.address,
         duration_hours: formik.values.duration,
@@ -72,7 +73,7 @@ const NewMeetupPage = (): JSX.Element => {
   return (
     <Page>
       <Container padding={'1rem'} maxWidth={'contanier.md'}>
-        <Stack padding={0} mx={'auto'} maxW={'lg'}>
+        <Stack padding={0} mx={'auto'} maxW={'lg'} spacing={4}>
           <Heading fontSize={'4xl'} textAlign={'center'}>
             New Meetup
           </Heading>
@@ -84,6 +85,13 @@ const NewMeetupPage = (): JSX.Element => {
           >
             <form onSubmit={formik.handleSubmit} noValidate>
               <Stack spacing={4}>
+                <Link
+                  alignSelf={'end'}
+                  href={'/new-meetup/eventbrite'}
+                  textDecoration={'underline'}
+                >
+                  Use Eventbrite
+                </Link>
                 <FormControl
                   id="name"
                   isRequired
