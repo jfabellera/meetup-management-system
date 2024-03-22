@@ -93,6 +93,7 @@ This project is split into two portions:
    ```bash
    VITE_MMS_API_SERVER_URL=http://localhost:3000
    VITE_MMS_AUTH_SERVER_URL=http://localhost:3001
+   VITE_MMS_APP_URL=http://localhost:5173
    ```
 
 3. Run the app.
