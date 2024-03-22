@@ -16,7 +16,7 @@ const AccountPage = (): JSX.Element => {
         <Heading textAlign={'center'}>Account</Heading>
         <Container padding={'1rem'} background={'white'} borderRadius={'md'}>
           <Link
-            href={`${config.apiUrl}:${config.apiPort}/oauth2/eventbrite?redirect_uri=http://localhost:5173/account/authorize-eventbrite`}
+            href={`${config.apiUrl}/oauth2/eventbrite?redirect_uri=http://localhost:5173/account/authorize-eventbrite`}
           >
             <Button isDisabled={user?.is_eventbrite_linked}>
               {user?.is_eventbrite_linked ?? false
