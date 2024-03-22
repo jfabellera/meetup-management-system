@@ -58,7 +58,8 @@ This project is split into two portions:
    MMS_DATABASE_PASSWORD=
 
    JWT_ACCESS_SECRET=
-   AES_KEY=
+   AES_ENCRYPTION_KEY=
+
    GCP_API_KEY=
    EVENTBRITE_API_KEY=
    EVENTBRITE_CLIENT_SECRET=
