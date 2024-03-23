@@ -144,10 +144,7 @@ export const authChecker =
       }
 
       // If accessing a meetup, check that the requestor is an organizer of the meetup
-      if (
-        req.params.meetup_id != null &&
-        (rules == null || !rules.includes(Rule.ignoreMeetupOrganizer))
-      ) {
+      if (req.params.meetup_id != null) {
         const meetup = await Meetup.findOne({
           relations: {
             organizers: true,
@@ -165,10 +162,9 @@ export const authChecker =
         res.locals.meetup = meetup;
 
         if (
-          !(
-            meetup.organizers.filter((organizer) => organizer.id === user.id)
-              .length > 0
-          )
+          (rules == null || !rules.includes(Rule.ignoreMeetupOrganizer)) &&
+          meetup.organizers.find((organizer) => organizer.id === user.id) ==
+            null
         ) {
           return reject(res);
         }
