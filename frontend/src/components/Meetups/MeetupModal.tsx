@@ -161,16 +161,16 @@ export const MeetupModal = ({
             </Flex>
 
             {/* Description */}
-            {/* TODO(jan): Add actual description from meetup details when implemented */}
-            <Text>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris
-              nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-              reprehenderit in voluptate velit esse cillum dolore eu fugiat
-              nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-              sunt in culpa qui officia deserunt mollit anim id est laborum.
-            </Text>
+            {meetup.description !== '' ? (
+              <>
+                <Text fontWeight={'semibold'}>Description</Text>
+                <Text whiteSpace={'pre-line'}>{meetup.description}</Text>
+              </>
+            ) : (
+              <Text>
+                <i>No description</i>
+              </Text>
+            )}
           </Flex>
         </ModalBody>
 

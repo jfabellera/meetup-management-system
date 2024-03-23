@@ -52,6 +52,7 @@ export interface MeetupInfo {
   duration_hours?: number;
   image_url: string;
   eventbrite_url?: string;
+  description?: string;
 }
 
 export interface TicketInfo {
@@ -100,6 +101,7 @@ const mapMeetupInfo = async (
 
   if (type === MeetupInfoDetailLevel.Detailed) {
     meetupInfo.location.full_address = meetup.address;
+    meetupInfo.description = meetup.description;
 
     meetupInfo.organizers = meetup.organizers.map(
       (organizer) => organizer.nick_name
@@ -253,6 +255,7 @@ export const createMeetup = async (
     capacity: result.data.capacity,
     duration_hours: result.data.duration_hours,
     image_url: result.data.image_url,
+    description: result.data.description,
   });
 
   // Add requestor to front of organizer list
@@ -379,6 +382,7 @@ export const createMeetupFromEventbrite = async (
       capacity: ebTicketClass.total,
       duration_hours: dayjs(ebEvent.endTime).diff(ebEvent.startTime, 'hours'),
       image_url: ebEvent.imageUrl,
+      description: ebEvent.description,
       organizers: [],
       has_raffle: result.data.has_raffle,
     });
@@ -455,6 +459,7 @@ export const updateMeetup = async (
   meetup.capacity = req.body.capacity ?? meetup.capacity;
   meetup.image_url = req.body.image_url ?? meetup.image_url;
   meetup.address = req.body.address ?? meetup.address;
+  meetup.description = req.body.description ?? meetup.description;
 
   // TODO(jan): This is mostly copied from createMeetup. We should reduce this duplication
   if (req.body.address != null || req.body.date != null) {

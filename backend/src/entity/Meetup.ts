@@ -54,6 +54,9 @@ export class Meetup extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   image_url: string;
 
+  @Column({ type: 'varchar', length: 500, default: '' })
+  description: string;
+
   @OneToMany(() => Ticket, (ticket) => ticket.meetup)
   tickets: Ticket[];
 
