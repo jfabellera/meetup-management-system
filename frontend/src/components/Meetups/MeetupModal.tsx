@@ -161,7 +161,16 @@ export const MeetupModal = ({
             </Flex>
 
             {/* Description */}
-            <Text>{meetup.description}</Text>
+            {meetup.description !== '' ? (
+              <>
+                <Text fontWeight={'semibold'}>Description</Text>
+                <Text>{meetup.description}</Text>
+              </>
+            ) : (
+              <Text>
+                <i>No description</i>
+              </Text>
+            )}
           </Flex>
         </ModalBody>
 
