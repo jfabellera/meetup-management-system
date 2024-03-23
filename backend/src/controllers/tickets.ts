@@ -1,9 +1,10 @@
 import { type Request, type Response } from 'express';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
+import { type User } from '../entity/User';
 import { type EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
 import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
-import { createTicketSchema, editTicketSchema } from '../util/validator';
+import { editTicketSchema } from '../util/validator';
 
 export interface SimpleTicketInfo {
   id: number;
@@ -40,20 +41,22 @@ export const createTicket = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const meetup_id = parseInt(req.params.meetup_id);
-  const user_id = parseInt(res.locals.requestor.id);
+  const meetup = res.locals.meetup as Meetup;
+  const user = res.locals.requestor as User;
 
-  const result = createTicketSchema.safeParse({ meetup_id, user_id });
-
-  if (!result.success) {
-    return res.status(400).json(result.error);
+  if (meetup == null || user == null) {
+    return res.status(400).end();
   }
 
   // Check if ticket already exists
-  const existingTicket = await Ticket.findOneBy({
-    meetup: { id: meetup_id },
-    user: {
-      id: user_id,
+  const existingTicket = await Ticket.findOne({
+    relations: {
+      meetup: true,
+      user: true,
+    },
+    where: {
+      meetup: { id: meetup.id },
+      user: { id: user.id },
     },
   });
 
@@ -62,12 +65,9 @@ export const createTicket = async (
   }
 
   const newTicket = Ticket.create({
-    meetup: {
-      id: meetup_id,
-    },
-    user: {
-      id: user_id,
-    },
+    meetup,
+    user,
+    raffle_entries: meetup.default_raffle_entries,
   });
   await newTicket.save();
 
