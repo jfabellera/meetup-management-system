@@ -52,6 +52,7 @@ export interface MeetupInfo {
   duration_hours?: number;
   image_url: string;
   eventbrite_url?: string;
+  description?: string;
 }
 
 export interface TicketInfo {
@@ -100,6 +101,7 @@ const mapMeetupInfo = async (
 
   if (type === MeetupInfoDetailLevel.Detailed) {
     meetupInfo.location.full_address = meetup.address;
+    meetupInfo.description = meetup.description;
 
     meetupInfo.organizers = meetup.organizers.map(
       (organizer) => organizer.nick_name
