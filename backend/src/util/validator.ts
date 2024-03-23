@@ -22,7 +22,8 @@ export const createMeetupFromEventbriteSchema = z.object({
   eventbrite_event_id: z.number(),
   eventbrite_ticket_id: z.number(),
   eventbrite_question_id: z.number(),
-  has_raffle: z.boolean(),
+  has_raffle: z.boolean().optional().default(true),
+  default_raffle_entries: z.number().gte(0).optional().default(1),
 });
 
 export type CreateMeetupFromEventbritePayload = z.infer<

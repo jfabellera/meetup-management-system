@@ -386,6 +386,7 @@ export const createMeetupFromEventbrite = async (
       description: ebEvent.description,
       organizers: [],
       has_raffle: result.data.has_raffle,
+      default_raffle_entries: result.data.default_raffle_entries,
     });
 
     newMeetup.organizers.unshift(user);
