@@ -10,11 +10,14 @@ import {
   Input,
   Link,
   Stack,
+  Text,
+  Textarea,
   useColorModeValue,
   useToast,
   type BoxProps,
 } from '@chakra-ui/react';
 import { useFormik } from 'formik';
+import { type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Page from '../components/Page/Page';
 import { useCreateMeetupMutation } from '../store/meetupSlice';
@@ -33,6 +36,7 @@ const NewMeetupPage = (): JSX.Element => {
       duration: 0,
       capacity: 0,
       imageUrl: '',
+      description: '',
     },
     onSubmit: async (values) => {
       const result = await createMeetup({
@@ -44,6 +48,7 @@ const NewMeetupPage = (): JSX.Element => {
         duration_hours: formik.values.duration,
         capacity: formik.values.capacity,
         image_url: formik.values.imageUrl,
+        description: formik.values.description,
         has_raffle: false, // TODO(jan)
       });
 
@@ -63,6 +68,14 @@ const NewMeetupPage = (): JSX.Element => {
     validationSchema: MeetupFormSchema,
     validateOnMount: true,
   });
+
+  const onDescriptionChange = (
+    event: ChangeEvent<HTMLTextAreaElement>
+  ): void => {
+    // Truncate more than 500 characters
+    event.target.value = event.target.value.substring(0, 500);
+    formik.handleChange(event);
+  };
 
   const ErrorMessage = ({ children }: BoxProps): JSX.Element => {
     return (
@@ -223,6 +236,26 @@ const NewMeetupPage = (): JSX.Element => {
                     onBlur={formik.handleBlur}
                   />
                   <ErrorMessage>{formik.errors.imageUrl}</ErrorMessage>
+                </FormControl>
+
+                <FormControl id="description" minWidth={0}>
+                  <FormLabel noOfLines={1}>Description</FormLabel>
+                  <Textarea
+                    name="description"
+                    onChange={onDescriptionChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.description}
+                  />
+                  <Text
+                    textAlign={'right'}
+                    fontSize={'sm'}
+                    marginTop="0.2rem"
+                    textColor={
+                      formik.values.description.length === 500 ? 'red' : 'black'
+                    }
+                  >
+                    {formik.values.description.length} / 500
+                  </Text>
                 </FormControl>
 
                 {/* TODO(jan) */}
