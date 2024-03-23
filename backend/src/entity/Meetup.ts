@@ -27,7 +27,7 @@ export class Meetup extends BaseEntity {
   @JoinTable()
   organizers: User[];
 
-  @Column({ type: 'boolean' })
+  @Column({ type: 'boolean', default: true })
   has_raffle: boolean;
 
   @Column({ type: 'int' })
@@ -56,6 +56,9 @@ export class Meetup extends BaseEntity {
 
   @Column({ type: 'varchar', length: 500, default: '' })
   description: string;
+
+  @Column({ type: 'int', default: 1 })
+  default_raffle_entries: number;
 
   @OneToMany(() => Ticket, (ticket) => ticket.meetup)
   tickets: Ticket[];

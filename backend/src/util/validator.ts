@@ -8,11 +8,12 @@ export const createMeetupSchema = z.object({
   }),
   address: z.string(),
   duration_hours: z.number().gt(0),
-  has_raffle: z.boolean(),
   capacity: z.number().gt(0),
   image_url: z.string(),
   organizer_ids: z.array(z.number()).optional(),
   description: z.string().optional().default(''),
+  has_raffle: z.boolean().optional().default(true),
+  default_raffle_entries: z.number().gte(0).optional().default(1),
 });
 
 export type CreateMeetupPayload = z.infer<typeof createMeetupSchema>;
@@ -39,11 +40,12 @@ export const editMeetupSchema = z.object({
     .optional(),
   address: z.string().optional(),
   duration_hours: z.number().gt(0).optional(),
-  has_raffle: z.boolean().optional(),
   capacity: z.number().gt(0).optional(),
   image_url: z.string().optional(),
   description: z.string().optional(),
   organizer_ids: z.array(z.number()).optional(),
+  has_raffle: z.boolean().optional(),
+  default_raffle_entries: z.number().gte(0).optional(),
 });
 
 export type EditMeetupPayload = z.infer<typeof editMeetupSchema>;
