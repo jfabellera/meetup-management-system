@@ -244,6 +244,8 @@ const ManageMeetupSettingsPage = (): JSX.Element => {
           onBlur={formik.handleBlur}
           errorMessage={formik.errors.capacity}
         />
+        {/* TODO(jan): Add imageURL */}
+        {/* TODO(jan): Add description */}
         {editable ? (
           <HStack>
             <Spacer />
