@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Checkbox,
   Container,
   FormControl,
   FormErrorMessage,
@@ -37,6 +38,8 @@ const NewMeetupPage = (): JSX.Element => {
       capacity: 0,
       imageUrl: '',
       description: '',
+      hasRaffle: true,
+      defaultRaffleEntries: 1,
     },
     onSubmit: async (values) => {
       const result = await createMeetup({
@@ -49,7 +52,10 @@ const NewMeetupPage = (): JSX.Element => {
         capacity: formik.values.capacity,
         image_url: formik.values.imageUrl,
         description: formik.values.description,
-        has_raffle: false, // TODO(jan)
+        has_raffle: formik.values.hasRaffle,
+        default_raffle_entries: formik.values.hasRaffle
+          ? formik.values.defaultRaffleEntries
+          : formik.initialValues.defaultRaffleEntries,
       });
 
       if ('error' in result && 'data' in result.error) {
@@ -258,20 +264,51 @@ const NewMeetupPage = (): JSX.Element => {
                   </Text>
                 </FormControl>
 
-                {/* TODO(jan) */}
-                {/* <FormControl id="has_raffle">
+                <FormControl id="hasRaffle">
                   <Stack direction="row">
                     <FormLabel margin={0} pr="4">
                       Will this meetup have raffles?
                     </FormLabel>
-                    <Checkbox>Yes</Checkbox>
+                    <Checkbox
+                      name="hasRaffle"
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      isChecked={formik.values.hasRaffle}
+                    >
+                      Yes
+                    </Checkbox>
                   </Stack>
-                </FormControl> */}
+                </FormControl>
+
+                <FormControl
+                  id="defaultRaffleEntries"
+                  isRequired={formik.values.hasRaffle}
+                  isDisabled={!formik.values.hasRaffle}
+                  isInvalid={
+                    formik.errors.defaultRaffleEntries != null &&
+                    formik.touched.defaultRaffleEntries
+                  }
+                  minWidth={0}
+                >
+                  <FormLabel noOfLines={1}>
+                    Default raffle entries per attendee
+                  </FormLabel>
+                  <Input
+                    type="number"
+                    name="defaultRaffleEntries"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.defaultRaffleEntries}
+                  />
+                  <ErrorMessage>
+                    {formik.errors.defaultRaffleEntries}
+                  </ErrorMessage>
+                </FormControl>
 
                 <Button
                   type="submit"
                   loadingText="Submitting"
-                  disabled={!formik.isValid}
+                  isDisabled={!formik.isValid}
                   size="lg"
                   bg={'blue.400'}
                   color={'white'}
