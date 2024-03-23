@@ -164,7 +164,7 @@ export const MeetupModal = ({
             {meetup.description !== '' ? (
               <>
                 <Text fontWeight={'semibold'}>Description</Text>
-                <Text>{meetup.description}</Text>
+                <Text whiteSpace={'pre-line'}>{meetup.description}</Text>
               </>
             ) : (
               <Text>
