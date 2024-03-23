@@ -201,6 +201,7 @@ export const syncEventbriteAttendee = async (
       meetup,
       eventbrite_attendee_id: attendee.id,
       created_at: attendee.createdAt,
+      raffle_entries: meetup.default_raffle_entries,
     });
 
     await newTicket.save();
