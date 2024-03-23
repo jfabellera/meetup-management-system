@@ -12,6 +12,7 @@ export const createMeetupSchema = z.object({
   capacity: z.number().gt(0),
   image_url: z.string(),
   organizer_ids: z.array(z.number()).optional(),
+  description: z.string().optional().default(''),
 });
 
 export type CreateMeetupPayload = z.infer<typeof createMeetupSchema>;
@@ -41,6 +42,7 @@ export const editMeetupSchema = z.object({
   has_raffle: z.boolean().optional(),
   capacity: z.number().gt(0).optional(),
   image_url: z.string().optional(),
+  description: z.string().optional(),
   organizer_ids: z.array(z.number()).optional(),
 });
 

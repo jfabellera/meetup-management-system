@@ -255,6 +255,7 @@ export const createMeetup = async (
     capacity: result.data.capacity,
     duration_hours: result.data.duration_hours,
     image_url: result.data.image_url,
+    description: result.data.description,
   });
 
   // Add requestor to front of organizer list
@@ -458,6 +459,7 @@ export const updateMeetup = async (
   meetup.capacity = req.body.capacity ?? meetup.capacity;
   meetup.image_url = req.body.image_url ?? meetup.image_url;
   meetup.address = req.body.address ?? meetup.address;
+  meetup.description = req.body.description ?? meetup.description;
 
   // TODO(jan): This is mostly copied from createMeetup. We should reduce this duplication
   if (req.body.address != null || req.body.date != null) {
