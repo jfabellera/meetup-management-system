@@ -381,6 +381,7 @@ export const createMeetupFromEventbrite = async (
       capacity: ebTicketClass.total,
       duration_hours: dayjs(ebEvent.endTime).diff(ebEvent.startTime, 'hours'),
       image_url: ebEvent.imageUrl,
+      description: ebEvent.description,
       organizers: [],
       has_raffle: result.data.has_raffle,
     });
