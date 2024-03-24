@@ -195,7 +195,7 @@ export const MeetupModal = ({
               leftIcon={<FiUserX />}
               colorScheme={'red'}
               mr={3}
-              disabled={!isLoggedIn}
+              isDisabled={!isLoggedIn}
               onClick={unrsvpOnClick}
             >
               Cancel RSVP
@@ -205,7 +205,7 @@ export const MeetupModal = ({
               leftIcon={<FiUserCheck />}
               colorScheme={'green'}
               mr={3}
-              disabled={!isLoggedIn}
+              isDisabled={!isLoggedIn}
               onClick={rsvpOnclick}
             >
               RSVP

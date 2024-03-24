@@ -252,7 +252,7 @@ const ManageMeetupSettingsPage = (): JSX.Element => {
             <Button
               type="submit"
               loadingText="Save"
-              disabled={!formik.isValid}
+              isDisabled={!formik.isValid}
               size="lg"
               bg={'blue.400'}
               color={'white'}

@@ -224,7 +224,7 @@ const RegisterPage = (): JSX.Element => {
                     type="submit"
                     loadingText="Submitting"
                     isLoading={loading}
-                    disabled={!formik.isValid}
+                    isDisabled={!formik.isValid}
                     size="lg"
                     bg={'blue.400'}
                     color={'white'}
