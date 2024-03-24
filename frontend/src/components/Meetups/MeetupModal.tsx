@@ -139,6 +139,10 @@ export const MeetupModal = ({
                 <Icon as={FiClock} />
                 <Text>
                   {dayjs(meetup.date, 'YYYY-MM-DDTHH:mm:ss').format('h:mm A')}
+                  {' - '}
+                  {dayjs(meetup.date, 'YYYY-MM-DDTHH:mm:ss')
+                    .add(meetup.duration_hours ?? 0, 'hours')
+                    .format('h:mm A')}
                 </Text>
               </HStack>
 
