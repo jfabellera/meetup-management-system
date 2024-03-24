@@ -251,11 +251,12 @@ export const createMeetup = async (
     date: result.data.date,
     address: result.data.address,
     organizers: [],
-    has_raffle: result.data.has_raffle,
     capacity: result.data.capacity,
     duration_hours: result.data.duration_hours,
     image_url: result.data.image_url,
     description: result.data.description,
+    has_raffle: result.data.has_raffle,
+    default_raffle_entries: result.data.default_raffle_entries,
   });
 
   // Add requestor to front of organizer list
@@ -385,6 +386,7 @@ export const createMeetupFromEventbrite = async (
       description: ebEvent.description,
       organizers: [],
       has_raffle: result.data.has_raffle,
+      default_raffle_entries: result.data.default_raffle_entries,
     });
 
     newMeetup.organizers.unshift(user);
@@ -460,6 +462,8 @@ export const updateMeetup = async (
   meetup.image_url = req.body.image_url ?? meetup.image_url;
   meetup.address = req.body.address ?? meetup.address;
   meetup.description = req.body.description ?? meetup.description;
+  meetup.default_raffle_entries =
+    req.body.default_raffle_entries ?? meetup.default_raffle_entries;
 
   // TODO(jan): This is mostly copied from createMeetup. We should reduce this duplication
   if (req.body.address != null || req.body.date != null) {
