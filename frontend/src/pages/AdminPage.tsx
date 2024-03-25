@@ -1,17 +1,14 @@
 'use client';
 
 import { Flex, Heading, Stack, StackDivider, VStack, } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
 import Page from '../components/Page/Page';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { useGetMeetupsQuery } from '../store/meetupSlice';
+import { useAppSelector } from '../store/hooks';
+import { useGetAllOrganizerRequestQuery } from '../store/organizerRequestSlice';
 
 
 const AdminPage = (): JSX.Element => {
-    const { data: requests } = useGetMeetupsQuery();
-    const dispatch = useAppDispatch();
     const { loading, error } = useAppSelector((state) => state.user);
-    const navigate = useNavigate();
+    const { data: requests } = useGetAllOrganizerRequestQuery();
 
     return (
         <Page>
@@ -42,38 +39,38 @@ const AdminPage = (): JSX.Element => {
 
 export default AdminPage;
 
-// const RequestUserProfile = ({} : RequestProps) : JSX.Element => {
-//     return (<Flex>
-//         <Avatar src='https://bit.ly/sage-adebayo' />
-//         <Box ml='3'>
-//             <Text fontWeight='bold'>
-//                 Segun Adebayo
-//             </Text>
-//             <Text fontSize='sm'>UI Engineer</Text>
-//         </Box>
-//         <IconButton
-//             variant='ghost'
-//             colorScheme='green'
-//             aria-label='Approve'
-//             fontSize='4xl'
-//             icon={<FaGrinStars />}
-//         />
-//         <IconButton
-//             variant='ghost'
-//             colorScheme='red'
-//             aria-label='Decline'
-//             fontSize='4xl'
-//             icon={<FaFrown />}
-//         />
-//         <IconButton
-//             variant='ghost'
-//             colorScheme='yellow'
-//             aria-label='Dismiss'
-//             fontSize='4xl'
-//             icon={<FaGrinBeamSweat />}
-//         />
-//     </Flex>);
-// };
+const RequestUserProfile = () : JSX.Element => {
+    return (<Flex>
+        <Avatar src='https://bit.ly/sage-adebayo' />
+        <Box ml='3'>
+            <Text fontWeight='bold'>
+                Segun Adebayo
+            </Text>
+            <Text fontSize='sm'>UI Engineer</Text>
+        </Box>
+        <IconButton
+            variant='ghost'
+            colorScheme='green'
+            aria-label='Approve'
+            fontSize='4xl'
+            icon={<FaGrinStars />}
+        />
+        <IconButton
+            variant='ghost'
+            colorScheme='red'
+            aria-label='Decline'
+            fontSize='4xl'
+            icon={<FaFrown />}
+        />
+        <IconButton
+            variant='ghost'
+            colorScheme='yellow'
+            aria-label='Dismiss'
+            fontSize='4xl'
+            icon={<FaGrinBeamSweat />}
+        />
+    </Flex>);
+};
 
 // <Page>
 //     <Heading fontSize="3xl" mb={'0.5em'}>
