@@ -58,7 +58,7 @@ const ManageMeetupPage = ({
   };
 
   const [sidebarValue, setSidebarValue] = useState<string>(
-    getSidebarValueFromPath(),
+    getSidebarValueFromPath()
   );
 
   useEffect(() => {

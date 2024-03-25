@@ -46,10 +46,7 @@ export const login = createAsyncThunk(
   'auth/login',
   async (payload: LoginPayload, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
-        `${config.authUrl}:${config.authPort}/login`,
-        payload,
-      );
+      const response = await axios.post(`${config.authUrl}/login`, payload);
       const { data } = response;
 
       localStorage.setItem('token', data.token);
@@ -62,7 +59,7 @@ export const login = createAsyncThunk(
         return rejectWithValue(500);
       }
     }
-  },
+  }
 );
 
 /**
@@ -72,7 +69,7 @@ export const register = createAsyncThunk(
   'auth/register',
   async (payload: RegisterPayload, { rejectWithValue }) => {
     try {
-      await axios.post(`${config.authUrl}:${config.authPort}/`, {
+      await axios.post(`${config.authUrl}/`, {
         email: payload.email,
         first_name: payload.firstName,
         last_name: payload.lastName,
@@ -86,7 +83,7 @@ export const register = createAsyncThunk(
         return rejectWithValue(500);
       }
     }
-  },
+  }
 );
 
 /**

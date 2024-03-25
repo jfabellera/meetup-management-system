@@ -10,6 +10,7 @@ export interface EventbriteEvent {
   startTime?: string;
   endTime?: string;
   url?: string;
+  description?: string;
   venueId?: number;
   organizationId?: number;
 }

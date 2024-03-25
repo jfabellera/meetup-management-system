@@ -78,7 +78,7 @@ export const MeetupOrganizerCard = ({
             <Text noOfLines={1}>
               {`${dayjs(date, 'YYYY-MM-DDTHH:mm:ss').diff(
                 dayjs(),
-                'day',
+                'day'
               )} days`}
             </Text>
           </HStack>

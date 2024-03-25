@@ -28,7 +28,7 @@ const RegisterSchema = Yup.object().shape({
   email: Yup.string()
     .matches(
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
-      'Invalid email',
+      'Invalid email'
     )
     .required('Required'),
   firstName: Yup.string().required('Required'),
@@ -38,7 +38,7 @@ const RegisterSchema = Yup.object().shape({
     .required('Required')
     .matches(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/,
-      'Must contain 8 characters, one uppercase, one lowercase, one number, and one special character',
+      'Must contain 8 characters, one uppercase, one lowercase, one number, and one special character'
     ),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref('password')], 'Passwords must match')
@@ -224,7 +224,7 @@ const RegisterPage = (): JSX.Element => {
                     type="submit"
                     loadingText="Submitting"
                     isLoading={loading}
-                    disabled={!formik.isValid}
+                    isDisabled={!formik.isValid}
                     size="lg"
                     bg={'blue.400'}
                     color={'white'}

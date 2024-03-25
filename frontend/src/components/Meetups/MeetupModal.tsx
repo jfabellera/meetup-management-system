@@ -6,6 +6,7 @@ import {
   HStack,
   Icon,
   Image,
+  Link,
   Modal,
   ModalBody,
   ModalContent,
@@ -20,6 +21,7 @@ import { useEffect } from 'react';
 import {
   FiCalendar,
   FiClock,
+  FiExternalLink,
   FiMapPin,
   FiUser,
   FiUserCheck,
@@ -126,7 +128,7 @@ export const MeetupModal = ({
                 <Icon as={FiCalendar} />
                 <Text>
                   {dayjs(meetup.date, 'YYYY-MM-DDTHH:mm:ss').format(
-                    'MMMM DD, YYYY',
+                    'MMMM DD, YYYY'
                   )}
                 </Text>
               </HStack>
@@ -137,6 +139,10 @@ export const MeetupModal = ({
                 <Icon as={FiClock} />
                 <Text>
                   {dayjs(meetup.date, 'YYYY-MM-DDTHH:mm:ss').format('h:mm A')}
+                  {' - '}
+                  {dayjs(meetup.date, 'YYYY-MM-DDTHH:mm:ss')
+                    .add(meetup.duration_hours ?? 0, 'hours')
+                    .format('h:mm A')}
                 </Text>
               </HStack>
 
@@ -147,40 +153,49 @@ export const MeetupModal = ({
               </HStack>
 
               {/* Organizers */}
-              <HStack>
-                <Icon as={FiUser} />
-                <Text>
-                  Organized by {new Intl.ListFormat().format(meetup.organizers)}
-                </Text>
-              </HStack>
+              {meetup.organizers != null ? (
+                <HStack>
+                  <Icon as={FiUser} />
+                  <Text>
+                    Organized by{' '}
+                    {new Intl.ListFormat().format(meetup.organizers)}
+                  </Text>
+                </HStack>
+              ) : null}
             </Flex>
 
             {/* Description */}
-            {/* TODO(jan): Add actual description from meetup details when implemented */}
-            <Text>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris
-              nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-              reprehenderit in voluptate velit esse cillum dolore eu fugiat
-              nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-              sunt in culpa qui officia deserunt mollit anim id est laborum.
-            </Text>
+            {meetup.description !== '' ? (
+              <>
+                <Text fontWeight={'semibold'}>Description</Text>
+                <Text whiteSpace={'pre-line'}>{meetup.description}</Text>
+              </>
+            ) : (
+              <Text>
+                <i>No description</i>
+              </Text>
+            )}
           </Flex>
         </ModalBody>
 
         <ModalFooter>
-          <MeetupCapacityStatus
-            available={meetup.tickets.available}
-            total={meetup.tickets.total}
-          />
+          {meetup.tickets != null ? (
+            <MeetupCapacityStatus
+              available={meetup.tickets.available}
+              total={meetup.tickets.total}
+            />
+          ) : null}
           <Spacer />
-          {ticket != null ? (
+          {meetup.eventbrite_url != null ? (
+            <Link href={meetup.eventbrite_url} isExternal mr={3}>
+              <Button leftIcon={<FiExternalLink />}>RSVP</Button>
+            </Link>
+          ) : ticket != null ? (
             <Button
               leftIcon={<FiUserX />}
               colorScheme={'red'}
               mr={3}
-              disabled={!isLoggedIn}
+              isDisabled={!isLoggedIn}
               onClick={unrsvpOnClick}
             >
               Cancel RSVP
@@ -190,7 +205,7 @@ export const MeetupModal = ({
               leftIcon={<FiUserCheck />}
               colorScheme={'green'}
               mr={3}
-              disabled={!isLoggedIn}
+              isDisabled={!isLoggedIn}
               onClick={rsvpOnclick}
             >
               RSVP

@@ -8,6 +8,7 @@ import {
   type FlexProps,
   HStack,
   Icon,
+  IconButton,
   Link,
   Menu,
   MenuButton,
@@ -86,7 +87,13 @@ const Nav = ({ sidebar, onOpen }: NavbarProps): JSX.Element => {
         <HStack flexGrow={1} gap={1}>
           {sidebar != null && sidebar ? (
             <Show below={'md'}>
-              <Icon as={FiMenu} onClick={onOpen} />
+              <IconButton
+                icon={<FiMenu />}
+                variant={'outline'}
+                marginRight={'0.5rem'}
+                onClick={onOpen}
+                aria-label={'menu'}
+              />
             </Show>
           ) : null}
           <Link
@@ -199,7 +206,7 @@ const NavbarDropdown = (props: NavbarDropdownProps): JSX.Element => {
                 <NavItem key={link.name} icon={link.icon} url={link.url}>
                   {link.name}
                 </NavItem>
-              ) : null,
+              ) : null
             )}
             <NavItem
               key="logout"

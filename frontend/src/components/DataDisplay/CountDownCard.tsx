@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 dayjs.extend(duration);
 
 const convertToSmallestUnitOfTime = (
-  durationMs: number,
+  durationMs: number
 ): { amount: number; unit: string } => {
   const duration = dayjs.duration(Math.abs(durationMs));
   const days = Math.floor(duration.asDays());
@@ -45,7 +45,7 @@ const CountDown = ({
 
   const { amount, unit } = useMemo(
     () => convertToSmallestUnitOfTime(durationMs),
-    [durationMs],
+    [durationMs]
   );
 
   useEffect(() => {

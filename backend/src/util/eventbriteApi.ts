@@ -82,6 +82,7 @@ export const getEventbriteEvent = async (
       startTime: event.start?.utc,
       endTime: event.end?.utc,
       url: event.url,
+      description: event.summary,
       venueId: event.venue_id,
       organizationId: event.organization_id,
     } satisfies EventbriteEvent;

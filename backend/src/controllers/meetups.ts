@@ -51,6 +51,8 @@ export interface MeetupInfo {
   };
   duration_hours?: number;
   image_url: string;
+  eventbrite_url?: string;
+  description?: string;
 }
 
 export interface TicketInfo {
@@ -93,8 +95,13 @@ const mapMeetupInfo = async (
     image_url: meetup.image_url,
   };
 
+  if (meetup.eventbriteRecord != null) {
+    meetupInfo.eventbrite_url = meetup.eventbriteRecord.url;
+  }
+
   if (type === MeetupInfoDetailLevel.Detailed) {
     meetupInfo.location.full_address = meetup.address;
+    meetupInfo.description = meetup.description;
 
     meetupInfo.organizers = meetup.organizers.map(
       (organizer) => organizer.nick_name
@@ -185,6 +192,7 @@ export const getAllMeetups = async (
     await Meetup.find({
       relations: {
         organizers: true,
+        eventbriteRecord: true,
       },
       where: findOptionsWhere,
       order: findOptionsOrder,
@@ -212,6 +220,7 @@ export const getMeetup = async (
   const meetup = await Meetup.findOne({
     relations: {
       organizers: true,
+      eventbriteRecord: true,
     },
     where: {
       id: parseInt(meetup_id),
@@ -242,10 +251,12 @@ export const createMeetup = async (
     date: result.data.date,
     address: result.data.address,
     organizers: [],
-    has_raffle: result.data.has_raffle,
     capacity: result.data.capacity,
     duration_hours: result.data.duration_hours,
     image_url: result.data.image_url,
+    description: result.data.description,
+    has_raffle: result.data.has_raffle,
+    default_raffle_entries: result.data.default_raffle_entries,
   });
 
   // Add requestor to front of organizer list
@@ -372,8 +383,10 @@ export const createMeetupFromEventbrite = async (
       capacity: ebTicketClass.total,
       duration_hours: dayjs(ebEvent.endTime).diff(ebEvent.startTime, 'hours'),
       image_url: ebEvent.imageUrl,
+      description: ebEvent.description,
       organizers: [],
       has_raffle: result.data.has_raffle,
+      default_raffle_entries: result.data.default_raffle_entries,
     });
 
     newMeetup.organizers.unshift(user);
@@ -448,6 +461,9 @@ export const updateMeetup = async (
   meetup.capacity = req.body.capacity ?? meetup.capacity;
   meetup.image_url = req.body.image_url ?? meetup.image_url;
   meetup.address = req.body.address ?? meetup.address;
+  meetup.description = req.body.description ?? meetup.description;
+  meetup.default_raffle_entries =
+    req.body.default_raffle_entries ?? meetup.default_raffle_entries;
 
   // TODO(jan): This is mostly copied from createMeetup. We should reduce this duplication
   if (req.body.address != null || req.body.date != null) {

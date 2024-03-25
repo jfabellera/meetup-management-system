@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { MeetupInfo } from '../../../backend/src/controllers/meetups';
 import {
+  type CreateMeetupFromEventbritePayload,
   type CreateMeetupPayload,
   type EditMeetupPayload,
 } from '../../../backend/src/util/validator';
@@ -21,7 +22,7 @@ export const meetupSlice = createApi({
   reducerPath: 'meetupSlice',
   tagTypes: ['Meetups', 'Meetup', 'Attendees'],
   baseQuery: fetchBaseQuery({
-    baseUrl: `${config.apiUrl}:${config.apiPort}/`,
+    baseUrl: `${config.apiUrl}/`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).user.user?.token;
 
@@ -54,6 +55,17 @@ export const meetupSlice = createApi({
       }),
       invalidatesTags: ['Meetups'],
     }),
+    createMeetupFromEventbrite: builder.mutation<
+      void,
+      CreateMeetupFromEventbritePayload
+    >({
+      query: (payload) => ({
+        url: `meetups/eventbrite`,
+        method: 'POST',
+        body: payload,
+      }),
+      invalidatesTags: ['Meetups'],
+    }),
     editMeetup: builder.mutation<void, EditMeetupOptions>({
       query: ({ payload, meetupId }) => ({
         url: `meetups/${meetupId}`,
@@ -69,5 +81,6 @@ export const {
   useGetMeetupsQuery,
   useGetMeetupQuery,
   useCreateMeetupMutation,
+  useCreateMeetupFromEventbriteMutation,
   useEditMeetupMutation,
 } = meetupSlice;

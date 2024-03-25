@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Checkbox,
   Container,
   FormControl,
   FormErrorMessage,
@@ -8,12 +9,16 @@ import {
   Heading,
   HStack,
   Input,
+  Link,
   Stack,
+  Text,
+  Textarea,
   useColorModeValue,
   useToast,
   type BoxProps,
 } from '@chakra-ui/react';
 import { useFormik } from 'formik';
+import { type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Page from '../components/Page/Page';
 import { useCreateMeetupMutation } from '../store/meetupSlice';
@@ -32,18 +37,25 @@ const NewMeetupPage = (): JSX.Element => {
       duration: 0,
       capacity: 0,
       imageUrl: '',
+      description: '',
+      hasRaffle: true,
+      defaultRaffleEntries: 1,
     },
     onSubmit: async (values) => {
       const result = await createMeetup({
         name: formik.values.name,
         date: new Date(
-          `${formik.values.date}T${formik.values.startTime}Z`,
+          `${formik.values.date}T${formik.values.startTime}Z`
         ).toISOString(),
         address: formik.values.address,
         duration_hours: formik.values.duration,
         capacity: formik.values.capacity,
         image_url: formik.values.imageUrl,
-        has_raffle: false, // TODO(jan)
+        description: formik.values.description,
+        has_raffle: formik.values.hasRaffle,
+        default_raffle_entries: formik.values.hasRaffle
+          ? formik.values.defaultRaffleEntries
+          : formik.initialValues.defaultRaffleEntries,
       });
 
       if ('error' in result && 'data' in result.error) {
@@ -63,6 +75,14 @@ const NewMeetupPage = (): JSX.Element => {
     validateOnMount: true,
   });
 
+  const onDescriptionChange = (
+    event: ChangeEvent<HTMLTextAreaElement>
+  ): void => {
+    // Truncate more than 500 characters
+    event.target.value = event.target.value.substring(0, 500);
+    formik.handleChange(event);
+  };
+
   const ErrorMessage = ({ children }: BoxProps): JSX.Element => {
     return (
       <FormErrorMessage justifyContent={'right'}>{children}</FormErrorMessage>
@@ -72,7 +92,7 @@ const NewMeetupPage = (): JSX.Element => {
   return (
     <Page>
       <Container padding={'1rem'} maxWidth={'contanier.md'}>
-        <Stack padding={0} mx={'auto'} maxW={'lg'}>
+        <Stack padding={0} mx={'auto'} maxW={'lg'} spacing={4}>
           <Heading fontSize={'4xl'} textAlign={'center'}>
             New Meetup
           </Heading>
@@ -84,6 +104,15 @@ const NewMeetupPage = (): JSX.Element => {
           >
             <form onSubmit={formik.handleSubmit} noValidate>
               <Stack spacing={4}>
+                <Link
+                  alignSelf={'end'}
+                  onClick={() => {
+                    navigate('/new-meetup/eventbrite');
+                  }}
+                  textDecoration={'underline'}
+                >
+                  Use Eventbrite
+                </Link>
                 <FormControl
                   id="name"
                   isRequired
@@ -215,20 +244,71 @@ const NewMeetupPage = (): JSX.Element => {
                   <ErrorMessage>{formik.errors.imageUrl}</ErrorMessage>
                 </FormControl>
 
-                {/* TODO(jan) */}
-                {/* <FormControl id="has_raffle">
+                <FormControl id="description" minWidth={0}>
+                  <FormLabel noOfLines={1}>Description</FormLabel>
+                  <Textarea
+                    name="description"
+                    onChange={onDescriptionChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.description}
+                  />
+                  <Text
+                    textAlign={'right'}
+                    fontSize={'sm'}
+                    marginTop="0.2rem"
+                    textColor={
+                      formik.values.description.length === 500 ? 'red' : 'black'
+                    }
+                  >
+                    {formik.values.description.length} / 500
+                  </Text>
+                </FormControl>
+
+                <FormControl id="hasRaffle">
                   <Stack direction="row">
                     <FormLabel margin={0} pr="4">
                       Will this meetup have raffles?
                     </FormLabel>
-                    <Checkbox>Yes</Checkbox>
+                    <Checkbox
+                      name="hasRaffle"
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      isChecked={formik.values.hasRaffle}
+                    >
+                      Yes
+                    </Checkbox>
                   </Stack>
-                </FormControl> */}
+                </FormControl>
+
+                <FormControl
+                  id="defaultRaffleEntries"
+                  isRequired={formik.values.hasRaffle}
+                  isDisabled={!formik.values.hasRaffle}
+                  isInvalid={
+                    formik.errors.defaultRaffleEntries != null &&
+                    formik.touched.defaultRaffleEntries
+                  }
+                  minWidth={0}
+                >
+                  <FormLabel noOfLines={1}>
+                    Default raffle entries per attendee
+                  </FormLabel>
+                  <Input
+                    type="number"
+                    name="defaultRaffleEntries"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.defaultRaffleEntries}
+                  />
+                  <ErrorMessage>
+                    {formik.errors.defaultRaffleEntries}
+                  </ErrorMessage>
+                </FormControl>
 
                 <Button
                   type="submit"
                   loadingText="Submitting"
-                  disabled={!formik.isValid}
+                  isDisabled={!formik.isValid}
                   size="lg"
                   bg={'blue.400'}
                   color={'white'}

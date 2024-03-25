@@ -36,7 +36,7 @@ const RafflePage = (): JSX.Element => {
     },
   ] = useClaimRaffleWinnerMutation();
   const [winner, setWinner] = useState<RaffleWinnerResponse | undefined>(
-    undefined,
+    undefined
   );
 
   const toast = useToast();
