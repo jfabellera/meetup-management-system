@@ -20,6 +20,7 @@ interface Config {
   eventbriteApiKey: string;
   eventbriteClientSecret: string;
   apiUrl: string;
+  socketUrl: string;
 }
 
 const config: Config = {
@@ -40,6 +41,7 @@ const config: Config = {
   eventbriteApiKey: process.env.EVENTBRITE_API_KEY ?? '',
   eventbriteClientSecret: process.env.EVENTBRITE_CLIENT_SECRET ?? '',
   apiUrl: process.env.MMS_API_URL ?? '',
+  socketUrl: process.env.MMS_SOCKET_URL ?? '',
 };
 
 export default config;
