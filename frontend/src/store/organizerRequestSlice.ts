@@ -2,13 +2,12 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { type User } from '../../../backend/src/interfaces/userInterfaces';
 import config from '../config';
 import { type RootState } from './store';
-import { deleteOrganizerRequest } from '../../../backend/src/controllers/organizerRequests';
 
 export const organizerRequestSlice = createApi({
     reducerPath: 'organizerRequestSlice',
     tagTypes: ['User'],
     baseQuery: fetchBaseQuery({
-        baseUrl: `${config.apiUrl}:${config.apiPort}/`,
+        baseUrl: `${config.apiUrl}/`,
         prepareHeaders: (headers, { getState }) => {
             const token = (getState() as RootState).user.user?.token;
 
