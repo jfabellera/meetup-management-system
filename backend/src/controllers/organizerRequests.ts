@@ -10,11 +10,9 @@ export const getAllOrganizerRequests = async (req: Request, res: Response) => {
 export const createOrganizerRequest = async (req: Request, res: Response) => {
     const user_id = parseInt(res.locals.requestor.id);
 
-    const existingRequest = await OrganizerRequests.findOneBy({
-        user_id: user_id,
-    });
+    const existingRequest = await OrganizerRequests.findOneBy({ user_id });
 
-    if (existingRequest) {
+    if (existingRequest != null) {
         return res.status(409).json({ message: 'Request from user already exists.' });
     }
 
@@ -31,7 +29,7 @@ export const deleteOrganizerRequest = async (req: Request, res: Response) => {
         id: parseInt(request_id),
     });
 
-    if (!organizerRequest) {
+    if (organizerRequest == null) {
         return res.status(404).json({ message: 'Invalid organizer request ID.' });
     }
 

@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { type User } from '../../../backend/src/interfaces/userInterfaces';
 import config from '../config';
 import { type RootState } from './store';
+import { deleteOrganizerRequest } from '../../../backend/src/controllers/organizerRequests';
 
 export const organizerRequestSlice = createApi({
     reducerPath: 'organizerRequestSlice',
@@ -21,15 +22,21 @@ export const organizerRequestSlice = createApi({
     endpoints: (builder) => ({
         submitOrganizerRequest: builder.query<User, number>({
             query: (userId) => ({
-                url: `/users/${userId}`,
+                url: `/organizerRequests/${userId}`,
             }),
-            providesTags: ['User'],
+            providesTags: ['OrganizerRequest'],
         }),
         getAllOrganizerRequest: builder.query<User, number>({
             query: (userId) => ({
-                url: `/users/${userId}`,
+                url: `/organizerRequests/`,
             }),
-            providesTags: ['User'],
+            providesTags: ['OrganizerRequest'],
+        }),
+        deleteOrganizerRequest: builder.query<User, number>({
+            query: (userId) => ({
+                url: `/organizerRequests/${userId}`,
+            }),
+            invalidatesTags: ['OrganizerRequest'],
         })
     }),
 });
