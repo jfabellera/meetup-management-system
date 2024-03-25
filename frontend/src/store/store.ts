@@ -6,12 +6,14 @@ import { meetupSlice } from './meetupSlice';
 import { organizerSlice } from './organizerSlice';
 import { ticketSlice } from './ticketSlice';
 import { userSlice } from './userSlice';
+import { organizerRequestSlice } from './organizerRequestSlice';
 
 export const store = configureStore({
   reducer: {
     [meetupSlice.reducerPath]: meetupSlice.reducer,
     [ticketSlice.reducerPath]: ticketSlice.reducer,
     [organizerSlice.reducerPath]: organizerSlice.reducer,
+    [organizerRequestSlice.reducerPath]: organizerRequestSlice.reducer,
     [userSlice.reducerPath]: userSlice.reducer,
     [eventbriteSlice.reducerPath]: eventbriteSlice.reducer,
     user: authSlice,
@@ -21,6 +23,7 @@ export const store = configureStore({
       .concat(meetupSlice.middleware)
       .concat(ticketSlice.middleware)
       .concat(organizerSlice.middleware)
+      .concat(organizerRequestSlice.middleware)
       .concat(userSlice.middleware)
       .concat(eventbriteSlice.middleware),
 });

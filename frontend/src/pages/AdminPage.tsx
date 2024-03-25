@@ -1,14 +1,16 @@
 'use client';
 
-import { Flex, Heading, Stack, StackDivider, VStack, } from '@chakra-ui/react';
+import { Avatar, Box, Flex, Heading, IconButton, Stack, StackDivider, Text, VStack } from '@chakra-ui/react';
 import Page from '../components/Page/Page';
 import { useAppSelector } from '../store/hooks';
 import { useGetAllOrganizerRequestQuery } from '../store/organizerRequestSlice';
+import { FaFrown, FaGrinBeamSweat, FaGrinStars } from 'react-icons/fa';
+import { OrganizerRequests } from '../../../backend/src/entity/OrganizerRequests';
 
 
 const AdminPage = (): JSX.Element => {
     const { loading, error } = useAppSelector((state) => state.user);
-    const { data: requests } = useGetAllOrganizerRequestQuery();
+    const { data: organizerRequests } = useGetAllOrganizerRequestQuery({});
 
     return (
         <Page>
@@ -23,12 +25,9 @@ const AdminPage = (): JSX.Element => {
                         divider={<StackDivider borderColor='gray.200' />}
                         spacing={4}
                         align='stretch'>
-                        {
-                            // <RequestUserProfile>
-                            //     user:{}
-                            //     request:{}
-                            // </RequestUserProfile>
-                        }
+                        <RequestUserProfile>
+                            {organizerRequests}
+                        </RequestUserProfile>
                     </VStack>
 
                 </Stack>
@@ -39,7 +38,7 @@ const AdminPage = (): JSX.Element => {
 
 export default AdminPage;
 
-const RequestUserProfile = () : JSX.Element => {
+const RequestUserProfile = (organizerRequests: OrganizerRequests[]) : JSX.Element => {
     return (<Flex>
         <Avatar src='https://bit.ly/sage-adebayo' />
         <Box ml='3'>
@@ -59,13 +58,6 @@ const RequestUserProfile = () : JSX.Element => {
             variant='ghost'
             colorScheme='red'
             aria-label='Decline'
-            fontSize='4xl'
-            icon={<FaFrown />}
-        />
-        <IconButton
-            variant='ghost'
-            colorScheme='yellow'
-            aria-label='Dismiss'
             fontSize='4xl'
             icon={<FaGrinBeamSweat />}
         />
