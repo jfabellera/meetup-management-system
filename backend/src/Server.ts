@@ -1,4 +1,4 @@
-import * as express from 'express';
+import express from 'express';
 import { io } from 'socket.io-client';
 import config from './config';
 import { AppDataSource } from './datasource';
@@ -15,7 +15,7 @@ class Server {
   private readonly express: express.Application;
 
   constructor() {
-    this.express = express.default();
+    this.express = express();
     this.config();
     this.routes();
   }
