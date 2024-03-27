@@ -45,7 +45,7 @@ export const meetupSlice = createApi({
       query: (id) => ({
         url: `meetups/${id}`,
       }),
-      providesTags: ['Meetup'],
+      providesTags: (result, error, arg) => [{ type: 'Meetup', id: arg }],
     }),
     createMeetup: builder.mutation<void, CreateMeetupPayload>({
       query: (payload) => ({
