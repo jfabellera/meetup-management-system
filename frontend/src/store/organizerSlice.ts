@@ -32,7 +32,9 @@ export const organizerSlice = createApi({
         url: `meetups/${options.meetup_id}/attendees`,
         params: options.params,
       }),
-      providesTags: ['Attendees'],
+      providesTags: (result, error, arg) => [
+        { type: 'Attendees', id: arg.meetup_id },
+      ],
     }),
     checkInAttendee: builder.mutation<void, number>({
       query: (ticketId) => ({

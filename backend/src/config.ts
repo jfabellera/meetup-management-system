@@ -7,6 +7,8 @@ interface Config {
   apiPort: string;
   authHostname: string;
   authPort: string;
+  socketHostname: string;
+  socketPort: string;
   databaseHost: string;
   databasePort: string;
   databaseName: string;
@@ -18,6 +20,7 @@ interface Config {
   eventbriteApiKey: string;
   eventbriteClientSecret: string;
   apiUrl: string;
+  socketUrl: string;
 }
 
 const config: Config = {
@@ -25,6 +28,8 @@ const config: Config = {
   apiPort: process.env.MMS_API_SERVER_PORT ?? '3000',
   authHostname: process.env.MMS_AUTH_SERVER_HOSTNAME ?? 'localhost',
   authPort: process.env.MMS_AUTH_SERVER_PORT ?? '3001',
+  socketHostname: process.env.MMS_SOCKET_SERVER_HOSTNAME ?? 'localhost',
+  socketPort: process.env.MMS_SOCKET_SERVER_PORT ?? '3002',
   databaseHost: process.env.MMS_DATABASE_HOST ?? 'localhost',
   databasePort: process.env.MMS_DATABASE_PORT ?? '5432',
   databaseName: process.env.MMS_DATABASE_NAME ?? '',
@@ -35,7 +40,8 @@ const config: Config = {
   gcpApiKey: process.env.GCP_API_KEY ?? '',
   eventbriteApiKey: process.env.EVENTBRITE_API_KEY ?? '',
   eventbriteClientSecret: process.env.EVENTBRITE_CLIENT_SECRET ?? '',
-  apiUrl: process.env.MMS_API_URL ?? '',
+  apiUrl: process.env.MMS_API_URL ?? 'http://localhost:3000',
+  socketUrl: process.env.MMS_SOCKET_URL ?? 'http://localhost:3002',
 };
 
 export default config;

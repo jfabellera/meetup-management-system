@@ -5,8 +5,10 @@
   "scripts": {
     "start": "tsc && node -r dotenv/config build/Server.js",
     "startAuth": "tsc && node -r dotenv/config build/AuthServer.js",
+    "startSocket": "tsc && node -r dotenv/config build/SocketServer.js",
     "dev": "ts-node-dev --respawn -r dotenv/config ./src/Server.ts",
     "devAuth": "ts-node-dev --respawn -r dotenv/config ./src/AuthServer.ts",
+    "devSocket": "ts-node-dev --respawn -r dotenv/config ./src/SocketServer.ts",
     "build": "tsc"
   },
   "devDependencies": {
@@ -27,6 +29,8 @@
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.8.0",
     "reflect-metadata": "^0.1.13",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
     "typeorm": "^0.3.17",
     "zod": "^3.22.4"
   }
