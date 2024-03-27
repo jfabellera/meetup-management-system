@@ -28,19 +28,28 @@ const ManageMeetupPage = ({
    * cache for the fetched meetup and attendees whenever a meetup is updated.
    */
   useEffect(() => {
-    socket.emit('meetup:subscribe', { meetupId: Number(meetupId) });
-
-    socket.on('meetup:update', (payload) => {
+    const onMeetupUpdate = (meetupId: number): void => {
+      console.log(meetupId);
       dispatch(
-        meetupSlice.util.invalidateTags([
-          { type: 'Meetup', id: payload.meetupId },
-        ])
+        meetupSlice.util.invalidateTags([{ type: 'Meetup', id: meetupId }])
       );
       dispatch(
         organizerSlice.util.invalidateTags([
-          { type: 'Attendees', id: payload.meetupId },
+          { type: 'Attendees', id: meetupId },
         ])
       );
+    };
+
+    socket.emit('meetup:subscribe', { meetupId: Number(meetupId) });
+
+    socket.on('meetup:update', (payload) => {
+      onMeetupUpdate(payload.id);
+    });
+
+    // Resubscribe and force update on reconnection after losing connection
+    socket.on('connect', () => {
+      socket.emit('meetup:subscribe', { meetupId: Number(meetupId) });
+      onMeetupUpdate(Number(meetupId));
     });
 
     // Stay subscribed to updates in case user comes back to page

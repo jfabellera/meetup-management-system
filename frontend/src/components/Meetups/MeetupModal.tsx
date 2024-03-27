@@ -71,14 +71,22 @@ export const MeetupModal = ({
   useEffect(() => {
     if (meetup == null) return;
 
+    const onMeetupUpdate = (meetupId: number): void => {
+      dispatch(
+        meetupSlice.util.invalidateTags([{ type: 'Meetup', id: meetupId }])
+      );
+    };
+
     socket.emit('meetup:subscribe', { meetupId: Number(meetupId) });
 
     socket.on('meetup:update', (payload) => {
-      dispatch(
-        meetupSlice.util.invalidateTags([
-          { type: 'Meetup', id: payload.meetupId },
-        ])
-      );
+      onMeetupUpdate(payload.meetupId);
+    });
+
+    // Resubscribe and force update on reconnection after losing connection
+    socket.on('connect', () => {
+      socket.emit('meetup:subscribe', { meetupId: Number(meetupId) });
+      onMeetupUpdate(Number(meetupId));
     });
 
     // Stay subscribed to updates in case user comes back to page
