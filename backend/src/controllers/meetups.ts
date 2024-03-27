@@ -3,6 +3,7 @@ import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
 import { type ParsedQs } from 'qs';
 import { ILike, type FindOptionsOrder, type FindOptionsWhere } from 'typeorm';
+import { socket } from '../Server';
 import config from '../config';
 import { EventbriteRecord } from '../entity/EventbriteRecord';
 import { Meetup } from '../entity/Meetup';
@@ -519,6 +520,7 @@ export const updateMeetup = async (
 
   await meetup.save();
 
+  socket.emit('meetup:update', { meetupId: meetup.id });
   return res.status(201).json(meetup);
 };
 
@@ -684,5 +686,7 @@ export const syncEventbriteAttendees = async (
       await syncEventbriteAttendee(attendee, meetup);
     })();
   });
+
+  socket.emit('meetup:update', { meetupId: meetup.id });
   return res.status(200).end();
 };
