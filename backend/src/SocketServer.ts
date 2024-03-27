@@ -8,16 +8,27 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: '*' } });
 
 io.on('connection', (socket) => {
-  console.log('Client connected');
+  const { meetupId } = socket.handshake.query;
 
-  socket.on('message', (msg) => {
-    console.log('message: ' + msg);
-    io.emit('message', msg);
+  if (meetupId != null) {
+    void socket.join(`meetup-${String(meetupId)}`);
+  }
+
+  socket.on('meetup:subscribe', (payload) => {
+    void socket.join(`meetup-${String(payload.meetupId)}`);
   });
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected');
+  socket.on('meetup:unsubscribe', (payload) => {
+    void socket.leave(`meetup-${String(payload.meetupId)}`);
   });
+
+  socket.on('meetup:update', (payload) => {
+    io.to(`meetup-${String(payload.meetupId)}`).emit('meetup:update', {
+      meetupId: payload.meetupId,
+    });
+  });
+
+  socket.on('disconnect', () => {});
 });
 
 httpServer.listen(parseInt(config.socketPort), config.socketHostname, () => {
