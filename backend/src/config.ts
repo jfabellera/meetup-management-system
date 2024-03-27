@@ -40,8 +40,8 @@ const config: Config = {
   gcpApiKey: process.env.GCP_API_KEY ?? '',
   eventbriteApiKey: process.env.EVENTBRITE_API_KEY ?? '',
   eventbriteClientSecret: process.env.EVENTBRITE_CLIENT_SECRET ?? '',
-  apiUrl: process.env.MMS_API_URL ?? '',
-  socketUrl: process.env.MMS_SOCKET_URL ?? '',
+  apiUrl: process.env.MMS_API_URL ?? 'http://localhost:3000',
+  socketUrl: process.env.MMS_SOCKET_URL ?? 'http://localhost:3002',
 };
 
 export default config;
