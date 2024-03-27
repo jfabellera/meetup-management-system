@@ -49,7 +49,12 @@ This project is split into two portions:
    MMS_API_SERVER_HOSTNAME=localhost
    MMS_API_SERVER_PORT=3000
    MMS_AUTH_SERVER_HOSTNAME=localhost
-   MMS_AUTH_SERVER_PORT=3000
+   MMS_AUTH_SERVER_PORT=3001
+   MMS_SOCKET_SERVER_HOSTNAME=localhost
+   MMS_SOCKET_SERVER_PORT=3002
+
+   MMS_API_URL=http://localhost:3000
+   MMS_SOCKET_URL=http://localhost:3002
 
    MMS_DATABASE_HOST=localhost
    MMS_DATABASE_PORT=5432
@@ -63,8 +68,6 @@ This project is split into two portions:
    GCP_API_KEY=
    EVENTBRITE_API_KEY=
    EVENTBRITE_CLIENT_SECRET=
-
-   MMS_API_URL=
    ```
 
 3. Start the authentication server.
@@ -94,6 +97,7 @@ This project is split into two portions:
    ```bash
    VITE_MMS_API_SERVER_URL=http://localhost:3000
    VITE_MMS_AUTH_SERVER_URL=http://localhost:3001
+   VITE_MMS_SOCKET_SERVER_URL=http://localhost:3002
    VITE_MMS_APP_URL=http://localhost:5173
    ```
 
