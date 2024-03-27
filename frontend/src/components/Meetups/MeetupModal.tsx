@@ -28,7 +28,9 @@ import {
   FiUserX,
 } from 'react-icons/fi';
 import { type SimpleTicketInfo } from '../../../../backend/src/controllers/tickets';
-import { useGetMeetupQuery } from '../../store/meetupSlice';
+import { socket } from '../../socket';
+import { useAppDispatch } from '../../store/hooks';
+import { meetupSlice, useGetMeetupQuery } from '../../store/meetupSlice';
 import {
   useCreateTicketMutation,
   useDeleteTicketMutation,
@@ -59,6 +61,28 @@ export const MeetupModal = ({
   });
   const [rsvp] = useCreateTicketMutation();
   const [unrsvp] = useDeleteTicketMutation();
+  const dispatch = useAppDispatch();
+
+  /**
+   * Subscribe user to updates for the selected meetup. This will invalidate the
+   * cache for the fetched meetup. This is mostly used to update the ticket
+   * availability in real time.
+   */
+  useEffect(() => {
+    if (meetup == null) return;
+
+    socket.emit('meetup:subscribe', { meetupId: Number(meetupId) });
+
+    socket.on('meetup:update', (payload) => {
+      dispatch(
+        meetupSlice.util.invalidateTags([
+          { type: 'Meetup', id: payload.meetupId },
+        ])
+      );
+    });
+
+    // Stay subscribed to updates in case user comes back to page
+  }, [meetup]);
 
   // Open modal once meetup is loaded
   useEffect(() => {
