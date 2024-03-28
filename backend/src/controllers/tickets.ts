@@ -69,6 +69,9 @@ export const createTicket = async (
     meetup,
     user,
     raffle_entries: meetup.default_raffle_entries,
+    ticket_holder_display_name: user.nick_name,
+    ticket_holder_first_name: user.first_name,
+    ticket_holder_last_name: user.last_name,
   });
   await newTicket.save();
 
@@ -205,6 +208,9 @@ export const syncEventbriteAttendee = async (
       eventbrite_attendee_id: attendee.id,
       created_at: attendee.createdAt,
       raffle_entries: meetup.default_raffle_entries,
+      ticket_holder_display_name: attendee.displayName,
+      ticket_holder_first_name: attendee.firstName,
+      ticket_holder_last_name: attendee.lastName,
     });
 
     await newTicket.save();
@@ -233,6 +239,10 @@ export const syncEventbriteAttendee = async (
 
   // Sync checked in status regardless of check in or check out
   ticket.is_checked_in = attendee.isCheckedIn;
+
+  ticket.ticket_holder_display_name = attendee.displayName;
+  ticket.ticket_holder_first_name = attendee.firstName;
+  ticket.ticket_holder_last_name = attendee.lastName;
 
   await ticket.save();
 };
