@@ -60,10 +60,10 @@ const ManageMeetupAttendeesPage = (): JSX.Element => {
             {sortedAttendees != null
               ? sortedAttendees.map((attendee: TicketInfo) => (
                   <Tr key={attendee.id}>
-                    <Td>{attendee.user?.nick_name}</Td>
+                    <Td>{attendee.ticket_holder_display_name}</Td>
                     <Show above={'md'}>
-                      <Td>{attendee.user?.first_name}</Td>
-                      <Td>{attendee.user?.last_name}</Td>
+                      <Td>{attendee.ticket_holder_first_name}</Td>
+                      <Td>{attendee.ticket_holder_last_name}</Td>
                     </Show>
                     <Td>
                       {dayjs(attendee.created_at).format('M/D/YY hh:mm A')}
