@@ -41,6 +41,7 @@ const RafflePage = (): JSX.Element => {
   const [winner, setWinner] = useState<RaffleWinnerResponse | undefined>(
     undefined
   );
+  const [isDisplayed, setIsDisplayed] = useState<boolean>(false);
 
   const toast = useToast();
 
@@ -48,6 +49,7 @@ const RafflePage = (): JSX.Element => {
     void (async () => {
       await rollRaffleWinner(meetupId);
       socket.emit('meetup:display', { meetupId, winner: null });
+      setIsDisplayed(false);
     })();
   };
 
@@ -62,11 +64,13 @@ const RafflePage = (): JSX.Element => {
   const handleDisplay = (): void => {
     if (winner != null) {
       socket.emit('meetup:display', { meetupId, winner: winner.displayName });
+      setIsDisplayed(true);
     }
   };
 
   const handleClear = (): void => {
     setWinner(undefined);
+    setIsDisplayed(false);
     socket.emit('meetup:display', { meetupId, winner: null });
   };
 
@@ -136,7 +140,7 @@ const RafflePage = (): JSX.Element => {
             <Button
               width={'100%'}
               height={'100%'}
-              colorScheme={'blackAlpha'}
+              colorScheme={winner == null ? 'green' : 'blackAlpha'}
               onClick={handleRoll}
               isLoading={isRollLoading}
               isDisabled={winner != null}
@@ -148,7 +152,9 @@ const RafflePage = (): JSX.Element => {
             <Button
               width={'100%'}
               height={'100%'}
-              colorScheme={'blackAlpha'}
+              colorScheme={
+                winner != null && !isDisplayed ? 'green' : 'blackAlpha'
+              }
               onClick={handleDisplay}
               isDisabled={winner == null}
             >
@@ -159,7 +165,9 @@ const RafflePage = (): JSX.Element => {
             <Button
               width={'100%'}
               height={'100%'}
-              colorScheme={'blackAlpha'}
+              colorScheme={
+                winner != null && isDisplayed ? 'green' : 'blackAlpha'
+              }
               onClick={handleClaim}
               isLoading={isClaimLoading}
               isDisabled={winner == null}
@@ -171,7 +179,13 @@ const RafflePage = (): JSX.Element => {
             <Button
               width={'100%'}
               height={'100%'}
-              colorScheme={'blackAlpha'}
+              colorScheme={
+                winner != null && isDisplayed
+                  ? 'red'
+                  : isDisplayed
+                    ? 'yellow'
+                    : 'blackAlpha'
+              }
               onClick={handleClear}
             >
               <Heading fontWeight={'medium'}>Clear</Heading>
