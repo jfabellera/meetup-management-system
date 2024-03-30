@@ -23,6 +23,7 @@ import {
   useToast,
   VStack,
 } from '@chakra-ui/react';
+import { useFormik } from 'formik';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { type RaffleWinnerResponse } from '../../../backend/src/interfaces/rafflesInterfaces';
@@ -59,12 +60,18 @@ const RafflePage = (): JSX.Element => {
 
   const toast = useToast({ position: 'top-right', duration: 2500 });
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const formik = useFormik({
+    initialValues: {
+      rollQuantity: 1,
+      displayOnRoll: false,
+      clearOnClaim: false,
+    },
+    onSubmit: () => {},
+  });
 
   const handleRoll = (): void => {
     void (async () => {
       await rollRaffleWinner(meetupId);
-      socket.emit('meetup:display', { meetupId, winner: null });
-      setIsDisplayed(false);
     })();
   };
 
@@ -97,10 +104,22 @@ const RafflePage = (): JSX.Element => {
           status: 'warning',
           description: 'No eligible attendees',
         });
+      } else {
+        if (formik.values.displayOnRoll) {
+          socket.emit('meetup:display', {
+            meetupId,
+            winner: rollResult.displayName,
+          });
+          setIsDisplayed(true);
+        } else {
+          socket.emit('meetup:display', { meetupId, winner: null });
+          setIsDisplayed(false);
+        }
       }
+
       setWinner(rollResult);
     }
-  }, [isRollSuccess]);
+  }, [isRollSuccess, rollResult]);
 
   useEffect(() => {
     if (isClaimSuccess) {
@@ -109,6 +128,10 @@ const RafflePage = (): JSX.Element => {
         status: 'success',
         description: `Raffle claimed by ${winner?.displayName}`,
       });
+
+      if (formik.values.clearOnClaim) {
+        handleClear();
+      }
       setWinner(undefined);
     }
   }, [isClaimSuccess]);
@@ -167,8 +190,12 @@ const RafflePage = (): JSX.Element => {
               onClick={handleRoll}
               isLoading={isRollLoading}
               isDisabled={winner != null}
+              flexDir={'column'}
             >
               <Heading fontWeight={'medium'}>Roll</Heading>
+              {formik.values.displayOnRoll ? (
+                <Text fontSize={'14px'}>and display</Text>
+              ) : null}
             </Button>
           </GridItem>
           <GridItem rowSpan={1} colSpan={2}>
@@ -225,19 +252,38 @@ const RafflePage = (): JSX.Element => {
 
           <DrawerBody>
             <VStack spacing={6}>
-              <FormControl>
+              <FormControl id={'rollQuantity'}>
                 <FormLabel>Roll quantity</FormLabel>
-                <Input type={'number'} inputMode={'numeric'} defaultValue={1} />
+                <Input
+                  type={'number'}
+                  inputMode={'numeric'}
+                  value={formik.values.rollQuantity}
+                  onChange={formik.handleChange}
+                />
               </FormControl>
 
-              <FormControl display={'flex'} alignItems={'center'}>
+              <FormControl
+                id={'displayOnRoll'}
+                display={'flex'}
+                alignItems={'center'}
+              >
                 <FormLabel mb={0}>Display on roll</FormLabel>
-                <Switch />
+                <Switch
+                  isChecked={formik.values.displayOnRoll}
+                  onChange={formik.handleChange}
+                />
               </FormControl>
 
-              <FormControl display={'flex'} alignItems={'center'}>
+              <FormControl
+                id={'clearOnClaim'}
+                display={'flex'}
+                alignItems={'center'}
+              >
                 <FormLabel mb={0}>Clear on claim</FormLabel>
-                <Switch />
+                <Switch
+                  isChecked={formik.values.clearOnClaim}
+                  onChange={formik.handleChange}
+                />
               </FormControl>
 
               <Box width={'100%'}>
