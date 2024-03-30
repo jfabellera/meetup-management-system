@@ -3,4 +3,5 @@ export interface RaffleWinnerResponse {
   displayName: string;
   firstName: string;
   lastName: string;
+  wins: number;
 }

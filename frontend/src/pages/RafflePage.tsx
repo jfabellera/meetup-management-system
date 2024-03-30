@@ -57,6 +57,7 @@ const RafflePage = (): JSX.Element => {
     undefined
   );
   const [isDisplayed, setIsDisplayed] = useState<boolean>(false);
+  const [isAllIn, setIsAllIn] = useState<boolean>(false);
 
   const toast = useToast({ position: 'top-right', duration: 2500 });
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -71,14 +72,26 @@ const RafflePage = (): JSX.Element => {
 
   const handleRoll = (): void => {
     void (async () => {
-      await rollRaffleWinner(meetupId);
+      await rollRaffleWinner({ meetupId });
+    })();
+    setIsAllIn(false);
+  };
+
+  const handleRollAllIn = (): void => {
+    void (async () => {
+      await rollRaffleWinner({ meetupId, payload: { allIn: true } });
+      onClose();
+      setIsAllIn(true);
     })();
   };
 
   const handleClaim = (): void => {
     void (async () => {
       if (winner != null) {
-        await claimRaffleWinner(winner.ticketId);
+        await claimRaffleWinner({
+          ticketId: winner.ticketId,
+          payload: { force: isAllIn },
+        });
       }
     })();
   };
@@ -93,6 +106,7 @@ const RafflePage = (): JSX.Element => {
   const handleClear = (): void => {
     setWinner(undefined);
     setIsDisplayed(false);
+    setIsAllIn(false);
     socket.emit('meetup:display', { meetupId, winner: null });
   };
 
@@ -132,6 +146,8 @@ const RafflePage = (): JSX.Element => {
       if (formik.values.clearOnClaim) {
         handleClear();
       }
+
+      setIsAllIn(false);
       setWinner(undefined);
     }
   }, [isClaimSuccess]);
@@ -165,6 +181,11 @@ const RafflePage = (): JSX.Element => {
               <Text marginTop={'0.3rem'}>
                 {winner.firstName} {winner.lastName}
               </Text>
+              {winner.wins > 0 ? (
+                <Text textColor={'red'}>
+                  {winner.wins} win{winner.wins > 1 ? 's' : null}
+                </Text>
+              ) : null}
             </>
           ) : (
             <Text lineHeight={'6rem'}>Click roll to select a winner</Text>
@@ -287,11 +308,17 @@ const RafflePage = (): JSX.Element => {
               </FormControl>
 
               <Box width={'100%'}>
-                <Button width={'100%'} height={'3rem'} colorScheme={'red'}>
+                <Button
+                  width={'100%'}
+                  height={'3rem'}
+                  colorScheme={'red'}
+                  onClick={handleRollAllIn}
+                  isDisabled={winner != null}
+                >
                   Roll all in
                 </Button>
                 <Text textAlign={'center'} marginTop={'0.25rem'}>
-                  Previous winners are eligible to wins
+                  Previous winners are eligible to win
                 </Text>
               </Box>
             </VStack>
