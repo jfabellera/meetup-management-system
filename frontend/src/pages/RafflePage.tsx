@@ -2,6 +2,8 @@ import {
   Box,
   Button,
   Flex,
+  Grid,
+  GridItem,
   Heading,
   Text,
   useToast,
@@ -121,43 +123,59 @@ const RafflePage = (): JSX.Element => {
             <Text lineHeight={'6rem'}>Click roll to select a winner</Text>
           )}
         </Box>
-        <Button
-          colorScheme={'green'}
-          flexGrow={1}
+        <Grid
           width={'100%'}
-          onClick={handleClaim}
-          isLoading={isClaimLoading}
-          isDisabled={winner == null}
-        >
-          <Heading fontWeight={'medium'}>Claim</Heading>
-        </Button>
-        <Button
-          colorScheme={'blackAlpha'}
           flexGrow={1}
-          width={'100%'}
-          onClick={handleRoll}
-          isLoading={isRollLoading}
+          templateRows="repeat(3, 1fr)"
+          templateColumns="repeat(2, 1fr)"
+          gap={4}
         >
-          <Heading fontWeight={'medium'}>Roll</Heading>
-        </Button>
-        <Button
-          colorScheme={'blackAlpha'}
-          flexGrow={1}
-          width={'100%'}
-          onClick={handleDisplay}
-          isLoading={isRollLoading}
-        >
-          <Heading fontWeight={'medium'}>Display winner</Heading>
-        </Button>
-        <Button
-          colorScheme={'blackAlpha'}
-          flexGrow={1}
-          width={'100%'}
-          onClick={handleClearDisplay}
-          isLoading={isRollLoading}
-        >
-          <Heading fontWeight={'medium'}>Clear display</Heading>
-        </Button>
+          <GridItem rowSpan={1} colSpan={2}>
+            <Button
+              width={'100%'}
+              height={'100%'}
+              colorScheme={'blackAlpha'}
+              onClick={handleRoll}
+              isLoading={isRollLoading}
+            >
+              <Heading fontWeight={'medium'}>Roll</Heading>
+            </Button>
+          </GridItem>
+          <GridItem rowSpan={1} colSpan={2}>
+            <Button
+              width={'100%'}
+              height={'100%'}
+              colorScheme={'blackAlpha'}
+              onClick={handleDisplay}
+              isLoading={isRollLoading}
+            >
+              <Heading fontWeight={'medium'}>Display winner</Heading>
+            </Button>
+          </GridItem>
+          <GridItem colSpan={1}>
+            <Button
+              width={'100%'}
+              height={'100%'}
+              colorScheme={'blackAlpha'}
+              onClick={handleClaim}
+              isLoading={isClaimLoading}
+              isDisabled={winner == null}
+            >
+              <Heading fontWeight={'medium'}>Claim</Heading>
+            </Button>
+          </GridItem>
+          <GridItem colSpan={1}>
+            <Button
+              width={'100%'}
+              height={'100%'}
+              colorScheme={'blackAlpha'}
+              onClick={handleClearDisplay}
+              isLoading={isRollLoading}
+            >
+              <Heading fontWeight={'medium'}>Clear display</Heading>
+            </Button>{' '}
+          </GridItem>
+        </Grid>
       </VStack>
     </Flex>
   );
