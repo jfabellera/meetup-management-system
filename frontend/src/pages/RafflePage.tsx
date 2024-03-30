@@ -1,12 +1,25 @@
 import {
   Box,
   Button,
+  Drawer,
+  DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
   Flex,
+  FormControl,
+  FormLabel,
   Grid,
   GridItem,
   Heading,
+  Input,
+  Link,
   Spacer,
+  Switch,
   Text,
+  useDisclosure,
   useToast,
   VStack,
 } from '@chakra-ui/react';
@@ -45,6 +58,7 @@ const RafflePage = (): JSX.Element => {
   const [isDisplayed, setIsDisplayed] = useState<boolean>(false);
 
   const toast = useToast({ position: 'top-right', duration: 2500 });
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const handleRoll = (): void => {
     void (async () => {
@@ -134,6 +148,9 @@ const RafflePage = (): JSX.Element => {
           )}
         </Box>
         <Spacer />
+        <Link fontSize={'18px'} textDecoration={'underline'} onClick={onOpen}>
+          More options
+        </Link>
         <Grid
           width={'100%'}
           flexGrow={1}
@@ -199,6 +216,44 @@ const RafflePage = (): JSX.Element => {
           </GridItem>
         </Grid>
       </VStack>
+
+      <Drawer isOpen={isOpen} placement={'bottom'} onClose={onClose}>
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader>Options</DrawerHeader>
+
+          <DrawerBody>
+            <VStack spacing={6}>
+              <FormControl>
+                <FormLabel>Roll quantity</FormLabel>
+                <Input type={'number'} inputMode={'numeric'} defaultValue={1} />
+              </FormControl>
+
+              <FormControl display={'flex'} alignItems={'center'}>
+                <FormLabel mb={0}>Display on roll</FormLabel>
+                <Switch />
+              </FormControl>
+
+              <FormControl display={'flex'} alignItems={'center'}>
+                <FormLabel mb={0}>Clear on claim</FormLabel>
+                <Switch />
+              </FormControl>
+
+              <Box width={'100%'}>
+                <Button width={'100%'} height={'3rem'} colorScheme={'red'}>
+                  Roll all in
+                </Button>
+                <Text textAlign={'center'} marginTop={'0.25rem'}>
+                  Previous winners are eligible to wins
+                </Text>
+              </Box>
+            </VStack>
+          </DrawerBody>
+
+          <DrawerFooter></DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </Flex>
   );
 };
