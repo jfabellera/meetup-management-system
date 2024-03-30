@@ -273,9 +273,11 @@ const RafflePage = (): JSX.Element => {
 
           <DrawerBody>
             <VStack spacing={6}>
+              {/* TODO(jan): Implement logic */}
               <FormControl id={'rollQuantity'}>
                 <FormLabel>Roll quantity</FormLabel>
                 <Input
+                  isDisabled
                   type={'number'}
                   inputMode={'numeric'}
                   value={formik.values.rollQuantity}
