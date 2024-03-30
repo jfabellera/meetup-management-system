@@ -47,6 +47,7 @@ const RafflePage = (): JSX.Element => {
   const handleRoll = (): void => {
     void (async () => {
       await rollRaffleWinner(meetupId);
+      socket.emit('meetup:display', { meetupId, winner: null });
     })();
   };
 
@@ -64,7 +65,8 @@ const RafflePage = (): JSX.Element => {
     }
   };
 
-  const handleClearDisplay = (): void => {
+  const handleClear = (): void => {
+    setWinner(undefined);
     socket.emit('meetup:display', { meetupId, winner: null });
   };
 
@@ -137,6 +139,7 @@ const RafflePage = (): JSX.Element => {
               colorScheme={'blackAlpha'}
               onClick={handleRoll}
               isLoading={isRollLoading}
+              isDisabled={winner != null}
             >
               <Heading fontWeight={'medium'}>Roll</Heading>
             </Button>
@@ -147,7 +150,7 @@ const RafflePage = (): JSX.Element => {
               height={'100%'}
               colorScheme={'blackAlpha'}
               onClick={handleDisplay}
-              isLoading={isRollLoading}
+              isDisabled={winner == null}
             >
               <Heading fontWeight={'medium'}>Display winner</Heading>
             </Button>
@@ -169,10 +172,9 @@ const RafflePage = (): JSX.Element => {
               width={'100%'}
               height={'100%'}
               colorScheme={'blackAlpha'}
-              onClick={handleClearDisplay}
-              isLoading={isRollLoading}
+              onClick={handleClear}
             >
-              <Heading fontWeight={'medium'}>Clear display</Heading>
+              <Heading fontWeight={'medium'}>Clear</Heading>
             </Button>{' '}
           </GridItem>
         </Grid>
