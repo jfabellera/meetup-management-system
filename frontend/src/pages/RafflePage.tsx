@@ -10,6 +10,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { type RaffleWinnerResponse } from '../../../backend/src/interfaces/rafflesInterfaces';
+import { socket } from '../socket';
 import {
   useClaimRaffleWinnerMutation,
   useRollRaffleWinnerMutation,
@@ -53,6 +54,16 @@ const RafflePage = (): JSX.Element => {
         await claimRaffleWinner(winner.ticketId);
       }
     })();
+  };
+
+  const handleDisplay = (): void => {
+    if (winner != null) {
+      socket.emit('meetup:display', { meetupId, winner: winner.displayName });
+    }
+  };
+
+  const handleClearDisplay = (): void => {
+    socket.emit('meetup:display', { meetupId, winner: null });
   };
 
   useEffect(() => {
@@ -112,13 +123,13 @@ const RafflePage = (): JSX.Element => {
         </Box>
         <Button
           colorScheme={'green'}
-          height={'6rem'}
+          flexGrow={1}
           width={'100%'}
           onClick={handleClaim}
           isLoading={isClaimLoading}
           isDisabled={winner == null}
         >
-          CLAIM
+          <Heading fontWeight={'medium'}>Claim</Heading>
         </Button>
         <Button
           colorScheme={'blackAlpha'}
@@ -127,9 +138,25 @@ const RafflePage = (): JSX.Element => {
           onClick={handleRoll}
           isLoading={isRollLoading}
         >
-          <Heading size={'4xl'} fontWeight={'medium'}>
-            ROLL
-          </Heading>
+          <Heading fontWeight={'medium'}>Roll</Heading>
+        </Button>
+        <Button
+          colorScheme={'blackAlpha'}
+          flexGrow={1}
+          width={'100%'}
+          onClick={handleDisplay}
+          isLoading={isRollLoading}
+        >
+          <Heading fontWeight={'medium'}>Display winner</Heading>
+        </Button>
+        <Button
+          colorScheme={'blackAlpha'}
+          flexGrow={1}
+          width={'100%'}
+          onClick={handleClearDisplay}
+          isLoading={isRollLoading}
+        >
+          <Heading fontWeight={'medium'}>Clear display</Heading>
         </Button>
       </VStack>
     </Flex>
