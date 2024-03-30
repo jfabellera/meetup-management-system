@@ -5,6 +5,7 @@ import {
   Grid,
   GridItem,
   Heading,
+  Spacer,
   Text,
   useToast,
   VStack,
@@ -129,9 +130,11 @@ const RafflePage = (): JSX.Element => {
             <Text lineHeight={'6rem'}>Click roll to select a winner</Text>
           )}
         </Box>
+        <Spacer />
         <Grid
           width={'100%'}
           flexGrow={1}
+          maxHeight={'350px'}
           templateRows="repeat(3, 1fr)"
           templateColumns="repeat(2, 1fr)"
           gap={4}
