@@ -44,7 +44,7 @@ const RafflePage = (): JSX.Element => {
   );
   const [isDisplayed, setIsDisplayed] = useState<boolean>(false);
 
-  const toast = useToast();
+  const toast = useToast({ position: 'top-right', duration: 2500 });
 
   const handleRoll = (): void => {
     void (async () => {
