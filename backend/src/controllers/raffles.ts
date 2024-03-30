@@ -27,6 +27,8 @@ export const rollRaffleWinner = async (
     select: {
       id: true,
       ticket_holder_display_name: true,
+      ticket_holder_first_name: true,
+      ticket_holder_last_name: true,
     },
   });
 
@@ -35,11 +37,11 @@ export const rollRaffleWinner = async (
     const winnerIndex = generateRandomNumber(0, tickets.length - 1);
     const winnerTicket = tickets[winnerIndex];
 
-    const displayName = winnerTicket.ticket_holder_display_name;
-
     const response: RaffleWinnerResponse = {
       ticketId: winnerTicket.id,
-      displayName,
+      displayName: winnerTicket.ticket_holder_display_name,
+      firstName: winnerTicket.ticket_holder_first_name,
+      lastName: winnerTicket.ticket_holder_last_name,
     };
 
     return res.status(200).json(response);

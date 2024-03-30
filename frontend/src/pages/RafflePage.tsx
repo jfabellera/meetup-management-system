@@ -125,6 +125,9 @@ const RafflePage = (): JSX.Element => {
               <Heading size={'4xl'} fontWeight={'medium'}>
                 {winner.displayName ?? ''}
               </Heading>
+              <Text marginTop={'0.3rem'}>
+                {winner.firstName} {winner.lastName}
+              </Text>
             </>
           ) : (
             <Text lineHeight={'6rem'}>Click roll to select a winner</Text>
