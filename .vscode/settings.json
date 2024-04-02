@@ -1,7 +1,13 @@
 {
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-        "source.organizeImports": true
+      "source.sortImports": "explicit",
+    },
+    "files.associations": {
+      "*.env": "env"
+    },
+    "[env]": {
+        "editor.formatOnSave": false
     },
     "restoreTerminals.terminals": [
         {
@@ -13,6 +19,10 @@
             {
               "name": "auth",
               "commands": ["cd backend", "npm run devAuth"]
+            },
+            {
+              "name": "socket",
+              "commands": ["cd backend", "npm run devSocket"]
             },
             {
               "name": "frontend",

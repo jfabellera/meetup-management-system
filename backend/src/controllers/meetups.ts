@@ -3,6 +3,7 @@ import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
 import { type ParsedQs } from 'qs';
 import { ILike, type FindOptionsOrder, type FindOptionsWhere } from 'typeorm';
+import { socket } from '../Server';
 import config from '../config';
 import { EventbriteRecord } from '../entity/EventbriteRecord';
 import { Meetup } from '../entity/Meetup';
@@ -60,17 +61,9 @@ export interface TicketInfo {
   created_at: Date;
   is_checked_in: boolean;
   checked_in_at?: Date;
-  user?: {
-    email: string;
-    first_name: string;
-    last_name: string;
-    nick_name: string;
-  };
-}
-
-enum TicketInfoDetailLevel {
-  Simple,
-  Detailed,
+  ticket_holder_display_name: string;
+  ticket_holder_first_name: string;
+  ticket_holder_last_name: string;
 }
 
 enum MeetupInfoDetailLevel {
@@ -519,6 +512,7 @@ export const updateMeetup = async (
 
   await meetup.save();
 
+  socket.emit('meetup:update', { meetupId: meetup.id });
   return res.status(201).json(meetup);
 };
 
@@ -552,14 +546,6 @@ export const getMeetupAttendees = async (
   res: Response
 ): Promise<Response> => {
   const { meetup_id } = req.params;
-  const { detail_level } = req.query;
-  const user = res.locals.requestor as User;
-
-  const detailLevel =
-    detail_level != null &&
-    (detail_level as string).toLowerCase() === 'detailed'
-      ? TicketInfoDetailLevel.Detailed
-      : TicketInfoDetailLevel.Simple;
 
   const meetup = await Meetup.findOne({
     select: {
@@ -568,12 +554,9 @@ export const getMeetupAttendees = async (
         created_at: true,
         is_checked_in: true,
         checked_in_at: true,
-        user: {
-          first_name: true,
-          last_name: true,
-          nick_name: true,
-          email: true,
-        },
+        ticket_holder_display_name: true,
+        ticket_holder_first_name: true,
+        ticket_holder_last_name: true,
         eventbrite_attendee_id: true,
       },
     },
@@ -587,58 +570,15 @@ export const getMeetupAttendees = async (
     return res.status(404).json({ message: 'Invalid meetupID.' });
   }
 
-  // Get attendee list from Eventbrite if meetup is setup with Eventbrite
-  let ebAttendees: EventbriteAttendee[];
-  if (
-    detailLevel === TicketInfoDetailLevel.Detailed &&
-    meetup.eventbriteRecord != null &&
-    user.encrypted_eventbrite_token != null
-  ) {
-    try {
-      const ebToken = decrypt(user.encrypted_eventbrite_token);
-      ebAttendees = await getEventbriteAttendees(
-        ebToken,
-        meetup.eventbriteRecord.event_id,
-        meetup.eventbriteRecord.ticket_class_id,
-        meetup.eventbriteRecord.display_name_question_id
-      );
-    } catch (error: any) {
-      return res
-        .status(500)
-        .json({ message: 'Unable to get Eventbrite details.' });
-    }
-  }
-
   const response = meetup.tickets.map((ticket) => {
     const ticketInfo: TicketInfo = {
       id: ticket.id,
       created_at: ticket.created_at,
       is_checked_in: ticket.is_checked_in,
+      ticket_holder_display_name: ticket.ticket_holder_display_name,
+      ticket_holder_first_name: ticket.ticket_holder_first_name,
+      ticket_holder_last_name: ticket.ticket_holder_last_name,
     };
-
-    if (detailLevel === TicketInfoDetailLevel.Detailed) {
-      if (ticket.eventbrite_attendee_id == null) {
-        ticketInfo.user = {
-          email: ticket.user.email,
-          nick_name: ticket.user.nick_name,
-          first_name: ticket.user.first_name,
-          last_name: ticket.user.last_name,
-        };
-      } else {
-        const ebAttendee = ebAttendees.find(
-          (attendee) => attendee.id === ticket.eventbrite_attendee_id
-        );
-
-        if (ebAttendee != null) {
-          ticketInfo.user = {
-            email: ebAttendee.email,
-            nick_name: ebAttendee.displayName,
-            first_name: ebAttendee.firstName,
-            last_name: ebAttendee.lastName,
-          };
-        }
-      }
-    }
 
     if (ticket.is_checked_in) {
       ticketInfo.checked_in_at = ticket.checked_in_at;
@@ -684,5 +624,7 @@ export const syncEventbriteAttendees = async (
       await syncEventbriteAttendee(attendee, meetup);
     })();
   });
+
+  socket.emit('meetup:update', { meetupId: meetup.id });
   return res.status(200).end();
 };

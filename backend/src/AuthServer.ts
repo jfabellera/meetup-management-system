@@ -1,9 +1,8 @@
-import * as express from 'express';
-import { type RequestHandler } from 'express';
+import express, { type RequestHandler } from 'express';
 import config from './config';
 import { createUser, deleteUser, login, updateUser } from './controllers/auth';
 import { AppDataSource } from './datasource';
-import { authChecker, Rule } from './middleware/authChecker';
+import { Rule, authChecker } from './middleware/authChecker';
 
 void AppDataSource.initialize();
 
@@ -11,7 +10,7 @@ class AuthServer {
   private readonly express: express.Application;
 
   constructor() {
-    this.express = express.default();
+    this.express = express();
     this.config();
     this.routes();
   }

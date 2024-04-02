@@ -1,6 +1,10 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { type TicketInfo } from '../../../backend/src/controllers/meetups';
 import { type RaffleWinnerResponse } from '../../../backend/src/interfaces/rafflesInterfaces';
+import {
+  type ClaimRaffleWinnerPayload,
+  type RollRaffleWinnerPayload,
+} from '../../../backend/src/util/validator';
 import config from '../config';
 import { type RootState } from './store';
 
@@ -9,6 +13,16 @@ export interface GetMeetupAttendeesOptions {
   params?: {
     detail_level?: string;
   };
+}
+
+export interface RollRaffleWinnerOptions {
+  meetupId: number;
+  payload?: RollRaffleWinnerPayload;
+}
+
+export interface ClaimRaffleWinnerOptions {
+  ticketId: number;
+  payload?: ClaimRaffleWinnerPayload;
 }
 
 export const organizerSlice = createApi({
@@ -32,7 +46,9 @@ export const organizerSlice = createApi({
         url: `meetups/${options.meetup_id}/attendees`,
         params: options.params,
       }),
-      providesTags: ['Attendees'],
+      providesTags: (result, error, arg) => [
+        { type: 'Attendees', id: arg.meetup_id },
+      ],
     }),
     checkInAttendee: builder.mutation<void, number>({
       query: (ticketId) => ({
@@ -41,16 +57,21 @@ export const organizerSlice = createApi({
       }),
       invalidatesTags: ['Attendees'],
     }),
-    rollRaffleWinner: builder.mutation<RaffleWinnerResponse, number>({
-      query: (meetupId) => ({
-        url: `meetups/${meetupId}/raffle`,
+    rollRaffleWinner: builder.mutation<
+      RaffleWinnerResponse,
+      RollRaffleWinnerOptions
+    >({
+      query: (options) => ({
+        url: `meetups/${options.meetupId}/raffle`,
         method: 'POST',
+        body: options.payload,
       }),
     }),
-    claimRaffleWinner: builder.mutation<void, number>({
-      query: (ticketId) => ({
-        url: `tickets/${ticketId}/claim`,
+    claimRaffleWinner: builder.mutation<void, ClaimRaffleWinnerOptions>({
+      query: (options) => ({
+        url: `tickets/${options.ticketId}/claim`,
         method: 'POST',
+        body: options.payload,
       }),
     }),
   }),

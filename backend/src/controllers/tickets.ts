@@ -1,4 +1,5 @@
 import { type Request, type Response } from 'express';
+import { socket } from '../Server';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { type User } from '../entity/User';
@@ -68,9 +69,13 @@ export const createTicket = async (
     meetup,
     user,
     raffle_entries: meetup.default_raffle_entries,
+    ticket_holder_display_name: user.nick_name,
+    ticket_holder_first_name: user.first_name,
+    ticket_holder_last_name: user.last_name,
   });
   await newTicket.save();
 
+  socket.emit('meetup:update', { meetupId: meetup.id });
   return res.status(201).json(newTicket);
 };
 
@@ -86,8 +91,13 @@ export const updateTicket = async (
     return res.status(400).json(result.error);
   }
 
-  const ticket = await Ticket.findOneBy({
-    id: parseInt(ticket_id),
+  const ticket = await Ticket.findOne({
+    relations: {
+      meetup: true,
+    },
+    where: {
+      id: parseInt(ticket_id),
+    },
   });
 
   if (ticket == null) {
@@ -101,6 +111,7 @@ export const updateTicket = async (
 
   await ticket.save();
 
+  socket.emit('meetup:update', { meetupId: ticket.meetup.id });
   return res.status(201).json(ticket);
 };
 
@@ -108,18 +119,12 @@ export const deleteTicket = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { ticket_id } = req.params;
-
-  const ticket = await Ticket.findOneBy({
-    id: parseInt(ticket_id),
-  });
-
-  if (ticket == null) {
-    return res.status(404).json({ message: 'Invalid ticket ID.' });
-  }
+  const ticket = res.locals.ticket as Ticket;
+  const meetupId = ticket.meetup.id;
 
   await ticket.remove();
 
+  socket.emit('meetup:update', { meetupId });
   return res.status(204).end();
 };
 
@@ -179,6 +184,7 @@ export const checkInTicket = async (
   ticket.checked_in_at = new Date();
   await ticket.save();
 
+  socket.emit('meetup:update', { meetupId: ticket.meetup.id });
   return res.status(200).end();
 };
 
@@ -202,6 +208,9 @@ export const syncEventbriteAttendee = async (
       eventbrite_attendee_id: attendee.id,
       created_at: attendee.createdAt,
       raffle_entries: meetup.default_raffle_entries,
+      ticket_holder_display_name: attendee.displayName,
+      ticket_holder_first_name: attendee.firstName,
+      ticket_holder_last_name: attendee.lastName,
     });
 
     await newTicket.save();
@@ -230,6 +239,10 @@ export const syncEventbriteAttendee = async (
 
   // Sync checked in status regardless of check in or check out
   ticket.is_checked_in = attendee.isCheckedIn;
+
+  ticket.ticket_holder_display_name = attendee.displayName;
+  ticket.ticket_holder_first_name = attendee.firstName;
+  ticket.ticket_holder_last_name = attendee.lastName;
 
   await ticket.save();
 };
@@ -268,6 +281,7 @@ export const updateTicketViaWebhook = async (
 
     await syncEventbriteAttendee(attendee, meetup);
 
+    socket.emit('meetup:update', { meetupId: meetup.id });
     return res.status(200).end();
   } catch (error: any) {
     return res.status(400).end();

@@ -1,7 +1,7 @@
 import {
-  BrowserRouter as Router,
   Outlet,
   Route,
+  BrowserRouter as Router,
   Routes,
 } from 'react-router-dom';
 import './App.css';
@@ -22,6 +22,7 @@ import RegisterPage from './pages/RegisterPage';
 import { Provider } from 'react-redux';
 import AccountPage from './pages/AccountPage';
 import AuthorizeEventbritePage from './pages/AuthorizeEventbritePage';
+import MeetupDisplayPage from './pages/MeetupDisplayPage';
 import NewMeetupFromEventbritePage from './pages/NewMeetupFromEventbritePage';
 import { store } from './store/store';
 
@@ -54,6 +55,10 @@ const App = (): JSX.Element => {
             <Route path="attendees" element={<ManageMeetupAttendeesPage />} />
             <Route path="settings" element={<ManageMeetupSettingsPage />} />
           </Route>
+          <Route
+            path="/meetup/:meetupId/display"
+            element={<MeetupDisplayPage />}
+          />
           <Route
             path="/account/authorize-eventbrite"
             element={<AuthorizeEventbritePage />}

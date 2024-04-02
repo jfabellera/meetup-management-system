@@ -7,7 +7,7 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import dayjs from 'dayjs';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { type MeetupInfo } from '../../../backend/src/controllers/meetups';
 import { type SimpleTicketInfo } from '../../../backend/src/controllers/tickets';
 import { MeetupCard } from '../components/Meetups/MeetupCard';
@@ -49,6 +49,13 @@ const Homepage = (): JSX.Element => {
         .sort((a, b) => (dayjs(a.date).isBefore(b.date) ? 1 : -1)),
     [meetups]
   );
+
+  // Reset meetupID when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setMeetupId(0);
+    }
+  }, [isOpen]);
 
   /**
    * Get ticket for a meetup if the logged in user is attending the meetup. Otherwise, return null.

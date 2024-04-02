@@ -5,7 +5,10 @@ import { IoTicketOutline } from 'react-icons/io5';
 import { useLocation, useParams } from 'react-router-dom';
 import Page from '../components/Page/Page';
 import { type SidebarItem } from '../components/Sidebar/Sidebar';
-import { useGetMeetupQuery } from '../store/meetupSlice';
+import { socket } from '../socket';
+import { useAppDispatch } from '../store/hooks';
+import { meetupSlice, useGetMeetupQuery } from '../store/meetupSlice';
+import { organizerSlice } from '../store/organizerSlice';
 
 interface ManageMeetupPageProps extends BoxProps {
   children: ReactNode;
@@ -18,6 +21,39 @@ const ManageMeetupPage = ({
   const { meetupId } = useParams();
   const { data: meetup } = useGetMeetupQuery(parseInt(meetupId ?? ''));
   const location = useLocation();
+  const dispatch = useAppDispatch();
+
+  /**
+   * Subscribe user to updates for the selected meetup. This will invalidate the
+   * cache for the fetched meetup and attendees whenever a meetup is updated.
+   */
+  useEffect(() => {
+    const onMeetupUpdate = (meetupId: number): void => {
+      console.log(meetupId);
+      dispatch(
+        meetupSlice.util.invalidateTags([{ type: 'Meetup', id: meetupId }])
+      );
+      dispatch(
+        organizerSlice.util.invalidateTags([
+          { type: 'Attendees', id: meetupId },
+        ])
+      );
+    };
+
+    socket.emit('meetup:subscribe', { meetupId: Number(meetupId) });
+
+    socket.on('meetup:update', (payload) => {
+      onMeetupUpdate(payload.id);
+    });
+
+    // Resubscribe and force update on reconnection after losing connection
+    socket.on('connect', () => {
+      socket.emit('meetup:subscribe', { meetupId: Number(meetupId) });
+      onMeetupUpdate(Number(meetupId));
+    });
+
+    // Stay subscribed to updates in case user comes back to page
+  }, []);
 
   const sidebarItems: SidebarItem[] = [
     {

@@ -1,4 +1,5 @@
-import * as express from 'express';
+import express from 'express';
+import { io } from 'socket.io-client';
 import config from './config';
 import { AppDataSource } from './datasource';
 import eventbriteRoutes from './routes/eventbrite';
@@ -9,12 +10,13 @@ import ticketRoutes from './routes/tickets';
 import userRoutes from './routes/users';
 
 void AppDataSource.initialize();
+export const socket = io(config.socketUrl);
 
 class Server {
   private readonly express: express.Application;
 
   constructor() {
-    this.express = express.default();
+    this.express = express();
     this.config();
     this.routes();
   }

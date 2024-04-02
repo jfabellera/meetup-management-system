@@ -31,6 +31,15 @@ export class Ticket extends BaseEntity {
   @Column({ type: 'int', default: 0 })
   raffle_wins: number;
 
+  @Column({ type: 'varchar', default: '' })
+  ticket_holder_display_name: string;
+
+  @Column({ type: 'varchar', default: '' })
+  ticket_holder_first_name: string;
+
+  @Column({ type: 'varchar', default: '' })
+  ticket_holder_last_name: string;
+
   @Column({ type: 'timestamptz', default: () => 'now()' })
   created_at: Date;
 

@@ -2,18 +2,23 @@ import { type Request, type Response } from 'express';
 import { MoreThan, Raw } from 'typeorm';
 import { type Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
-import { type User } from '../entity/User';
 import { type RaffleWinnerResponse } from '../interfaces/rafflesInterfaces';
-import { getEventbriteAttendee } from '../util/eventbriteApi';
 import { generateRandomNumber } from '../util/math';
-import { decrypt } from '../util/security';
+import {
+  claimRaffleWinnerSchema,
+  rollRaffleWinnerSchema,
+} from '../util/validator';
 
 export const rollRaffleWinner = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
   const meetup = res.locals.meetup as Meetup;
-  const user = res.locals.requestor as User;
+  const result = rollRaffleWinnerSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
 
   // Get checked in tickets with raffle entries
   const tickets = await Ticket.find({
@@ -25,15 +30,19 @@ export const rollRaffleWinner = async (
         id: meetup.id,
       },
       is_checked_in: true,
-      raffle_entries: MoreThan(0),
-      raffle_wins: Raw((wins) => `${wins} < raffle_entries`),
+      ...(!result.data.allIn
+        ? {
+            raffle_entries: MoreThan(0),
+            raffle_wins: Raw((wins) => `${wins} < raffle_entries`),
+          }
+        : null),
     },
     select: {
       id: true,
-      user: {
-        nick_name: true,
-      },
-      eventbrite_attendee_id: true,
+      ticket_holder_display_name: true,
+      ticket_holder_first_name: true,
+      ticket_holder_last_name: true,
+      raffle_wins: true,
     },
   });
 
@@ -42,34 +51,12 @@ export const rollRaffleWinner = async (
     const winnerIndex = generateRandomNumber(0, tickets.length - 1);
     const winnerTicket = tickets[winnerIndex];
 
-    let displayName: string;
-    if (
-      winnerTicket.eventbrite_attendee_id != null &&
-      meetup.eventbriteRecord != null &&
-      user.encrypted_eventbrite_token != null
-    ) {
-      try {
-        const attendee = await getEventbriteAttendee(
-          decrypt(user.encrypted_eventbrite_token),
-          meetup.eventbriteRecord.event_id,
-          winnerTicket.eventbrite_attendee_id,
-          meetup.eventbriteRecord.display_name_question_id
-        );
-
-        displayName =
-          attendee?.displayName ?? String(winnerTicket.eventbrite_attendee_id);
-      } catch (error: any) {
-        return res
-          .status(500)
-          .json({ message: 'Unable to get Eventbrite details.' });
-      }
-    } else {
-      displayName = winnerTicket.user.nick_name;
-    }
-
     const response: RaffleWinnerResponse = {
       ticketId: winnerTicket.id,
-      displayName,
+      displayName: winnerTicket.ticket_holder_display_name,
+      firstName: winnerTicket.ticket_holder_first_name,
+      lastName: winnerTicket.ticket_holder_last_name,
+      wins: winnerTicket.raffle_wins,
     };
 
     return res.status(200).json(response);
@@ -83,6 +70,11 @@ export const claimRaffleWinner = async (
   res: Response
 ): Promise<Response> => {
   const ticket = res.locals.ticket as Ticket;
+  const result = claimRaffleWinnerSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
 
   if (ticket.raffle_entries <= 0) {
     return res
@@ -90,7 +82,7 @@ export const claimRaffleWinner = async (
       .json({ message: 'Ticket does not have any raffle entries.' });
   }
 
-  if (ticket.raffle_wins >= ticket.raffle_entries) {
+  if (ticket.raffle_wins >= ticket.raffle_entries && !result.data.force) {
     return res
       .status(400)
       .json({ message: 'Ticket is not eligible for any more wins.' });
