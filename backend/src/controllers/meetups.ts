@@ -628,3 +628,23 @@ export const syncEventbriteAttendees = async (
   socket.emit('meetup:update', { meetupId: meetup.id });
   return res.status(200).end();
 };
+
+export const getMeetupIdleImages = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { meetup_id } = req.params;
+
+  const meetup = await Meetup.findOne({
+    relations: { displayRecord: true },
+    where: {
+      id: Number(meetup_id),
+    },
+  });
+
+  if (meetup == null) {
+    return res.status(404).json({ message: 'Invalid meetupID.' });
+  }
+
+  return res.status(200).json(meetup.displayRecord?.idle_image_urls ?? []);
+};
