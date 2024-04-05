@@ -47,6 +47,7 @@ export const editMeetupSchema = z.object({
   organizer_ids: z.array(z.number()).optional(),
   has_raffle: z.boolean().optional(),
   default_raffle_entries: z.number().gte(0).optional(),
+  display_idle_image_urls: z.string().array().optional(),
 });
 
 export type EditMeetupPayload = z.infer<typeof editMeetupSchema>;

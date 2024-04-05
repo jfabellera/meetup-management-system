@@ -7,6 +7,7 @@ import { socket } from '../Server';
 import config from '../config';
 import { EventbriteRecord } from '../entity/EventbriteRecord';
 import { Meetup } from '../entity/Meetup';
+import { MeetupDisplayRecord } from '../entity/MeetupDisplayRecord';
 import { Ticket } from '../entity/Ticket';
 import { type User } from '../entity/User';
 import { type EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
@@ -429,8 +430,11 @@ export const updateMeetup = async (
     return res.status(400).json(result.error);
   }
 
-  const meetup = await Meetup.findOneBy({
-    id: parseInt(meetup_id),
+  const meetup = await Meetup.findOne({
+    relations: {
+      displayRecord: true,
+    },
+    where: { id: parseInt(meetup_id) },
   });
 
   if (meetup == null) {
@@ -485,6 +489,18 @@ export const updateMeetup = async (
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
     }
+  }
+
+  // Handle MeetupDisplayRecord
+  if (result.data.display_idle_image_urls != null) {
+    // Create display record if one does not exist
+    if (meetup.displayRecord == null) {
+      meetup.displayRecord = MeetupDisplayRecord.create();
+    }
+
+    meetup.displayRecord.idle_image_urls = result.data.display_idle_image_urls;
+
+    await meetup.displayRecord.save();
   }
 
   // TODO(jan): Implement this correctly with new typeorm entities
