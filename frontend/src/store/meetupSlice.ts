@@ -72,7 +72,11 @@ export const meetupSlice = createApi({
         method: 'PUT',
         body: payload,
       }),
-      invalidatesTags: ['Meetup', 'Meetups'],
+      invalidatesTags: (result, error, arg) => [
+        'Meetup',
+        'Meetups',
+        { type: 'Idle Images', id: arg.meetupId },
+      ],
     }),
     getMeetupIdleImages: builder.query<string[], number>({
       query: (meetupId) => ({
