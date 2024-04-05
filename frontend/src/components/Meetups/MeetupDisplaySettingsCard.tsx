@@ -9,7 +9,7 @@ import {
   useBoolean,
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiArrowLeft, FiArrowRight, FiPlus, FiTrash2 } from 'react-icons/fi';
 import {
   useEditMeetupMutation,
   useGetMeetupIdleImagesQuery,
@@ -55,6 +55,26 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
     });
   };
 
+  const onMoveLeft = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    const index = Number(event.currentTarget.id);
+    if (index === 0) return;
+    setUrls((urls) => {
+      const temp = [...urls];
+      temp.splice(index - 1, 1, temp.splice(index, 1, temp[index - 1])[0]);
+      return temp;
+    });
+  };
+
+  const onMoveRight = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    const index = Number(event.currentTarget.id);
+    if (index === urls.length - 1) return;
+    setUrls((urls) => {
+      const temp = [...urls];
+      temp.splice(index, 1, temp.splice(index + 1, 1, temp[index])[0]);
+      return temp;
+    });
+  };
+
   const onSubmit = (): void => {
     void (async () => {
       await updateMeetup({
@@ -91,7 +111,7 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
                   {isEditable ? (
                     <Box
                       display={'flex'}
-                      justifyContent={'center'}
+                      justifyContent={'space-between'}
                       alignItems={'center'}
                       position="absolute"
                       height={'100%'}
@@ -103,11 +123,27 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
                       _hover={{ opacity: 1 }}
                     >
                       <IconButton
+                        icon={<FiArrowLeft />}
+                        aria-label={'Move left'}
+                        colorScheme={'whiteAlpha'}
+                        id={String(index)}
+                        onClick={onMoveLeft}
+                        isDisabled={index === 0}
+                      />
+                      <IconButton
                         icon={<FiTrash2 />}
                         aria-label={'Delete'}
                         colorScheme={'red'}
                         id={String(index)}
                         onClick={onDelete}
+                      />
+                      <IconButton
+                        icon={<FiArrowRight />}
+                        aria-label={'Move right'}
+                        colorScheme={'whiteAlpha'}
+                        id={String(index)}
+                        onClick={onMoveRight}
+                        isDisabled={index === urls.length - 1}
                       />
                     </Box>
                   ) : null}
