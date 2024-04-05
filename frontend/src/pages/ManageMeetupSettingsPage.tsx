@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom';
 import MeetupDetailsSettingsCard from '../components/Meetups/MeetupDetailsSettingsCard';
+import MeetupDisplaySettingsCard from '../components/Meetups/MeetupDisplaySettingsCard';
 
 const ManageMeetupSettingsPage = (): JSX.Element => {
   const { meetupId } = useParams();
@@ -7,6 +8,7 @@ const ManageMeetupSettingsPage = (): JSX.Element => {
   return (
     <>
       <MeetupDetailsSettingsCard meetupId={Number(meetupId)} />
+      <MeetupDisplaySettingsCard meetupId={Number(meetupId)} />
     </>
   );
 };
