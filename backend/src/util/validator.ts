@@ -90,10 +90,11 @@ export const editUserSchema = z.object({
 export type EditUserPayload = z.infer<typeof editUserSchema>;
 
 export const rollRaffleWinnerSchema = z.object({
+  quantity: z.number().gt(0).optional().default(1),
   allIn: z.boolean().optional().default(false),
 });
 
-export type RollRaffleWinnerPayload = z.infer<typeof rollRaffleWinnerSchema>;
+export type RollRaffleWinnerPayload = z.input<typeof rollRaffleWinnerSchema>;
 
 export const claimRaffleWinnerSchema = z.object({
   force: z.boolean().optional().default(false),

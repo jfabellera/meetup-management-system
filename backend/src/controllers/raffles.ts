@@ -2,8 +2,11 @@ import { type Request, type Response } from 'express';
 import { MoreThan, Raw } from 'typeorm';
 import { type Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
-import { type RaffleWinnerResponse } from '../interfaces/rafflesInterfaces';
-import { generateRandomNumber } from '../util/math';
+import {
+  type RaffleWinnerInfo,
+  type RaffleWinnerResponse,
+} from '../interfaces/rafflesInterfaces';
+import { generateMultipleRandomNumbers } from '../util/math';
 import {
   claimRaffleWinnerSchema,
   rollRaffleWinnerSchema,
@@ -48,21 +51,33 @@ export const rollRaffleWinner = async (
 
   if (tickets.length > 0) {
     // Randomize winner
-    const winnerIndex = generateRandomNumber(0, tickets.length - 1);
-    const winnerTicket = tickets[winnerIndex];
+    const winnerIndices = generateMultipleRandomNumbers(
+      result.data.quantity,
+      0,
+      tickets.length - 1
+    );
+
+    const winnerTickets: Ticket[] = [];
+    winnerIndices.forEach((winnerIndex) => {
+      winnerTickets.push(tickets[winnerIndex]);
+    });
 
     const response: RaffleWinnerResponse = {
-      ticketId: winnerTicket.id,
-      displayName: winnerTicket.ticket_holder_display_name,
-      firstName: winnerTicket.ticket_holder_first_name,
-      lastName: winnerTicket.ticket_holder_last_name,
-      wins: winnerTicket.raffle_wins,
+      winners: winnerTickets.map((winnerTicket) => {
+        return {
+          ticketId: winnerTicket.id,
+          displayName: winnerTicket.ticket_holder_display_name,
+          firstName: winnerTicket.ticket_holder_first_name,
+          lastName: winnerTicket.ticket_holder_last_name,
+          wins: winnerTicket.raffle_wins,
+        } satisfies RaffleWinnerInfo;
+      }),
     };
 
     return res.status(200).json(response);
   }
 
-  return res.status(200).end();
+  return res.status(200).json({ winners: [] } satisfies RaffleWinnerResponse);
 };
 
 export const claimRaffleWinner = async (
