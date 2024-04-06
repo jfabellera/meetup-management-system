@@ -264,7 +264,12 @@ export const updateTicketViaWebhook = async (
     const meetup = await Meetup.findOne({
       relations: { eventbriteRecord: true },
       where: { id: parseInt(meetup_id) },
-      select: { eventbriteRecord: { display_name_question_id: true } },
+      select: {
+        eventbriteRecord: {
+          display_name_question_id: true,
+          ticket_class_id: true,
+        },
+      },
     });
 
     if (meetup?.eventbriteRecord == null) return res.status(404).end();
