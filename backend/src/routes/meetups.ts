@@ -6,12 +6,13 @@ import {
   getAllMeetups,
   getMeetup,
   getMeetupAttendees,
+  getMeetupIdleImages,
   syncEventbriteAttendees,
   updateMeetup,
 } from '../controllers/meetups';
 import { rollRaffleWinner } from '../controllers/raffles';
 import { createTicket, updateTicketViaWebhook } from '../controllers/tickets';
-import { authChecker, Rule } from '../middleware/authChecker';
+import { Rule, authChecker } from '../middleware/authChecker';
 
 const router = express.Router();
 
@@ -71,5 +72,7 @@ router.post(
   '/:meetup_id/attendee-webhook',
   updateTicketViaWebhook as RequestHandler
 );
+
+router.get('/:meetup_id/idle-images', getMeetupIdleImages as RequestHandler);
 
 export default router;

@@ -9,6 +9,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { EventbriteRecord } from './EventbriteRecord';
+import { MeetupDisplayRecord } from './MeetupDisplayRecord';
 import { Ticket } from './Ticket';
 import { User } from './User';
 
@@ -65,4 +66,7 @@ export class Meetup extends BaseEntity {
 
   @OneToOne(() => EventbriteRecord, (ebRecord) => ebRecord.meetup)
   eventbriteRecord?: EventbriteRecord;
+
+  @OneToOne(() => MeetupDisplayRecord, (displayRecord) => displayRecord.meetup)
+  displayRecord?: MeetupDisplayRecord;
 }

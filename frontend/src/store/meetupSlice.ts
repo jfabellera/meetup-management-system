@@ -20,7 +20,7 @@ interface EditMeetupOptions {
 
 export const meetupSlice = createApi({
   reducerPath: 'meetupSlice',
-  tagTypes: ['Meetups', 'Meetup', 'Attendees'],
+  tagTypes: ['Meetups', 'Meetup', 'Attendees', 'Idle Images'],
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}/`,
     prepareHeaders: (headers, { getState }) => {
@@ -72,7 +72,17 @@ export const meetupSlice = createApi({
         method: 'PUT',
         body: payload,
       }),
-      invalidatesTags: ['Meetup', 'Meetups'],
+      invalidatesTags: (result, error, arg) => [
+        'Meetup',
+        'Meetups',
+        { type: 'Idle Images', id: arg.meetupId },
+      ],
+    }),
+    getMeetupIdleImages: builder.query<string[], number>({
+      query: (meetupId) => ({
+        url: `meetups/${meetupId}/idle-images`,
+      }),
+      providesTags: (result, error, arg) => [{ type: 'Idle Images', id: arg }],
     }),
   }),
 });
@@ -83,4 +93,5 @@ export const {
   useCreateMeetupMutation,
   useCreateMeetupFromEventbriteMutation,
   useEditMeetupMutation,
+  useGetMeetupIdleImagesQuery,
 } = meetupSlice;
