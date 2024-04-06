@@ -192,6 +192,11 @@ export const syncEventbriteAttendee = async (
   attendee: EventbriteAttendee,
   meetup: Meetup
 ): Promise<void> => {
+  if (attendee.ticketClassId !== meetup.eventbriteRecord?.ticket_class_id) {
+    // Ignore attendees that do not match the specified ticket class
+    return;
+  }
+
   const ticket = await Ticket.findOne({
     where: { eventbrite_attendee_id: attendee.id },
   });

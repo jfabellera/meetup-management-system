@@ -236,6 +236,7 @@ export const getEventbriteAttendees = async (
               isCheckedIn: attendee.checked_in,
               checkInStatusUpdatedAt: attendee.barcodes[0].changed,
               isAttending: attendee.cancelled === false,
+              ticketClassId: attendee.ticket_class_id,
             } satisfies EventbriteAttendee;
           })
       );
@@ -275,6 +276,7 @@ export const getEventbriteAttendee = async (
       isCheckedIn: attendee.checked_in,
       checkInStatusUpdatedAt: attendee.barcodes[0].changed,
       isAttending: attendee.cancelled === false,
+      ticketClassId: attendee.ticket_class_id,
     } satisfies EventbriteAttendee;
   } catch (error: any) {
     return null;
@@ -306,6 +308,7 @@ export const getEventbriteAttendeeByUri = async (
       isCheckedIn: attendee.checked_in,
       checkInStatusUpdatedAt: attendee.barcodes[0].changed,
       isAttending: attendee.cancelled === false,
+      ticketClassId: attendee.ticket_class_id,
     } satisfies EventbriteAttendee;
   } catch (error: any) {
     return undefined;
