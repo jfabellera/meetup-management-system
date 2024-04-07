@@ -103,11 +103,11 @@ const RafflePage = (): JSX.Element => {
   };
 
   const handleDisplay = (): void => {
-    // TODO(jan): handle batch rolls
     if (winners != null) {
       socket.emit('meetup:display', {
         meetupId,
-        winner: winners[0].displayName,
+        winners: winners.map((winner) => winner.displayName),
+        isBatchRoll: formik.values.rollQuantity > 1,
       });
       setIsDisplayed(true);
     }
