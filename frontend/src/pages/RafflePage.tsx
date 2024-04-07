@@ -53,7 +53,11 @@ const RafflePage = (): JSX.Element => {
       isLoading: isClaimLoading,
     },
   ] = useClaimRaffleWinnerMutation();
-  const [winner, setWinner] = useState<RaffleWinnerInfo | undefined>(undefined);
+  const [winners, setWinners] = useState<RaffleWinnerInfo[] | undefined>(
+    undefined
+  );
+  const [claimIndex, setClaimIndex] = useState<number>(0);
+  const [claimedArray, setClaimedArray] = useState<boolean[]>([]); // Used for disabling buttons on batch rolls
   const [isDisplayed, setIsDisplayed] = useState<boolean>(false);
   const [isAllIn, setIsAllIn] = useState<boolean>(false);
 
@@ -70,7 +74,10 @@ const RafflePage = (): JSX.Element => {
 
   const handleRoll = (): void => {
     void (async () => {
-      await rollRaffleWinner({ meetupId });
+      await rollRaffleWinner({
+        meetupId,
+        payload: { quantity: formik.values.rollQuantity },
+      });
     })();
     setIsAllIn(false);
   };
@@ -83,11 +90,13 @@ const RafflePage = (): JSX.Element => {
     })();
   };
 
-  const handleClaim = (): void => {
+  const handleClaim = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    const winnerIndex = Number(event.currentTarget.id);
+    setClaimIndex(winnerIndex);
     void (async () => {
-      if (winner != null) {
+      if (winners != null) {
         await claimRaffleWinner({
-          ticketId: winner.ticketId,
+          ticketId: winners[winnerIndex].ticketId,
           payload: { force: isAllIn },
         });
       }
@@ -95,14 +104,18 @@ const RafflePage = (): JSX.Element => {
   };
 
   const handleDisplay = (): void => {
-    if (winner != null) {
-      socket.emit('meetup:display', { meetupId, winner: winner.displayName });
+    // TODO(jan): handle batch rolls
+    if (winners != null) {
+      socket.emit('meetup:display', {
+        meetupId,
+        winner: winners[0].displayName,
+      });
       setIsDisplayed(true);
     }
   };
 
   const handleClear = (): void => {
-    setWinner(undefined);
+    setWinners(undefined);
     setIsDisplayed(false);
     setIsAllIn(false);
     socket.emit('meetup:display', { meetupId, winner: null });
@@ -129,16 +142,25 @@ const RafflePage = (): JSX.Element => {
         }
       }
 
-      setWinner(rollResult.winners[0]);
+      setWinners(rollResult.winners);
+
+      // Initialize claimed status array for batch rolls
+      if (formik.values.rollQuantity > 1) {
+        const temp: boolean[] = [];
+        rollResult.winners.forEach(() => {
+          temp.push(false);
+        });
+        setClaimedArray(temp);
+      }
     }
   }, [isRollSuccess, rollResult]);
 
   useEffect(() => {
-    if (isClaimSuccess) {
+    if (isClaimSuccess && winners != null) {
       toast({
         title: 'Success',
         status: 'success',
-        description: `Raffle claimed by ${winner?.displayName}`,
+        description: `Raffle claimed by ${winners[claimIndex].displayName}`,
       });
 
       if (formik.values.clearOnClaim) {
@@ -146,7 +168,17 @@ const RafflePage = (): JSX.Element => {
       }
 
       setIsAllIn(false);
-      setWinner(undefined);
+
+      if (formik.values.rollQuantity === 1) {
+        setWinners(undefined);
+      } else {
+        // Update claimed status array
+        setClaimedArray((claimed) => {
+          const temp = [...claimed];
+          temp[claimIndex] = true;
+          return temp;
+        });
+      }
     }
   }, [isClaimSuccess]);
 
@@ -169,22 +201,57 @@ const RafflePage = (): JSX.Element => {
         width={'100%'}
         maxWidth={'800px'}
       >
-        <Box textAlign={'center'} height={'6rem'}>
-          {winner != null ? (
-            <>
-              <Text>WINNER</Text>
-              <Heading size={'4xl'} fontWeight={'medium'}>
-                {winner.displayName ?? ''}
-              </Heading>
-              <Text marginTop={'0.3rem'}>
-                {winner.firstName} {winner.lastName}
-              </Text>
-              {winner.wins > 0 ? (
-                <Text textColor={'red'}>
-                  {winner.wins} win{winner.wins > 1 ? 's' : null}
+        <Box textAlign={'center'} height={'6rem'} width={'100%'}>
+          {winners != null && winners.length > 0 ? (
+            formik.values.rollQuantity > 1 ? (
+              <>
+                {/* Display for batch roll */}
+                <Text>WINNERS</Text>
+                <VStack>
+                  {winners.map((winner, index) => {
+                    return (
+                      <Flex
+                        key={index}
+                        width={'100%'}
+                        textAlign={'left'}
+                        flexDirection={'row'}
+                        justifyContent={'space-between'}
+                      >
+                        <Text fontSize={'2xl'}>{winner.displayName}</Text>
+                        <Button
+                          colorScheme={
+                            winners != null && isDisplayed
+                              ? 'green'
+                              : 'blackAlpha'
+                          }
+                          id={String(index)}
+                          onClick={handleClaim}
+                          isDisabled={claimedArray[index]}
+                        >
+                          Claim
+                        </Button>
+                      </Flex>
+                    );
+                  })}
+                </VStack>
+              </>
+            ) : (
+              <>
+                {/* DIsplay for single person roll */}
+                <Text>WINNER</Text>
+                <Heading size={'4xl'} fontWeight={'medium'}>
+                  {winners[0].displayName ?? ''}
+                </Heading>
+                <Text marginTop={'0.3rem'}>
+                  {winners[0].firstName} {winners[0].lastName}
                 </Text>
-              ) : null}
-            </>
+                {winners[0].wins > 0 ? (
+                  <Text textColor={'red'}>
+                    {winners[0].wins} win{winners[0].wins > 1 ? 's' : null}
+                  </Text>
+                ) : null}
+              </>
+            )
           ) : (
             <Text lineHeight={'6rem'}>Click roll to select a winner</Text>
           )}
@@ -197,7 +264,9 @@ const RafflePage = (): JSX.Element => {
           width={'100%'}
           flexGrow={1}
           maxHeight={'350px'}
-          templateRows="repeat(3, 1fr)"
+          templateRows={
+            formik.values.rollQuantity > 1 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'
+          }
           templateColumns="repeat(2, 1fr)"
           gap={4}
         >
@@ -205,51 +274,62 @@ const RafflePage = (): JSX.Element => {
             <Button
               width={'100%'}
               height={'100%'}
-              colorScheme={winner == null ? 'green' : 'blackAlpha'}
+              colorScheme={winners == null ? 'green' : 'blackAlpha'}
               onClick={handleRoll}
               isLoading={isRollLoading}
-              isDisabled={winner != null}
+              isDisabled={winners != null}
               flexDir={'column'}
             >
-              <Heading fontWeight={'medium'}>Roll</Heading>
+              <Heading fontWeight={'medium'}>
+                Roll{' '}
+                {formik.values.rollQuantity > 1
+                  ? formik.values.rollQuantity
+                  : null}
+              </Heading>
               {formik.values.displayOnRoll ? (
                 <Text fontSize={'14px'}>and display</Text>
               ) : null}
             </Button>
           </GridItem>
-          <GridItem rowSpan={1} colSpan={2}>
+          <GridItem
+            rowSpan={1}
+            colSpan={formik.values.rollQuantity > 1 ? 1 : 2}
+          >
             <Button
               width={'100%'}
               height={'100%'}
               colorScheme={
-                winner != null && !isDisplayed ? 'green' : 'blackAlpha'
+                winners != null && !isDisplayed ? 'green' : 'blackAlpha'
               }
               onClick={handleDisplay}
-              isDisabled={winner == null}
+              isDisabled={winners == null}
             >
-              <Heading fontWeight={'medium'}>Display winner</Heading>
+              <Heading fontWeight={'medium'}>Display</Heading>
             </Button>
           </GridItem>
+          {formik.values.rollQuantity === 1 ? (
+            <GridItem colSpan={1}>
+              <Button
+                width={'100%'}
+                height={'100%'}
+                colorScheme={
+                  winners != null && isDisplayed ? 'green' : 'blackAlpha'
+                }
+                id={'0'}
+                onClick={handleClaim}
+                isLoading={isClaimLoading}
+                isDisabled={winners == null}
+              >
+                <Heading fontWeight={'medium'}>Claim</Heading>
+              </Button>
+            </GridItem>
+          ) : null}
           <GridItem colSpan={1}>
             <Button
               width={'100%'}
               height={'100%'}
               colorScheme={
-                winner != null && isDisplayed ? 'green' : 'blackAlpha'
-              }
-              onClick={handleClaim}
-              isLoading={isClaimLoading}
-              isDisabled={winner == null}
-            >
-              <Heading fontWeight={'medium'}>Claim</Heading>
-            </Button>
-          </GridItem>
-          <GridItem colSpan={1}>
-            <Button
-              width={'100%'}
-              height={'100%'}
-              colorScheme={
-                winner != null && isDisplayed
+                winners != null && isDisplayed
                   ? 'red'
                   : isDisplayed
                     ? 'yellow'
@@ -275,7 +355,6 @@ const RafflePage = (): JSX.Element => {
               <FormControl id={'rollQuantity'}>
                 <FormLabel>Roll quantity</FormLabel>
                 <Input
-                  isDisabled
                   type={'number'}
                   inputMode={'numeric'}
                   value={formik.values.rollQuantity}
@@ -313,7 +392,7 @@ const RafflePage = (): JSX.Element => {
                   height={'3rem'}
                   colorScheme={'red'}
                   onClick={handleRollAllIn}
-                  isDisabled={winner != null}
+                  isDisabled={winners != null}
                 >
                   Roll all in
                 </Button>
