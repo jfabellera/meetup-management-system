@@ -1,6 +1,7 @@
 import { type Request, type Response } from 'express';
 import { MoreThan, Raw } from 'typeorm';
 import { type Meetup } from '../entity/Meetup';
+import { RaffleRecord } from '../entity/RaffleRecord';
 import { Ticket } from '../entity/Ticket';
 import {
   type RaffleWinnerInfo,
@@ -62,7 +63,17 @@ export const rollRaffleWinner = async (
       winnerTickets.push(tickets[winnerIndex]);
     });
 
+    // Create raffle record
+    const raffleRecord = RaffleRecord.create({
+      meetup,
+      is_batch_roll: result.data.quantity > 1,
+      winners: winnerTickets.map((winnerTicket) => winnerTicket.id),
+    });
+
+    await raffleRecord.save();
+
     const response: RaffleWinnerResponse = {
+      raffleRecordId: Number(raffleRecord.id), // TODO(jan): Shouldn't have to cast here
       winners: winnerTickets.map((winnerTicket) => {
         return {
           ticketId: winnerTicket.id,
@@ -77,7 +88,7 @@ export const rollRaffleWinner = async (
     return res.status(200).json(response);
   }
 
-  return res.status(200).json({ winners: [] } satisfies RaffleWinnerResponse);
+  return res.status(200).end();
 };
 
 export const claimRaffleWinner = async (

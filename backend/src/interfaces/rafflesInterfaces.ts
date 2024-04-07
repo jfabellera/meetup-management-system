@@ -6,5 +6,6 @@ export interface RaffleWinnerInfo {
   wins: number;
 }
 export interface RaffleWinnerResponse {
+  raffleRecordId: number;
   winners: RaffleWinnerInfo[];
 }
