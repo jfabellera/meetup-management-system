@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { EventbriteRecord } from './EventbriteRecord';
 import { MeetupDisplayRecord } from './MeetupDisplayRecord';
+import { RaffleRecord } from './RaffleRecord';
 import { Ticket } from './Ticket';
 import { User } from './User';
 
@@ -69,4 +70,7 @@ export class Meetup extends BaseEntity {
 
   @OneToOne(() => MeetupDisplayRecord, (displayRecord) => displayRecord.meetup)
   displayRecord?: MeetupDisplayRecord;
+
+  @OneToMany(() => RaffleRecord, (raffleRecord) => raffleRecord.meetup)
+  raffleRecords: RaffleRecord[];
 }
