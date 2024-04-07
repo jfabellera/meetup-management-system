@@ -26,7 +26,7 @@ import {
 import { useFormik } from 'formik';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { type RaffleWinnerResponse } from '../../../backend/src/interfaces/rafflesInterfaces';
+import { type RaffleWinnerInfo } from '../../../backend/src/interfaces/rafflesInterfaces';
 import { socket } from '../socket';
 import {
   useClaimRaffleWinnerMutation,
@@ -53,9 +53,7 @@ const RafflePage = (): JSX.Element => {
       isLoading: isClaimLoading,
     },
   ] = useClaimRaffleWinnerMutation();
-  const [winner, setWinner] = useState<RaffleWinnerResponse | undefined>(
-    undefined
-  );
+  const [winner, setWinner] = useState<RaffleWinnerInfo | undefined>(undefined);
   const [isDisplayed, setIsDisplayed] = useState<boolean>(false);
   const [isAllIn, setIsAllIn] = useState<boolean>(false);
 
@@ -111,8 +109,8 @@ const RafflePage = (): JSX.Element => {
   };
 
   useEffect(() => {
-    if (isRollSuccess) {
-      if (rollResult == null) {
+    if (isRollSuccess && rollResult != null) {
+      if (rollResult.winners.length === 0) {
         toast({
           title: 'Roll failed',
           status: 'warning',
@@ -122,7 +120,7 @@ const RafflePage = (): JSX.Element => {
         if (formik.values.displayOnRoll) {
           socket.emit('meetup:display', {
             meetupId,
-            winner: rollResult.displayName,
+            winner: rollResult.winners[0],
           });
           setIsDisplayed(true);
         } else {
@@ -131,7 +129,7 @@ const RafflePage = (): JSX.Element => {
         }
       }
 
-      setWinner(rollResult);
+      setWinner(rollResult.winners[0]);
     }
   }, [isRollSuccess, rollResult]);
 
