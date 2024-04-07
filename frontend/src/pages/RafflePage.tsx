@@ -221,7 +221,9 @@ const RafflePage = (): JSX.Element => {
                         flexDirection={'row'}
                         justifyContent={'space-between'}
                       >
-                        <Text fontSize={'2xl'}>{winner.displayName}</Text>
+                        <Text fontSize={'2xl'}>
+                          {`${index + 1}. ${winner.displayName}`}
+                        </Text>
                         <Button
                           colorScheme={
                             winners != null && isDisplayed
