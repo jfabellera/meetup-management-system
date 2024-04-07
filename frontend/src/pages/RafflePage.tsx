@@ -16,7 +16,6 @@ import {
   Heading,
   Input,
   Link,
-  Spacer,
   Switch,
   Text,
   useDisclosure,
@@ -201,10 +200,15 @@ const RafflePage = (): JSX.Element => {
         width={'100%'}
         maxWidth={'800px'}
       >
-        <Box textAlign={'center'} height={'6rem'} width={'100%'}>
+        <Box
+          textAlign={'center'}
+          flexGrow={1}
+          width={'100%'}
+          overflow={'scroll'}
+        >
           {winners != null && winners.length > 0 ? (
             formik.values.rollQuantity > 1 ? (
-              <>
+              <Box height={0}>
                 {/* Display for batch roll */}
                 <Text>WINNERS</Text>
                 <VStack>
@@ -234,7 +238,7 @@ const RafflePage = (): JSX.Element => {
                     );
                   })}
                 </VStack>
-              </>
+              </Box>
             ) : (
               <>
                 {/* DIsplay for single person roll */}
@@ -256,19 +260,18 @@ const RafflePage = (): JSX.Element => {
             <Text lineHeight={'6rem'}>Click roll to select a winner</Text>
           )}
         </Box>
-        <Spacer />
         <Link fontSize={'18px'} textDecoration={'underline'} onClick={onOpen}>
           More options
         </Link>
         <Grid
           width={'100%'}
-          flexGrow={1}
-          maxHeight={'350px'}
           templateRows={
-            formik.values.rollQuantity > 1 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'
+            formik.values.rollQuantity > 1
+              ? 'repeat(2, 100px)'
+              : 'repeat(3, 100px)'
           }
           templateColumns="repeat(2, 1fr)"
-          gap={4}
+          gap={2}
         >
           <GridItem rowSpan={1} colSpan={2}>
             <Button
