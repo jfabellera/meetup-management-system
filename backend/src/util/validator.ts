@@ -97,7 +97,8 @@ export const rollRaffleWinnerSchema = z.object({
 export type RollRaffleWinnerPayload = z.input<typeof rollRaffleWinnerSchema>;
 
 export const claimRaffleWinnerSchema = z.object({
-  force: z.boolean().optional().default(false),
+  raffleRecordId: z.number(),
+  force: z.boolean().default(false).optional(),
 });
 
-export type ClaimRaffleWinnerPayload = z.infer<typeof claimRaffleWinnerSchema>;
+export type ClaimRaffleWinnerPayload = z.input<typeof claimRaffleWinnerSchema>;

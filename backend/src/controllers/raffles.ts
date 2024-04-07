@@ -102,17 +102,27 @@ export const claimRaffleWinner = async (
     return res.status(400).json(result.error);
   }
 
-  if (ticket.raffle_entries <= 0) {
-    return res
-      .status(400)
-      .json({ message: 'Ticket does not have any raffle entries.' });
-  }
+  const raffleRecord = await RaffleRecord.findOne({
+    where: {
+      id: result.data.raffleRecordId,
+    },
+  });
 
-  if (ticket.raffle_wins >= ticket.raffle_entries && !result.data.force) {
+  if (raffleRecord == null)
+    return res.status(404).json({ message: 'Raffle record not found.' });
+
+  if (!raffleRecord.winners.includes(ticket.id))
     return res
       .status(400)
-      .json({ message: 'Ticket is not eligible for any more wins.' });
-  }
+      .json({ message: 'Ticket is not part of raffle record.' });
+
+  if (raffleRecord.winners_claimed.includes(ticket.id))
+    return res.status(400).json({
+      message: 'Ticket has already been claimed for the given raffle record.',
+    });
+
+  raffleRecord.winners_claimed.push(ticket.id);
+  await raffleRecord.save();
 
   ticket.raffle_wins++;
   await ticket.save();
