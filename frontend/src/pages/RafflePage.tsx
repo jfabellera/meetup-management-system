@@ -15,7 +15,6 @@ import {
   GridItem,
   Heading,
   Input,
-  Link,
   Switch,
   Text,
   useDisclosure,
@@ -24,11 +23,15 @@ import {
 } from '@chakra-ui/react';
 import { useFormik } from 'formik';
 import { useEffect, useState } from 'react';
+import { FiSettings } from 'react-icons/fi';
+import { MdHistory } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
 import { type RaffleWinnerInfo } from '../../../backend/src/interfaces/rafflesInterfaces';
+import RaffleHistoryList from '../components/RafflePage/RaffleHistoryList';
 import { socket } from '../socket';
 import {
   useClaimRaffleWinnerMutation,
+  useMarkRaffleAsDisplayedMutation,
   useRollRaffleWinnerMutation,
 } from '../store/organizerSlice';
 
@@ -52,6 +55,8 @@ const RafflePage = (): JSX.Element => {
       isLoading: isClaimLoading,
     },
   ] = useClaimRaffleWinnerMutation();
+  const [markRaffleAsDisplayed] = useMarkRaffleAsDisplayedMutation();
+
   const [winners, setWinners] = useState<RaffleWinnerInfo[] | undefined>(
     undefined
   );
@@ -63,6 +68,11 @@ const RafflePage = (): JSX.Element => {
 
   const toast = useToast({ position: 'top-right', duration: 2500 });
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isHistoryOpen,
+    onOpen: onHistoryOpen,
+    onClose: onHistoryClose,
+  } = useDisclosure();
   const formik = useFormik({
     initialValues: {
       rollQuantity: 1,
@@ -104,13 +114,16 @@ const RafflePage = (): JSX.Element => {
   };
 
   const handleDisplay = (): void => {
-    if (winners != null) {
+    if (winners != null && raffleRecordId != null) {
       socket.emit('meetup:display', {
         meetupId,
         winners: winners.map((winner) => winner.displayName),
         isBatchRoll: formik.values.rollQuantity > 1,
       });
       setIsDisplayed(true);
+      void (async () => {
+        await markRaffleAsDisplayed(raffleRecordId);
+      })();
     }
   };
 
@@ -264,9 +277,18 @@ const RafflePage = (): JSX.Element => {
             <Text lineHeight={'6rem'}>Click roll to select a winner</Text>
           )}
         </Box>
-        <Link fontSize={'18px'} textDecoration={'underline'} onClick={onOpen}>
-          More options
-        </Link>
+        <Flex width={'100%'} justifyContent={'space-evenly'} align={'center'}>
+          <Button
+            variant={'ghost'}
+            leftIcon={<MdHistory />}
+            onClick={onHistoryOpen}
+          >
+            Raffle history
+          </Button>
+          <Button variant={'ghost'} leftIcon={<FiSettings />} onClick={onOpen}>
+            More options
+          </Button>
+        </Flex>
         <Grid
           width={'100%'}
           templateRows={
@@ -411,6 +433,22 @@ const RafflePage = (): JSX.Element => {
           </DrawerBody>
 
           <DrawerFooter></DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        isOpen={isHistoryOpen}
+        placement={'right'}
+        onClose={onHistoryClose}
+      >
+        <DrawerOverlay />
+        <DrawerContent background={'gray.100'}>
+          <DrawerCloseButton />
+          <DrawerHeader>Raffle history</DrawerHeader>
+
+          <DrawerBody>
+            <RaffleHistoryList meetupId={Number(meetupId)} />
+          </DrawerBody>
         </DrawerContent>
       </Drawer>
     </Flex>
