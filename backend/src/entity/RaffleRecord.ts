@@ -36,7 +36,7 @@ export class RaffleRecord extends BaseEntity {
 
   @BeforeInsert()
   @BeforeUpdate()
-  ensureArraysSameLength = (): void => {
+  validateClaimedWinners = (): void => {
     if (this.winners_claimed == null) return;
     this.winners_claimed.forEach((claimedWinner) => {
       if (!this.winners.includes(claimedWinner)) {
