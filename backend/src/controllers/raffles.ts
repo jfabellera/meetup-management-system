@@ -211,7 +211,6 @@ export const markRaffleRecordAsDisplayed = async (
     where: {
       id: Number(raffle_id),
     },
-    select: ['was_displayed'],
   });
 
   if (raffleRecord == null)
