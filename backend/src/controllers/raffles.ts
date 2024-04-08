@@ -197,3 +197,27 @@ export const getRaffleRecord = async (
 
   return res.status(200).json(mapRaffleRecordToResponse(raffleRecord));
 };
+
+export const markRaffleRecordAsDisplayed = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { raffle_id } = req.params;
+
+  const raffleRecord = await RaffleRecord.findOne({
+    where: {
+      id: Number(raffle_id),
+    },
+    select: ['was_displayed'],
+  });
+
+  if (raffleRecord == null)
+    return res.status(404).json({ message: 'Invalid raffle record ID.' });
+
+  if (raffleRecord.was_displayed) return res.status(204).end();
+
+  raffleRecord.was_displayed = true;
+  await raffleRecord.save();
+
+  return res.status(200).end();
+};
