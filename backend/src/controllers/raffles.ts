@@ -129,3 +129,35 @@ export const claimRaffleWinner = async (
 
   return res.status(200).end();
 };
+
+export const getRaffleRecords = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const meetup = res.locals.meetup as Meetup;
+
+  const raffleRecords = await RaffleRecord.find({
+    where: {
+      meetup: {
+        id: meetup.id,
+      },
+    },
+  });
+
+  return res.status(200).json(raffleRecords);
+};
+
+export const getRaffleRecord = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { raffle_id } = req.params;
+
+  const raffleRecord = await RaffleRecord.findOne({
+    where: {
+      id: Number(raffle_id),
+    },
+  });
+
+  return res.status(200).json(raffleRecord);
+};

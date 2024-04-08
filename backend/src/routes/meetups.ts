@@ -10,7 +10,7 @@ import {
   syncEventbriteAttendees,
   updateMeetup,
 } from '../controllers/meetups';
-import { rollRaffleWinner } from '../controllers/raffles';
+import { getRaffleRecords, rollRaffleWinner } from '../controllers/raffles';
 import { createTicket, updateTicketViaWebhook } from '../controllers/tickets';
 import { Rule, authChecker } from '../middleware/authChecker';
 
@@ -74,5 +74,11 @@ router.post(
 );
 
 router.get('/:meetup_id/idle-images', getMeetupIdleImages as RequestHandler);
+
+router.get(
+  '/:meetup_id/raffles',
+  authChecker() as RequestHandler,
+  getRaffleRecords as RequestHandler
+);
 
 export default router;
