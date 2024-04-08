@@ -67,7 +67,7 @@ export const rollRaffleWinner = async (
     const raffleRecord = RaffleRecord.create({
       meetup,
       is_batch_roll: result.data.quantity > 1,
-      winners: winnerTickets.map((winnerTicket) => winnerTicket.id),
+      winners: winnerTickets,
     });
 
     await raffleRecord.save();
@@ -103,6 +103,7 @@ export const claimRaffleWinner = async (
   }
 
   const raffleRecord = await RaffleRecord.findOne({
+    relations: ['winners', 'winners_claimed'],
     where: {
       id: result.data.raffleRecordId,
     },
@@ -111,17 +112,25 @@ export const claimRaffleWinner = async (
   if (raffleRecord == null)
     return res.status(404).json({ message: 'Raffle record not found.' });
 
-  if (!raffleRecord.winners.includes(ticket.id))
+  if (
+    raffleRecord.winners.find(
+      (winnerTicket) => winnerTicket.id === ticket.id
+    ) == null
+  )
     return res
       .status(400)
       .json({ message: 'Ticket is not part of raffle record.' });
 
-  if (raffleRecord.winners_claimed.includes(ticket.id))
+  if (
+    raffleRecord.winners_claimed.find(
+      (claimedTicket) => claimedTicket.id === ticket.id
+    ) != null
+  )
     return res.status(400).json({
       message: 'Ticket has already been claimed for the given raffle record.',
     });
 
-  raffleRecord.winners_claimed.push(ticket.id);
+  raffleRecord.winners_claimed.push(ticket);
   await raffleRecord.save();
 
   ticket.raffle_wins++;

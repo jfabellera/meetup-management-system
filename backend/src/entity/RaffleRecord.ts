@@ -5,10 +5,13 @@ import {
   Column,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Meetup } from './Meetup';
+import { Ticket } from './Ticket';
 
 @Entity({ name: 'raffle_record' })
 export class RaffleRecord extends BaseEntity {
@@ -18,11 +21,13 @@ export class RaffleRecord extends BaseEntity {
   @Column({ type: 'boolean' })
   is_batch_roll: boolean;
 
-  @Column({ type: 'bigint', array: true })
-  winners: number[];
+  @ManyToMany(() => Ticket, (ticket) => ticket.id)
+  @JoinTable()
+  winners: Ticket[];
 
-  @Column({ type: 'bigint', array: true, default: '{}' })
-  winners_claimed: number[];
+  @ManyToMany(() => Ticket, (ticket) => ticket.id)
+  @JoinTable()
+  winners_claimed: Ticket[];
 
   @Column({ type: 'boolean', default: 'false' })
   was_displayed: boolean;
