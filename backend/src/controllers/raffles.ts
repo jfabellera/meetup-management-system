@@ -174,6 +174,9 @@ export const getRaffleRecords = async (
         id: meetup.id,
       },
     },
+    order: {
+      created_at: 'DESC',
+    },
   });
 
   return res.status(200).json(raffleRecords.map(mapRaffleRecordToResponse));
