@@ -4,6 +4,7 @@ import { type Meetup } from '../entity/Meetup';
 import { RaffleRecord } from '../entity/RaffleRecord';
 import { Ticket } from '../entity/Ticket';
 import {
+  type RaffleRecordResponse,
   type RaffleWinnerInfo,
   type RaffleWinnerResponse,
 } from '../interfaces/rafflesInterfaces';
@@ -12,6 +13,27 @@ import {
   claimRaffleWinnerSchema,
   rollRaffleWinnerSchema,
 } from '../util/validator';
+
+const mapRaffleRecordToResponse = (
+  raffleRecord: RaffleRecord
+): RaffleRecordResponse => {
+  return {
+    id: raffleRecord.id,
+    isBatchRoll: raffleRecord.is_batch_roll,
+    winners: raffleRecord.winners.map((winner) => {
+      return {
+        ticketId: winner.id,
+        displayName: winner.ticket_holder_display_name,
+        firstName: winner.ticket_holder_first_name,
+        lastName: winner.ticket_holder_last_name,
+        wins: winner.raffle_wins,
+      } satisfies RaffleWinnerInfo;
+    }),
+    winnersClaimed: raffleRecord.winners_claimed.map((claimed) => claimed.id),
+    wasDisplayed: raffleRecord.was_displayed,
+    createdAt: raffleRecord.created_at,
+  } satisfies RaffleRecordResponse;
+};
 
 export const rollRaffleWinner = async (
   req: Request,
@@ -146,6 +168,7 @@ export const getRaffleRecords = async (
   const meetup = res.locals.meetup as Meetup;
 
   const raffleRecords = await RaffleRecord.find({
+    relations: ['winners', 'winners_claimed'],
     where: {
       meetup: {
         id: meetup.id,
@@ -153,7 +176,7 @@ export const getRaffleRecords = async (
     },
   });
 
-  return res.status(200).json(raffleRecords);
+  return res.status(200).json(raffleRecords.map(mapRaffleRecordToResponse));
 };
 
 export const getRaffleRecord = async (
@@ -163,10 +186,14 @@ export const getRaffleRecord = async (
   const { raffle_id } = req.params;
 
   const raffleRecord = await RaffleRecord.findOne({
+    relations: ['winners', 'winners_claimed'],
     where: {
       id: Number(raffle_id),
     },
   });
 
-  return res.status(200).json(raffleRecord);
+  if (raffleRecord == null)
+    return res.status(404).json({ message: 'Invalid raffle record ID.' });
+
+  return res.status(200).json(mapRaffleRecordToResponse(raffleRecord));
 };
