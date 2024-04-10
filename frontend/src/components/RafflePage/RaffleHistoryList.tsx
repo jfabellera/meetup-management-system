@@ -12,7 +12,7 @@ const RaffleHistoryList = ({ meetupId, ...rest }: Props): JSX.Element => {
   return (
     <Flex {...rest}>
       {raffleRecords != null && raffleRecords.length > 0 ? (
-        <VStack>
+        <VStack width={'100%'}>
           {raffleRecords.map((record, index) => (
             <RaffleHistoryCard key={index} raffleRecord={record} />
           ))}
