@@ -1,17 +1,14 @@
 import {
   BaseEntity,
-  BeforeInsert,
-  BeforeUpdate,
   Column,
   Entity,
   JoinColumn,
-  JoinTable,
-  ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Meetup } from './Meetup';
-import { Ticket } from './Ticket';
+import { RaffleWinner } from './RaffleWinner';
 
 @Entity({ name: 'raffle_record' })
 export class RaffleRecord extends BaseEntity {
@@ -21,13 +18,8 @@ export class RaffleRecord extends BaseEntity {
   @Column({ type: 'boolean' })
   is_batch_roll: boolean;
 
-  @ManyToMany(() => Ticket, (ticket) => ticket.id)
-  @JoinTable()
-  winners: Ticket[];
-
-  @ManyToMany(() => Ticket, (ticket) => ticket.id)
-  @JoinTable()
-  winners_claimed: Ticket[];
+  @OneToMany(() => RaffleWinner, (winner) => winner.raffle_record)
+  winners: RaffleWinner[];
 
   @Column({ type: 'boolean', default: 'false' })
   was_displayed: boolean;
@@ -38,17 +30,4 @@ export class RaffleRecord extends BaseEntity {
   @ManyToOne(() => Meetup, (meetup) => meetup.id)
   @JoinColumn({ name: 'meetup_id' })
   meetup: Meetup;
-
-  @BeforeInsert()
-  @BeforeUpdate()
-  validateClaimedWinners = (): void => {
-    if (this.winners_claimed == null) return;
-    this.winners_claimed.forEach((claimedWinner) => {
-      if (!this.winners.includes(claimedWinner)) {
-        throw new Error(
-          'All members of \twinners_claimed\t must be present in \twinners\t'
-        );
-      }
-    });
-  };
 }
