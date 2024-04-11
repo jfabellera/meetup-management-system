@@ -4,9 +4,14 @@ import RaffleHistoryCard from './RaffleHistoryCard';
 
 interface Props extends FlexProps {
   meetupId: number;
+  onCardClick: (raffleRecordId: number) => void;
 }
 
-const RaffleHistoryList = ({ meetupId, ...rest }: Props): JSX.Element => {
+const RaffleHistoryList = ({
+  meetupId,
+  onCardClick,
+  ...rest
+}: Props): JSX.Element => {
   const { data: raffleRecords } = useGetRaffleHistoryQuery(meetupId);
 
   return (
@@ -14,7 +19,11 @@ const RaffleHistoryList = ({ meetupId, ...rest }: Props): JSX.Element => {
       {raffleRecords != null && raffleRecords.length > 0 ? (
         <VStack width={'100%'}>
           {raffleRecords.map((record, index) => (
-            <RaffleHistoryCard key={index} raffleRecord={record} />
+            <RaffleHistoryCard
+              key={index}
+              raffleRecord={record}
+              onCardClick={onCardClick}
+            />
           ))}
         </VStack>
       ) : (

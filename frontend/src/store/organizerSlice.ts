@@ -30,7 +30,7 @@ export interface ClaimRaffleWinnerOptions {
 
 export const organizerSlice = createApi({
   reducerPath: 'organizerSlice',
-  tagTypes: ['Attendees', 'Raffles'],
+  tagTypes: ['Attendees', 'Raffles', 'Raffle'],
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}/`,
     prepareHeaders: (headers, { getState }) => {
@@ -77,13 +77,19 @@ export const organizerSlice = createApi({
         method: 'POST',
         body: options.payload,
       }),
-      invalidatesTags: ['Raffles'],
+      invalidatesTags: ['Raffles', 'Raffle'], // TODO(jan): Invalidate by id
     }),
     getRaffleHistory: builder.query<RaffleRecordResponse[], number>({
       query: (meetupId) => ({
         url: `meetups/${meetupId}/raffles`,
       }),
       providesTags: (result, error, arg) => [{ type: 'Raffles', id: arg }],
+    }),
+    getRaffleRecord: builder.query<RaffleRecordResponse, number>({
+      query: (raffleRecordId) => ({
+        url: `raffles/${raffleRecordId}`,
+      }),
+      providesTags: (result, error, arg) => [{ type: 'Raffle', id: arg }],
     }),
     markRaffleAsDisplayed: builder.mutation<void, number>({
       query: (raffleId) => ({
@@ -101,5 +107,6 @@ export const {
   useRollRaffleWinnerMutation,
   useClaimRaffleWinnerMutation,
   useGetRaffleHistoryQuery,
+  useGetRaffleRecordQuery,
   useMarkRaffleAsDisplayedMutation,
 } = organizerSlice;

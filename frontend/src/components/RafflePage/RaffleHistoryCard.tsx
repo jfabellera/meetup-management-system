@@ -15,9 +15,18 @@ dayjs.extend(RelativeTime);
 
 interface Props extends BoxProps {
   raffleRecord: RaffleRecordResponse;
+  onCardClick: (raffleRecordId: number) => void;
 }
 
-const RaffleHistoryCard = ({ raffleRecord, ...rest }: Props): JSX.Element => {
+const RaffleHistoryCard = ({
+  raffleRecord,
+  onCardClick,
+  ...rest
+}: Props): JSX.Element => {
+  const handleClick = (): void => {
+    onCardClick(Number(raffleRecord.id)); // TODO(jan): id is actually a string
+  };
+
   return (
     <Box
       width={'100%'}
@@ -25,7 +34,8 @@ const RaffleHistoryCard = ({ raffleRecord, ...rest }: Props): JSX.Element => {
       background={'white'}
       borderRadius={'md'}
       boxShadow={'sm'}
-      //   _hover={{ cursor: 'pointer' }}
+      _hover={{ cursor: 'pointer' }}
+      onClick={handleClick}
       {...rest}
     >
       <Stack gap={1.5}>
