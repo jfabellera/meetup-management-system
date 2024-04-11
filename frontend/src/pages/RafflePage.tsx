@@ -115,7 +115,7 @@ const RafflePage = (): JSX.Element => {
       socket.emit('meetup:display', {
         meetupId,
         winners: raffleRecord.winners.map((winner) => winner.displayName),
-        isBatchRoll: formik.values.rollQuantity > 1,
+        isBatchRoll: raffleRecord.winners.length > 1,
       });
       setIsDisplayed(true);
       void (async () => {
@@ -140,9 +140,6 @@ const RafflePage = (): JSX.Element => {
     if (raffleRecord == null) return;
 
     setIsDisplayed(raffleRecord.wasDisplayed);
-    void (async () => {
-      await formik.setFieldValue('rollQuantity', raffleRecord.winners.length);
-    })();
 
     if (formik.values.displayOnRoll) {
       handleDisplay();
@@ -177,7 +174,7 @@ const RafflePage = (): JSX.Element => {
 
       setIsAllIn(false);
 
-      if (formik.values.rollQuantity === 1) {
+      if (raffleRecord.winners.length === 1) {
         setRaffleRecordId(null);
       }
     }
@@ -212,7 +209,7 @@ const RafflePage = (): JSX.Element => {
           raffleRecord != null &&
           raffleRecordId === Number(raffleRecord.id) && // TODO(jan): id is a string
           raffleRecord.winners.length > 0 ? (
-            formik.values.rollQuantity > 1 ? (
+            raffleRecord.winners.length > 1 ? (
               <Box height={0}>
                 {/* Display for batch roll */}
                 <Text>WINNERS</Text>
@@ -286,7 +283,7 @@ const RafflePage = (): JSX.Element => {
         <Grid
           width={'100%'}
           templateRows={
-            formik.values.rollQuantity > 1
+            raffleRecord != null && raffleRecord.winners.length > 1
               ? 'repeat(2, 100px)'
               : 'repeat(3, 100px)'
           }
@@ -316,7 +313,9 @@ const RafflePage = (): JSX.Element => {
           </GridItem>
           <GridItem
             rowSpan={1}
-            colSpan={formik.values.rollQuantity > 1 ? 1 : 2}
+            colSpan={
+              raffleRecord != null && raffleRecord.winners.length > 1 ? 1 : 2
+            }
           >
             <Button
               width={'100%'}
@@ -330,7 +329,7 @@ const RafflePage = (): JSX.Element => {
               <Heading fontWeight={'medium'}>Display</Heading>
             </Button>
           </GridItem>
-          {formik.values.rollQuantity === 1 ? (
+          {raffleRecord == null || raffleRecord.winners.length === 1 ? (
             <GridItem colSpan={1}>
               <Button
                 width={'100%'}
