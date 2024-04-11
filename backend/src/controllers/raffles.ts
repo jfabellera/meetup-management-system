@@ -199,9 +199,13 @@ export const getRaffleRecord = async (
   const { raffle_id } = req.params;
 
   const raffleRecord = await RaffleRecord.findOne({
-    relations: ['winners', 'winners_claimed'],
+    relations: { winners: { ticket: true } },
     where: {
       id: Number(raffle_id),
+    },
+    order: {
+      created_at: 'DESC',
+      winners: { winner_number: 'ASC' },
     },
   });
 
