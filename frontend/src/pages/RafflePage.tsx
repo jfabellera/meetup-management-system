@@ -57,7 +57,14 @@ const RafflePage = (): JSX.Element => {
       isLoading: isClaimLoading,
     },
   ] = useClaimRaffleWinnerMutation();
-  const [unclaimRaffleWinner] = useUnClaimRaffleWinnerMutation();
+  const [
+    unclaimRaffleWinner,
+    {
+      isSuccess: isUnClaimSuccess,
+      isError: isUnClaimError,
+      isLoading: isUnClaimLoading,
+    },
+  ] = useUnClaimRaffleWinnerMutation();
   const [markRaffleAsDisplayed] = useMarkRaffleAsDisplayedMutation();
 
   const [raffleRecordId, setRaffleRecordId] = useState<number | null>(null);
@@ -207,14 +214,24 @@ const RafflePage = (): JSX.Element => {
   }, [isClaimSuccess]);
 
   useEffect(() => {
-    if (isRollError || isClaimError) {
+    if (isUnClaimSuccess) {
+      toast({
+        title: 'Success',
+        status: 'success',
+        description: 'Raffle unclaimed',
+      });
+    }
+  }, [isUnClaimSuccess]);
+
+  useEffect(() => {
+    if (isRollError || isClaimError || isUnClaimError) {
       toast({
         title: 'Error',
         status: 'error',
         description: 'Action failed',
       });
     }
-  }, [isRollError, isClaimError]);
+  }, [isRollError, isClaimError, isUnClaimError]);
 
   return (
     <Flex justify={'center'} height={'100%'}>
@@ -262,6 +279,7 @@ const RafflePage = (): JSX.Element => {
                           onClick={
                             !winner.claimed ? handleClaim : handleUnclaim
                           }
+                          isLoading={isClaimLoading || isUnClaimLoading}
                         >
                           {!winner.claimed ? 'Claim' : 'Unclaim'}
                         </Button>
@@ -370,7 +388,7 @@ const RafflePage = (): JSX.Element => {
                     ? handleClaim
                     : handleUnclaim
                 }
-                isLoading={isClaimLoading}
+                isLoading={isClaimLoading || isUnClaimLoading}
                 isDisabled={raffleRecordId == null}
               >
                 <Heading fontWeight={'medium'}>
