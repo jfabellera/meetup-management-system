@@ -68,6 +68,7 @@ const RafflePage = (): JSX.Element => {
   const [raffleRecord, setRaffleRecord] = useState<RaffleRecordResponse | null>(
     null
   );
+  const [isRollable, setIsRollable] = useState<boolean>(true);
 
   const toast = useToast({ position: 'top-right', duration: 2500 });
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -133,11 +134,13 @@ const RafflePage = (): JSX.Element => {
     setRaffleRecordId(null);
     setIsDisplayed(false);
     setIsAllIn(false);
+    setIsRollable(true);
     socket.emit('meetup:display', { meetupId, winner: null });
   };
 
   const handleRaffleRecordSelect = (raffleRecordId: number): void => {
     setRaffleRecordId(raffleRecordId);
+    setIsRollable(true);
     onHistoryClose();
   };
 
@@ -165,6 +168,8 @@ const RafflePage = (): JSX.Element => {
 
       setRaffleRecordId(Number(rollResult.id)); // TODO(jan): shouldn't have to cast
       setRaffleRecord(rollResult);
+
+      if (rollResult.winners.length === 1) setIsRollable(false);
     }
   }, [isRollSuccess, rollResult]);
 
@@ -181,10 +186,7 @@ const RafflePage = (): JSX.Element => {
       }
 
       setIsAllIn(false);
-
-      if (raffleRecord.winners.length === 1) {
-        setRaffleRecordId(null);
-      }
+      setIsRollable(true);
     }
   }, [isClaimSuccess]);
 
@@ -302,10 +304,10 @@ const RafflePage = (): JSX.Element => {
             <Button
               width={'100%'}
               height={'100%'}
-              colorScheme={raffleRecordId == null ? 'green' : 'blackAlpha'}
+              colorScheme={isRollable ? 'green' : 'blackAlpha'}
               onClick={handleRoll}
               isLoading={isRollLoading}
-              isDisabled={raffleRecordId != null}
+              isDisabled={!isRollable}
               flexDir={'column'}
             >
               <Heading fontWeight={'medium'}>
@@ -329,7 +331,9 @@ const RafflePage = (): JSX.Element => {
               width={'100%'}
               height={'100%'}
               colorScheme={
-                raffleRecordId != null && !isDisplayed ? 'green' : 'blackAlpha'
+                raffleRecordId != null && !isDisplayed && !isRollable
+                  ? 'green'
+                  : 'blackAlpha'
               }
               onClick={handleDisplay}
               isDisabled={raffleRecordId == null}
@@ -348,7 +352,12 @@ const RafflePage = (): JSX.Element => {
                 id={'0'}
                 onClick={handleClaim}
                 isLoading={isClaimLoading}
-                isDisabled={raffleRecordId == null}
+                isDisabled={
+                  raffleRecordId == null ||
+                  raffleRecord?.winnersClaimed.includes(
+                    raffleRecord.winners[0].ticketId
+                  )
+                }
               >
                 <Heading fontWeight={'medium'}>Claim</Heading>
               </Button>
@@ -359,7 +368,7 @@ const RafflePage = (): JSX.Element => {
               width={'100%'}
               height={'100%'}
               colorScheme={
-                raffleRecordId != null && isDisplayed
+                !isRollable && isDisplayed
                   ? 'red'
                   : isDisplayed
                     ? 'yellow'
