@@ -5,6 +5,7 @@ import { AppDataSource } from './datasource';
 import eventbriteRoutes from './routes/eventbrite';
 import meetupRoutes from './routes/meetups';
 import oauth2Routes from './routes/oauth2';
+import raffleRoutes from './routes/raffles';
 import ticketRoutes from './routes/tickets';
 import userRoutes from './routes/users';
 
@@ -43,6 +44,7 @@ class Server {
     this.express.use('/tickets', ticketRoutes);
     this.express.use('/oauth2/', oauth2Routes);
     this.express.use('/eventbrite', eventbriteRoutes);
+    this.express.use('/raffles', raffleRoutes);
 
     this.express.use('*', (req, res, next) => {
       res.send('Not a valid endpoint.');

@@ -5,6 +5,12 @@ export interface RaffleWinnerInfo {
   lastName: string;
   wins: number;
 }
-export interface RaffleWinnerResponse {
+
+export interface RaffleRecordResponse {
+  id: number;
+  isBatchRoll: boolean;
   winners: RaffleWinnerInfo[];
+  winnersClaimed: number[];
+  wasDisplayed: boolean;
+  createdAt: Date;
 }

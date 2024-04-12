@@ -2,6 +2,7 @@ import { type NextFunction, type Request, type Response } from 'express';
 import jwt from 'jsonwebtoken';
 import config from '../config';
 import { Meetup } from '../entity/Meetup';
+import { RaffleRecord } from '../entity/RaffleRecord';
 import { Ticket } from '../entity/Ticket';
 import { User } from '../entity/User';
 
@@ -141,6 +142,23 @@ export const authChecker =
         if (user.id !== ticket.user.id) {
           return reject(res);
         }
+      }
+
+      // If accessing a raffle record, check that the requestor is an organizer of the raffle's meetup
+      if (req.params.raffle_id != null) {
+        const raffleRecord = await RaffleRecord.findOne({
+          relations: ['meetup'],
+          where: { id: Number(req.params.raffle_id) },
+        });
+
+        if (raffleRecord == null)
+          return res.status(404).json({ message: 'Invalid raffle ID.' });
+
+        // Pass raffleRecord to next function
+        res.locals.raffleRecord = raffleRecord;
+
+        if (!(await checkMeetupOrganizer(raffleRecord.meetup.id, user.id)))
+          return reject(res);
       }
 
       // If accessing a meetup, check that the requestor is an organizer of the meetup

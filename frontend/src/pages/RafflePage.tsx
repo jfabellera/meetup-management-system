@@ -57,6 +57,7 @@ const RafflePage = (): JSX.Element => {
   );
   const [claimIndex, setClaimIndex] = useState<number>(0);
   const [claimedArray, setClaimedArray] = useState<boolean[]>([]); // Used for disabling buttons on batch rolls
+  const [raffleRecordId, setRaffleRecordId] = useState<number | null>(null);
   const [isDisplayed, setIsDisplayed] = useState<boolean>(false);
   const [isAllIn, setIsAllIn] = useState<boolean>(false);
 
@@ -93,10 +94,10 @@ const RafflePage = (): JSX.Element => {
     const winnerIndex = Number(event.currentTarget.id);
     setClaimIndex(winnerIndex);
     void (async () => {
-      if (winners != null) {
+      if (raffleRecordId != null && winners != null) {
         await claimRaffleWinner({
           ticketId: winners[winnerIndex].ticketId,
-          payload: { force: isAllIn },
+          payload: { raffleRecordId, force: isAllIn },
         });
       }
     })();
@@ -141,6 +142,7 @@ const RafflePage = (): JSX.Element => {
         }
       }
 
+      setRaffleRecordId(rollResult.raffleRecordId);
       setWinners(rollResult.winners);
 
       // Initialize claimed status array for batch rolls
