@@ -4,13 +4,13 @@ export interface RaffleWinnerInfo {
   firstName: string;
   lastName: string;
   wins: number;
+  claimed: boolean;
 }
 
 export interface RaffleRecordResponse {
   id: number;
   isBatchRoll: boolean;
   winners: RaffleWinnerInfo[];
-  winnersClaimed: number[];
   wasDisplayed: boolean;
   createdAt: Date;
 }
