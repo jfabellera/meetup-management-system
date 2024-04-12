@@ -102,3 +102,11 @@ export const claimRaffleWinnerSchema = z.object({
 });
 
 export type ClaimRaffleWinnerPayload = z.input<typeof claimRaffleWinnerSchema>;
+
+export const unclaimRaffleWinnerSchema = z.object({
+  ticketId: z.number(),
+});
+
+export type UnclaimRaffleWinnerPayload = z.input<
+  typeof claimRaffleWinnerSchema
+>;

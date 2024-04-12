@@ -13,6 +13,7 @@ import { generateMultipleRandomNumbers } from '../util/math';
 import {
   claimRaffleWinnerSchema,
   rollRaffleWinnerSchema,
+  unclaimRaffleWinnerSchema,
 } from '../util/validator';
 
 const mapRaffleRecordToResponse = (
@@ -224,6 +225,51 @@ export const markRaffleRecordAsDisplayed = async (
 
   raffleRecord.was_displayed = true;
   await raffleRecord.save();
+
+  socket.emit('meetup:update', { meetupId: raffleRecord.meetup.id });
+  return res.status(200).end();
+};
+
+export const unclaimRaffleWinner = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { raffle_id } = req.params;
+  const payload = unclaimRaffleWinnerSchema.safeParse(req.body);
+
+  if (!payload.success) {
+    return res.status(400).json(payload.error);
+  }
+
+  const raffleRecord = await RaffleRecord.findOne({
+    relations: { winners: { ticket: true }, meetup: true },
+    where: { id: Number(raffle_id) },
+  });
+
+  if (raffleRecord == null)
+    return res.status(404).json({ message: 'Invalid raffle record ID.' });
+
+  const raffleWinner = raffleRecord.winners.find(
+    (winner) => Number(winner.ticket.id) === payload.data.ticketId
+  );
+
+  if (raffleWinner == null)
+    return res
+      .status(400)
+      .json({ message: 'Ticket is not part of raffle record.' });
+
+  if (!raffleWinner.claimed)
+    return res.status(400).json({
+      message: 'Ticket has not been claimed for the given raffle record.',
+    });
+
+  // Decrease wins
+  raffleWinner.ticket.raffle_wins--;
+  await raffleWinner.ticket.save();
+
+  // Mark as unclaimed
+  raffleWinner.claimed = false;
+  await raffleWinner.save();
 
   socket.emit('meetup:update', { meetupId: raffleRecord.meetup.id });
   return res.status(200).end();
