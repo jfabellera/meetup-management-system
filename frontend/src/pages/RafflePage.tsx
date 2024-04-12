@@ -145,13 +145,15 @@ const RafflePage = (): JSX.Element => {
   };
 
   useEffect(() => {
-    if (getRaffleRecordResult == null) return;
-
-    setRaffleRecord(getRaffleRecordResult);
-
     if (formik.values.displayOnRoll) {
       handleDisplay();
     }
+  }, [raffleRecord]);
+
+  useEffect(() => {
+    if (getRaffleRecordResult == null) return;
+
+    setRaffleRecord(getRaffleRecordResult);
   }, [getRaffleRecordResult]);
 
   useEffect(() => {
