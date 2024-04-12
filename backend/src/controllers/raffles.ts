@@ -1,5 +1,6 @@
 import { type Request, type Response } from 'express';
 import { MoreThan, Raw } from 'typeorm';
+import { socket } from '../Server';
 import { type Meetup } from '../entity/Meetup';
 import { RaffleRecord } from '../entity/RaffleRecord';
 import { RaffleWinner } from '../entity/RaffleWinner';
@@ -108,6 +109,7 @@ export const rollRaffleWinner = async (
 
     raffleRecord.winners = raffleWinners;
 
+    socket.emit('meetup:update', { meetupId: meetup.id });
     return res.status(200).json(mapRaffleRecordToResponse(raffleRecord));
   }
 
@@ -126,7 +128,7 @@ export const claimRaffleWinner = async (
   }
 
   const raffleRecord = await RaffleRecord.findOne({
-    relations: { winners: { ticket: true } },
+    relations: { meetup: true, winners: { ticket: true } },
     where: {
       id: result.data.raffleRecordId,
     },
@@ -155,6 +157,7 @@ export const claimRaffleWinner = async (
   ticket.raffle_wins++;
   await ticket.save();
 
+  socket.emit('meetup:update', { meetupId: raffleRecord.meetup.id });
   return res.status(200).end();
 };
 
@@ -210,6 +213,7 @@ export const markRaffleRecordAsDisplayed = async (
   const { raffle_id } = req.params;
 
   const raffleRecord = await RaffleRecord.findOne({
+    relations: { meetup: true },
     where: {
       id: Number(raffle_id),
     },
@@ -223,5 +227,6 @@ export const markRaffleRecordAsDisplayed = async (
   raffleRecord.was_displayed = true;
   await raffleRecord.save();
 
+  socket.emit('meetup:update', { meetupId: raffleRecord.meetup.id });
   return res.status(200).end();
 };
