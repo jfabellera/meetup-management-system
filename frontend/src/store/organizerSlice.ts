@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { type TicketInfo } from '../../../backend/src/controllers/meetups';
 import { type RaffleRecordResponse } from '../../../backend/src/interfaces/rafflesInterfaces';
 import {
+  UnclaimRaffleWinnerPayload,
   type ClaimRaffleWinnerPayload,
   type RollRaffleWinnerPayload,
 } from '../../../backend/src/util/validator';
@@ -23,6 +24,11 @@ export interface RollRaffleWinnerOptions {
 export interface ClaimRaffleWinnerOptions {
   ticketId: number;
   payload?: ClaimRaffleWinnerPayload;
+}
+
+export interface UnclaimRaffleWinnerOptions {
+  raffleRecordId: number;
+  payload: UnclaimRaffleWinnerPayload;
 }
 
 export const organizerSlice = createApi({
@@ -76,6 +82,14 @@ export const organizerSlice = createApi({
       }),
       invalidatesTags: ['Raffles', 'Raffle'], // TODO(jan): Invalidate by id
     }),
+    unClaimRaffleWinner: builder.mutation<void, UnclaimRaffleWinnerOptions>({
+      query: (options) => ({
+        url: `raffles/${options.raffleRecordId}/unclaim`,
+        method: 'POST',
+        body: options.payload,
+      }),
+      invalidatesTags: ['Raffles', 'Raffle'], // TODO(jan): Invalidate by id
+    }),
     getRaffleHistory: builder.query<RaffleRecordResponse[], number>({
       query: (meetupId) => ({
         url: `meetups/${meetupId}/raffles`,
@@ -103,6 +117,7 @@ export const {
   useCheckInAttendeeMutation,
   useRollRaffleWinnerMutation,
   useClaimRaffleWinnerMutation,
+  useUnClaimRaffleWinnerMutation,
   useGetRaffleHistoryQuery,
   useGetRaffleRecordQuery,
   useMarkRaffleAsDisplayedMutation,
