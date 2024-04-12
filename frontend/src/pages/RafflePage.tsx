@@ -34,6 +34,7 @@ import {
   useGetRaffleRecordQuery,
   useMarkRaffleAsDisplayedMutation,
   useRollRaffleWinnerMutation,
+  useUnClaimRaffleWinnerMutation,
 } from '../store/organizerSlice';
 
 const RafflePage = (): JSX.Element => {
@@ -56,6 +57,14 @@ const RafflePage = (): JSX.Element => {
       isLoading: isClaimLoading,
     },
   ] = useClaimRaffleWinnerMutation();
+  const [
+    unclaimRaffleWinner,
+    {
+      isSuccess: isUnClaimSuccess,
+      isError: isUnClaimError,
+      isLoading: isUnClaimLoading,
+    },
+  ] = useUnClaimRaffleWinnerMutation();
   const [markRaffleAsDisplayed] = useMarkRaffleAsDisplayedMutation();
 
   const [raffleRecordId, setRaffleRecordId] = useState<number | null>(null);
@@ -111,6 +120,20 @@ const RafflePage = (): JSX.Element => {
         await claimRaffleWinner({
           ticketId: raffleRecord.winners[winnerIndex].ticketId,
           payload: { raffleRecordId: Number(raffleRecord.id), force: isAllIn }, // TODO(jan): id is a string
+        });
+      }
+    })();
+  };
+
+  const handleUnclaim = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    const winnerIndex = Number(event.currentTarget.id);
+    void (async () => {
+      if (raffleRecordId != null && raffleRecord != null) {
+        await unclaimRaffleWinner({
+          raffleRecordId: raffleRecord.id,
+          payload: {
+            ticketId: Number(raffleRecord.winners[winnerIndex].ticketId),
+          }, // TODO(jan): id is a string
         });
       }
     })();
@@ -191,14 +214,24 @@ const RafflePage = (): JSX.Element => {
   }, [isClaimSuccess]);
 
   useEffect(() => {
-    if (isRollError || isClaimError) {
+    if (isUnClaimSuccess) {
+      toast({
+        title: 'Success',
+        status: 'success',
+        description: 'Raffle unclaimed',
+      });
+    }
+  }, [isUnClaimSuccess]);
+
+  useEffect(() => {
+    if (isRollError || isClaimError || isUnClaimError) {
       toast({
         title: 'Error',
         status: 'error',
         description: 'Action failed',
       });
     }
-  }, [isRollError, isClaimError]);
+  }, [isRollError, isClaimError, isUnClaimError]);
 
   return (
     <Flex justify={'center'} height={'100%'}>
@@ -243,10 +276,12 @@ const RafflePage = (): JSX.Element => {
                               : 'blackAlpha'
                           }
                           id={String(index)}
-                          onClick={handleClaim}
-                          isDisabled={winner.claimed}
+                          onClick={
+                            !winner.claimed ? handleClaim : handleUnclaim
+                          }
+                          isLoading={isClaimLoading || isUnClaimLoading}
                         >
-                          Claim
+                          {!winner.claimed ? 'Claim' : 'Unclaim'}
                         </Button>
                       </Flex>
                     );
@@ -348,13 +383,19 @@ const RafflePage = (): JSX.Element => {
                   raffleRecordId != null && isDisplayed ? 'green' : 'blackAlpha'
                 }
                 id={'0'}
-                onClick={handleClaim}
-                isLoading={isClaimLoading}
-                isDisabled={
-                  raffleRecordId == null || raffleRecord?.winners[0].claimed
+                onClick={
+                  !(raffleRecord?.winners[0].claimed ?? false)
+                    ? handleClaim
+                    : handleUnclaim
                 }
+                isLoading={isClaimLoading || isUnClaimLoading}
+                isDisabled={raffleRecordId == null}
               >
-                <Heading fontWeight={'medium'}>Claim</Heading>
+                <Heading fontWeight={'medium'}>
+                  {!(raffleRecord?.winners[0].claimed ?? false)
+                    ? 'Claim'
+                    : 'Unclaim'}
+                </Heading>
               </Button>
             </GridItem>
           ) : null}
