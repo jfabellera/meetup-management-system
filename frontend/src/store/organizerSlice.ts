@@ -1,9 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { type TicketInfo } from '../../../backend/src/controllers/meetups';
-import {
-  type RaffleRecordResponse,
-  type RaffleWinnerResponse,
-} from '../../../backend/src/interfaces/rafflesInterfaces';
+import { type RaffleRecordResponse } from '../../../backend/src/interfaces/rafflesInterfaces';
 import {
   type ClaimRaffleWinnerPayload,
   type RollRaffleWinnerPayload,
@@ -61,7 +58,7 @@ export const organizerSlice = createApi({
       invalidatesTags: ['Attendees'],
     }),
     rollRaffleWinner: builder.mutation<
-      RaffleWinnerResponse,
+      RaffleRecordResponse,
       RollRaffleWinnerOptions
     >({
       query: (options) => ({

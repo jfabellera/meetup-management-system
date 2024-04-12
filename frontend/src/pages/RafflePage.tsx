@@ -26,6 +26,7 @@ import { useEffect, useState } from 'react';
 import { FiSettings } from 'react-icons/fi';
 import { MdHistory } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
+import { type RaffleRecordResponse } from '../../../backend/src/interfaces/rafflesInterfaces';
 import RaffleHistoryList from '../components/RafflePage/RaffleHistoryList';
 import { socket } from '../socket';
 import {
@@ -60,9 +61,13 @@ const RafflePage = (): JSX.Element => {
   const [raffleRecordId, setRaffleRecordId] = useState<number | null>(null);
   const [isDisplayed, setIsDisplayed] = useState<boolean>(false);
   const [isAllIn, setIsAllIn] = useState<boolean>(false);
-  const { data: raffleRecord } = useGetRaffleRecordQuery(raffleRecordId ?? 0, {
-    skip: raffleRecordId == null,
-  });
+  const { data: getRaffleRecordResult } = useGetRaffleRecordQuery(
+    raffleRecordId ?? 0,
+    { skip: raffleRecordId == null }
+  );
+  const [raffleRecord, setRaffleRecord] = useState<RaffleRecordResponse | null>(
+    null
+  );
 
   const toast = useToast({ position: 'top-right', duration: 2500 });
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -137,14 +142,16 @@ const RafflePage = (): JSX.Element => {
   };
 
   useEffect(() => {
-    if (raffleRecord == null) return;
+    if (getRaffleRecordResult == null) return;
 
-    setIsDisplayed(raffleRecord.wasDisplayed);
+    setRaffleRecord(getRaffleRecordResult);
+
+    setIsDisplayed(getRaffleRecordResult.wasDisplayed);
 
     if (formik.values.displayOnRoll) {
       handleDisplay();
     }
-  }, [raffleRecord]);
+  }, [getRaffleRecordResult]);
 
   useEffect(() => {
     if (isRollSuccess && rollResult != null) {
@@ -156,7 +163,8 @@ const RafflePage = (): JSX.Element => {
         });
       }
 
-      setRaffleRecordId(Number(rollResult.raffleRecordId)); // TODO(jan): shouldn't have to cast
+      setRaffleRecordId(Number(rollResult.id)); // TODO(jan): shouldn't have to cast
+      setRaffleRecord(rollResult);
     }
   }, [isRollSuccess, rollResult]);
 
