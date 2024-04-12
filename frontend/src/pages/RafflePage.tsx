@@ -149,8 +149,6 @@ const RafflePage = (): JSX.Element => {
 
     setRaffleRecord(getRaffleRecordResult);
 
-    setIsDisplayed(getRaffleRecordResult.wasDisplayed);
-
     if (formik.values.displayOnRoll) {
       handleDisplay();
     }
