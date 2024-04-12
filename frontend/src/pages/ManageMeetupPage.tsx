@@ -38,6 +38,12 @@ const ManageMeetupPage = ({
           { type: 'Attendees', id: meetupId },
         ])
       );
+      dispatch(
+        organizerSlice.util.invalidateTags([
+          'Raffle',
+          { type: 'Raffles', id: meetupId },
+        ])
+      );
     };
 
     socket.emit('meetup:subscribe', { meetupId: Number(meetupId) });
