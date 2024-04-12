@@ -244,9 +244,7 @@ const RafflePage = (): JSX.Element => {
                           }
                           id={String(index)}
                           onClick={handleClaim}
-                          isDisabled={raffleRecord.winnersClaimed.includes(
-                            winner.ticketId
-                          )}
+                          isDisabled={winner.claimed}
                         >
                           Claim
                         </Button>
@@ -353,10 +351,7 @@ const RafflePage = (): JSX.Element => {
                 onClick={handleClaim}
                 isLoading={isClaimLoading}
                 isDisabled={
-                  raffleRecordId == null ||
-                  raffleRecord?.winnersClaimed.includes(
-                    raffleRecord.winners[0].ticketId
-                  )
+                  raffleRecordId == null || raffleRecord?.winners[0].claimed
                 }
               >
                 <Heading fontWeight={'medium'}>Claim</Heading>

@@ -28,11 +28,9 @@ const mapRaffleRecordToResponse = (
         firstName: winner.ticket.ticket_holder_first_name,
         lastName: winner.ticket.ticket_holder_last_name,
         wins: winner.ticket.raffle_wins,
+        claimed: winner.claimed,
       } satisfies RaffleWinnerInfo;
     }),
-    winnersClaimed: raffleRecord.winners
-      .filter((winner) => winner.claimed)
-      .map((winner) => winner.ticket.id),
     wasDisplayed: raffleRecord.was_displayed,
     createdAt: raffleRecord.created_at,
   } satisfies RaffleRecordResponse;

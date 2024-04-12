@@ -42,9 +42,7 @@ const RaffleHistoryCard = ({
         {raffleRecord.winners.map((winner, index) => (
           <Flex key={index} justifyContent={'space-between'}>
             <Text noOfLines={1}>{winner.displayName}</Text>
-            {raffleRecord.winnersClaimed.includes(winner.ticketId) ? (
-              <Tag colorScheme={'green'}>Claimed</Tag>
-            ) : null}
+            {winner.claimed ? <Tag colorScheme={'green'}>Claimed</Tag> : null}
           </Flex>
         ))}
         <Flex justifyContent={'space-between'} marginTop={'0.5rem'}>
