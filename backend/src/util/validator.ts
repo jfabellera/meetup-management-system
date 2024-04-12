@@ -108,5 +108,5 @@ export const unclaimRaffleWinnerSchema = z.object({
 });
 
 export type UnclaimRaffleWinnerPayload = z.input<
-  typeof claimRaffleWinnerSchema
+  typeof unclaimRaffleWinnerSchema
 >;
