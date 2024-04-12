@@ -5,10 +5,6 @@ export interface RaffleWinnerInfo {
   lastName: string;
   wins: number;
 }
-export interface RaffleWinnerResponse {
-  raffleRecordId: number;
-  winners: RaffleWinnerInfo[];
-}
 
 export interface RaffleRecordResponse {
   id: number;

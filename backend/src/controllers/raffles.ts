@@ -7,7 +7,6 @@ import { Ticket } from '../entity/Ticket';
 import {
   type RaffleRecordResponse,
   type RaffleWinnerInfo,
-  type RaffleWinnerResponse,
 } from '../interfaces/rafflesInterfaces';
 import { generateMultipleRandomNumbers } from '../util/math';
 import {
@@ -107,20 +106,9 @@ export const rollRaffleWinner = async (
       })();
     });
 
-    const response: RaffleWinnerResponse = {
-      raffleRecordId: Number(raffleRecord.id), // TODO(jan): Shouldn't have to cast here
-      winners: raffleWinners.map((raffleWinner) => {
-        return {
-          ticketId: raffleWinner.ticket.id,
-          displayName: raffleWinner.ticket.ticket_holder_display_name,
-          firstName: raffleWinner.ticket.ticket_holder_first_name,
-          lastName: raffleWinner.ticket.ticket_holder_last_name,
-          wins: raffleWinner.ticket.raffle_wins,
-        } satisfies RaffleWinnerInfo;
-      }),
-    };
+    raffleRecord.winners = raffleWinners;
 
-    return res.status(200).json(response);
+    return res.status(200).json(mapRaffleRecordToResponse(raffleRecord));
   }
 
   return res.status(200).end();
