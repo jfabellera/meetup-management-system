@@ -180,19 +180,19 @@ const RafflePage = (): JSX.Element => {
   }, [getRaffleRecordResult]);
 
   useEffect(() => {
-    if (isRollSuccess && rollResult != null) {
-      if (rollResult.winners.length === 0) {
+    if (isRollSuccess) {
+      if (rollResult == null) {
         toast({
           title: 'Roll failed',
           status: 'warning',
           description: 'No eligible attendees',
         });
+      } else {
+        setRaffleRecordId(Number(rollResult.id)); // TODO(jan): shouldn't have to cast
+        setRaffleRecord(rollResult);
+
+        if (rollResult.winners.length === 1) setIsRollable(false);
       }
-
-      setRaffleRecordId(Number(rollResult.id)); // TODO(jan): shouldn't have to cast
-      setRaffleRecord(rollResult);
-
-      if (rollResult.winners.length === 1) setIsRollable(false);
     }
   }, [isRollSuccess, rollResult]);
 
