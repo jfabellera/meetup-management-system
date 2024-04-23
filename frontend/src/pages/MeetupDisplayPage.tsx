@@ -172,7 +172,7 @@ const MeetupDisplayPage = (): JSX.Element => {
     if (height === 0) return;
 
     const initialY = -height;
-    const finalY = -height / 2 + 72 - 11;
+    const finalY = 72;
 
     void (async () => {
       await animate(yTranslation, [initialY, finalY], {
@@ -218,7 +218,6 @@ const MeetupDisplayPage = (): JSX.Element => {
 
             <Box
               position={'absolute'}
-              backgroundColor={'green'}
               height={'33%'}
               width={'66%'}
               overflow={'clip'}
@@ -229,18 +228,9 @@ const MeetupDisplayPage = (): JSX.Element => {
                 <VStack
                   position={'absolute'}
                   width={'100%'}
-                  spacing={4}
+                  spacing={5}
                   ref={ref}
                 >
-                  <Text fontSize={'144px'} noOfLines={1}>
-                    {winners[0]}
-                  </Text>
-                  {losers.map((loser, index) => (
-                    <Text key={index} fontSize={'144px'} noOfLines={1}>
-                      {loser}
-                    </Text>
-                  ))}
-
                   <Text fontSize={'144px'} noOfLines={1}>
                     {winners[0]}
                   </Text>
