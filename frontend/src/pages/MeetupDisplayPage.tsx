@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, Image, VStack } from '@chakra-ui/react';
+import { Box, Flex, Heading, Image, Text, VStack } from '@chakra-ui/react';
 import { animate, motion, useMotionValue } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -172,14 +172,14 @@ const MeetupDisplayPage = (): JSX.Element => {
     if (height === 0) return;
 
     const initialY = -height;
-    const finalY = -height / 2 - 44;
+    const finalY = -height / 2 + 72 - 11;
 
     void (async () => {
       await animate(yTranslation, [initialY, finalY], {
         // ease: 'backOut',
         type: 'spring',
         // stiffness: 20,
-        mass: 10,
+        // mass: 10,
         damping: 50,
       });
     })();
@@ -216,34 +216,42 @@ const MeetupDisplayPage = (): JSX.Element => {
               {'<'}
             </Heading>
 
-            <motion.div
-              style={{ width: '100%', textAlign: 'center', y: yTranslation }}
+            <Box
+              position={'absolute'}
+              backgroundColor={'green'}
+              height={'33%'}
+              width={'66%'}
+              overflow={'clip'}
             >
-              <VStack
-                position={'absolute'}
-                width={'100%'}
-                spacing={4}
-                ref={ref}
+              <motion.div
+                style={{ width: '100%', textAlign: 'center', y: yTranslation }}
               >
-                <Heading size={'4xl'} fontWeight={''}>
-                  {winners[0]}
-                </Heading>
-                {losers.map((loser, index) => (
-                  <Heading key={index} size={'4xl'} fontWeight={''}>
-                    {loser}
-                  </Heading>
-                ))}
+                <VStack
+                  position={'absolute'}
+                  width={'100%'}
+                  spacing={4}
+                  ref={ref}
+                >
+                  <Text fontSize={'144px'} noOfLines={1}>
+                    {winners[0]}
+                  </Text>
+                  {losers.map((loser, index) => (
+                    <Text key={index} fontSize={'144px'} noOfLines={1}>
+                      {loser}
+                    </Text>
+                  ))}
 
-                <Heading size={'4xl'} fontWeight={''}>
-                  {winners[0]}
-                </Heading>
-                {losers.map((loser, index) => (
-                  <Heading key={index} size={'4xl'} fontWeight={''}>
-                    {loser}
-                  </Heading>
-                ))}
-              </VStack>
-            </motion.div>
+                  <Text fontSize={'144px'} noOfLines={1}>
+                    {winners[0]}
+                  </Text>
+                  {losers.map((loser, index) => (
+                    <Text key={index} fontSize={'144px'} noOfLines={1}>
+                      {loser}
+                    </Text>
+                  ))}
+                </VStack>
+              </motion.div>
+            </Box>
           </>
         )
       ) : idleImages != null && idleImages.length > 0 ? (
