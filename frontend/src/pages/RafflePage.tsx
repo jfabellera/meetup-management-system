@@ -188,10 +188,10 @@ const RafflePage = (): JSX.Element => {
           description: 'No eligible attendees',
         });
       } else {
-        setRaffleRecordId(Number(rollResult.id)); // TODO(jan): shouldn't have to cast
-        setRaffleRecord(rollResult);
+        setRaffleRecordId(Number(rollResult.raffleRecord.id)); // TODO(jan): shouldn't have to cast
+        setRaffleRecord(rollResult.raffleRecord);
 
-        if (rollResult.winners.length === 1) setIsRollable(false);
+        if (rollResult.raffleRecord.winners.length === 1) setIsRollable(false);
       }
     }
   }, [isRollSuccess, rollResult]);
