@@ -68,6 +68,7 @@ const MeetupDisplayPage = (): JSX.Element => {
 
   useEffect(() => {
     if (height === 0) return;
+    if (winners == null) return;
 
     const initialY = -height;
     const finalY = 72;
@@ -81,7 +82,7 @@ const MeetupDisplayPage = (): JSX.Element => {
         damping: 50,
       });
     })();
-  }, [yTranslation, height]);
+  }, [yTranslation, height, winners]);
 
   return (
     <Flex
