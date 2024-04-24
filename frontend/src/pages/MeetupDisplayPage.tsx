@@ -6,6 +6,15 @@ import useMeasure from 'react-use-measure';
 import { socket } from '../socket';
 import { useGetMeetupIdleImagesQuery } from '../store/meetupSlice';
 
+// Durstenfeld shuffle taken from https://stackoverflow.com/a/12646864
+const shuffleArray = (array: any[]): any[] => {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+};
+
 const MeetupDisplayPage = (): JSX.Element => {
   const { meetupId } = useParams();
   const [displayState, setDisplayState] = useState<'idle' | 'raffle winner'>(
@@ -124,7 +133,7 @@ const MeetupDisplayPage = (): JSX.Element => {
                     {winners[0]}
                   </Text>
                   {losers != null
-                    ? losers.map((loser, index) => (
+                    ? shuffleArray(losers).map((loser, index) => (
                         <Text key={index} fontSize={'144px'} noOfLines={1}>
                           {loser}
                         </Text>
