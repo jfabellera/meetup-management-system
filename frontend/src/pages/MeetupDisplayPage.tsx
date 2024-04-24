@@ -108,13 +108,6 @@ const MeetupDisplayPage = (): JSX.Element => {
           </VStack>
         ) : (
           <>
-            <Heading position={'absolute'} left={'20%'}>
-              {'>'}
-            </Heading>
-            <Heading position={'absolute'} right={'20%'}>
-              {'<'}
-            </Heading>
-
             <Box
               position={'absolute'}
               height={'33%'}
