@@ -6,119 +6,6 @@ import useMeasure from 'react-use-measure';
 import { socket } from '../socket';
 import { useGetMeetupIdleImagesQuery } from '../store/meetupSlice';
 
-const losers = [
-  'Oliver',
-  'Emma',
-  'Liam',
-  'Ava',
-  'Noah',
-  'Sophia',
-  'Jackson',
-  'Isabella',
-  'Ethan',
-  'Mia',
-  'James',
-  'Charlotte',
-  'Alexander',
-  'Amelia',
-  'Lucas',
-  'Harper',
-  'Mason',
-  'Ella',
-  'Michael',
-  'Evelyn',
-  'Elijah',
-  'Abigail',
-  'William',
-  'Emily',
-  'Benjamin',
-  'Sofia',
-  'Logan',
-  'Avery',
-  'Jacob',
-  'Scarlett',
-  'Daniel',
-  'Chloe',
-  'Matthew',
-  'Luna',
-  'Henry',
-  'Zoe',
-  'Sebastian',
-  'Penelope',
-  'David',
-  'Lily',
-  'Owen',
-  'Grace',
-  'Jack',
-  'Hannah',
-  'Jackson',
-  'Lila',
-  'Grayson',
-  'Natalie',
-  'Leo',
-  'Brooklyn',
-  'Luke',
-  'Ellie',
-  'Josiah',
-  'Leah',
-  'Nathan',
-  'Savannah',
-  'Jaxon',
-  'Aria',
-  'Wyatt',
-  'Camila',
-  'Hunter',
-  'Chloe',
-  'Connor',
-  'Victoria',
-  'Christian',
-  'Madison',
-  'Jonathan',
-  'Sophie',
-  'Thomas',
-  'Hailey',
-  'Carter',
-  'Riley',
-  'Dominic',
-  'Layla',
-  'Nicholas',
-  'Hazel',
-  'Zachary',
-  'Ellie',
-  'Josiah',
-  'Lillian',
-  'Hunter',
-  'Scarlett',
-  'Cameron',
-  'Aubrey',
-  'Aidan',
-  'Stella',
-  'Asher',
-  'Audrey',
-  'Julian',
-  'Mila',
-  'Easton',
-  'Aria',
-  'Eli',
-  'Savannah',
-  'Isaac',
-  'Elena',
-  'Jeremiah',
-  'Ella',
-  'Levi',
-  'Brooklyn',
-  'Xavier',
-  'Samantha',
-  'Josiah',
-  'Madelyn',
-  'Landon',
-  'Ariana',
-  'Levi',
-  'Skylar',
-  'Eli',
-  'Charlotte',
-];
-
 const MeetupDisplayPage = (): JSX.Element => {
   const { meetupId } = useParams();
   const [displayState, setDisplayState] = useState<'idle' | 'raffle winner'>(
@@ -128,6 +15,7 @@ const MeetupDisplayPage = (): JSX.Element => {
   const { data: idleImages } = useGetMeetupIdleImagesQuery(Number(meetupId));
   const [idleImageIndex, setIdleImageIndex] = useState<number>(0);
   const [winners, setWinners] = useState<string[] | null>(null);
+  const [losers, setLosers] = useState<string[] | null>(null);
 
   const [ref, { height }] = useMeasure();
   const yTranslation = useMotionValue(0);
@@ -141,6 +29,7 @@ const MeetupDisplayPage = (): JSX.Element => {
 
     socket.on('meetup:display', (payload) => {
       setWinners(payload.winners);
+      setLosers(payload.losers);
       setRaffleType(payload.isBatchRoll === true ? 'batch' : 'single');
       if (payload.winners != null) {
         setDisplayState('raffle winner');
@@ -234,11 +123,13 @@ const MeetupDisplayPage = (): JSX.Element => {
                   <Text fontSize={'144px'} noOfLines={1}>
                     {winners[0]}
                   </Text>
-                  {losers.map((loser, index) => (
-                    <Text key={index} fontSize={'144px'} noOfLines={1}>
-                      {loser}
-                    </Text>
-                  ))}
+                  {losers != null
+                    ? losers.map((loser, index) => (
+                        <Text key={index} fontSize={'144px'} noOfLines={1}>
+                          {loser}
+                        </Text>
+                      ))
+                    : null}
                 </VStack>
               </motion.div>
             </Box>
