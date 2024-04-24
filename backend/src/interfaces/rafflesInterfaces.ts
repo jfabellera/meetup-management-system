@@ -14,3 +14,8 @@ export interface RaffleRecordResponse {
   wasDisplayed: boolean;
   createdAt: Date;
 }
+
+export interface RollRaffleWinnerResponse {
+  losers: string[];
+  raffleRecord: RaffleRecordResponse;
+}

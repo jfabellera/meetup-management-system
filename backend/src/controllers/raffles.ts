@@ -8,6 +8,7 @@ import { Ticket } from '../entity/Ticket';
 import {
   type RaffleRecordResponse,
   type RaffleWinnerInfo,
+  type RollRaffleWinnerResponse,
 } from '../interfaces/rafflesInterfaces';
 import { generateMultipleRandomNumbers } from '../util/math';
 import {
@@ -109,7 +110,10 @@ export const rollRaffleWinner = async (
     raffleRecord.winners = raffleWinners;
 
     socket.emit('meetup:update', { meetupId: meetup.id });
-    return res.status(200).json(mapRaffleRecordToResponse(raffleRecord));
+    return res.status(200).json({
+      losers: tickets.map((ticket) => ticket.ticket_holder_display_name),
+      raffleRecord: mapRaffleRecordToResponse(raffleRecord),
+    } satisfies RollRaffleWinnerResponse);
   }
 
   return res.status(200).end();

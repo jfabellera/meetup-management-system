@@ -31,6 +31,7 @@ io.on('connection', (socket) => {
   socket.on('meetup:display', (payload) => {
     io.to(`meetup-${String(payload.meetupId)}`).emit('meetup:display', {
       winners: payload.winners,
+      losers: payload.losers,
       isBatchRoll: payload.isBatchRoll,
     });
   });

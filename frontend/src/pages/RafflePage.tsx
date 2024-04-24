@@ -78,6 +78,7 @@ const RafflePage = (): JSX.Element => {
     null
   );
   const [isRollable, setIsRollable] = useState<boolean>(true);
+  const [losers, setLosers] = useState<string[] | null>(null);
 
   const toast = useToast({ position: 'top-right', duration: 2500 });
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -144,6 +145,7 @@ const RafflePage = (): JSX.Element => {
       socket.emit('meetup:display', {
         meetupId,
         winners: raffleRecord.winners.map((winner) => winner.displayName),
+        losers,
         isBatchRoll: raffleRecord.winners.length > 1,
       });
       setIsDisplayed(true);
@@ -155,6 +157,7 @@ const RafflePage = (): JSX.Element => {
 
   const handleClear = (): void => {
     setRaffleRecordId(null);
+    setLosers(null);
     setIsDisplayed(false);
     setIsAllIn(false);
     setIsRollable(true);
@@ -188,10 +191,11 @@ const RafflePage = (): JSX.Element => {
           description: 'No eligible attendees',
         });
       } else {
-        setRaffleRecordId(Number(rollResult.id)); // TODO(jan): shouldn't have to cast
-        setRaffleRecord(rollResult);
+        setRaffleRecordId(Number(rollResult.raffleRecord.id)); // TODO(jan): shouldn't have to cast
+        setRaffleRecord(rollResult.raffleRecord);
+        setLosers(rollResult.losers);
 
-        if (rollResult.winners.length === 1) setIsRollable(false);
+        if (rollResult.raffleRecord.winners.length === 1) setIsRollable(false);
       }
     }
   }, [isRollSuccess, rollResult]);
