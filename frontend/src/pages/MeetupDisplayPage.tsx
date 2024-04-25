@@ -135,6 +135,7 @@ const MeetupDisplayPage = (): JSX.Element => {
               padding={'2rem'}
             >
               <Grid
+                width={'100%'}
                 templateColumns={'repeat(2, auto)'}
                 templateRows={'repeat(10, auto)'}
                 gridAutoFlow={'column'}
@@ -152,6 +153,7 @@ const MeetupDisplayPage = (): JSX.Element => {
                         noOfLines={1}
                         lineHeight={'normal'}
                         minWidth={0}
+                        wordBreak={'break-all'}
                       >
                         {`${index + 1}. ${winner}`}
                       </Text>
