@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import useMeasure from 'react-use-measure';
 import { socket } from '../socket';
-import { useGetMeetupIdleImagesQuery } from '../store/meetupSlice';
+import { useGetMeetupDisplayAssetsQuery } from '../store/meetupSlice';
 
 // Durstenfeld shuffle taken from https://stackoverflow.com/a/12646864
 const shuffleArray = (array: any[]): any[] => {
@@ -21,7 +21,9 @@ const MeetupDisplayPage = (): JSX.Element => {
     'idle'
   );
   const [raffleType, setRaffleType] = useState<'single' | 'batch'>('single');
-  const { data: idleImages } = useGetMeetupIdleImagesQuery(Number(meetupId));
+  const { data: displayAssets } = useGetMeetupDisplayAssetsQuery(
+    Number(meetupId)
+  );
   const [idleImageIndex, setIdleImageIndex] = useState<number>(0);
   const [winners, setWinners] = useState<string[] | null>(null);
   const [losers, setLosers] = useState<string[] | null>(null);
@@ -49,22 +51,28 @@ const MeetupDisplayPage = (): JSX.Element => {
   }, []);
 
   useEffect(() => {
-    if (idleImages == null || idleImages.length <= 1) return;
+    if (
+      displayAssets?.idleImageUrls == null ||
+      displayAssets.idleImageUrls.length <= 1
+    )
+      return;
 
     // If there are multiple images, cycle through them periodically
     const intervalId = setInterval(() => {
       // Don't change image if display is idle
       if (displayState !== 'idle') return;
 
+      const idleImageCount = displayAssets.idleImageUrls?.length ?? 0;
+
       setIdleImageIndex(
-        (previousIndex) => (previousIndex + 1) % idleImages.length
+        (previousIndex) => (previousIndex + 1) % idleImageCount
       );
     }, 15000);
 
     return () => {
       clearInterval(intervalId);
     };
-  }, [idleImages, displayState]);
+  }, [displayAssets, displayState]);
 
   useEffect(() => {
     if (height === 0) return;
@@ -95,17 +103,19 @@ const MeetupDisplayPage = (): JSX.Element => {
       winners != null &&
       winners.length > 0 ? (
         raffleType === 'batch' ? (
-          <VStack spacing={4}>
-            {winners.map((winner, index) => {
-              return (
-                <Box key={index} textAlign={'left'} width={'100%'}>
-                  <Heading size={'4xl'} fontWeight={''}>
-                    {`${index + 1}. ${winner}`}
-                  </Heading>
-                </Box>
-              );
-            })}
-          </VStack>
+          <>
+            <VStack spacing={4}>
+              {winners.map((winner, index) => {
+                return (
+                  <Box key={index} textAlign={'left'} width={'100%'}>
+                    <Heading size={'4xl'} fontWeight={''}>
+                      {`${index + 1}. ${winner}`}
+                    </Heading>
+                  </Box>
+                );
+              })}
+            </VStack>
+          </>
         ) : (
           <>
             <Box
@@ -138,13 +148,14 @@ const MeetupDisplayPage = (): JSX.Element => {
             </Box>
           </>
         )
-      ) : idleImages != null && idleImages.length > 0 ? (
+      ) : displayAssets?.idleImageUrls != null &&
+        displayAssets.idleImageUrls.length > 0 ? (
         <Image
           width={'100%'}
           height={'100%'}
           objectFit={'contain'}
           background={'black'}
-          src={idleImages[idleImageIndex]}
+          src={displayAssets.idleImageUrls[idleImageIndex]}
         />
       ) : null}
     </Flex>

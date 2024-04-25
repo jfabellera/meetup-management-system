@@ -19,4 +19,10 @@ export class MeetupDisplayRecord extends BaseEntity {
 
   @Column({ type: 'varchar', length: 1024, array: true, default: '{}' })
   idle_image_urls: string[];
+
+  @Column({ type: 'varchar', length: 1024, nullable: true })
+  raffle_winner_background_image_url: string;
+
+  @Column({ type: 'varchar', length: 1024, nullable: true })
+  batch_raffle_winner_background_image_url: string;
 }

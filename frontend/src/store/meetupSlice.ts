@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { MeetupInfo } from '../../../backend/src/controllers/meetups';
+import { type MeetupDisplayAssets } from '../../../backend/src/interfaces/meetupInterfaces';
 import {
   type CreateMeetupFromEventbritePayload,
   type CreateMeetupPayload,
@@ -20,7 +21,7 @@ interface EditMeetupOptions {
 
 export const meetupSlice = createApi({
   reducerPath: 'meetupSlice',
-  tagTypes: ['Meetups', 'Meetup', 'Attendees', 'Idle Images'],
+  tagTypes: ['Meetups', 'Meetup', 'Attendees', 'Display Assets'],
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}/`,
     prepareHeaders: (headers, { getState }) => {
@@ -75,14 +76,16 @@ export const meetupSlice = createApi({
       invalidatesTags: (result, error, arg) => [
         'Meetup',
         'Meetups',
-        { type: 'Idle Images', id: arg.meetupId },
+        { type: 'Display Assets', id: arg.meetupId },
       ],
     }),
-    getMeetupIdleImages: builder.query<string[], number>({
+    getMeetupDisplayAssets: builder.query<MeetupDisplayAssets, number>({
       query: (meetupId) => ({
-        url: `meetups/${meetupId}/idle-images`,
+        url: `meetups/${meetupId}/display-assets`,
       }),
-      providesTags: (result, error, arg) => [{ type: 'Idle Images', id: arg }],
+      providesTags: (result, error, arg) => [
+        { type: 'Display Assets', id: arg },
+      ],
     }),
   }),
 });
@@ -93,5 +96,5 @@ export const {
   useCreateMeetupMutation,
   useCreateMeetupFromEventbriteMutation,
   useEditMeetupMutation,
-  useGetMeetupIdleImagesQuery,
+  useGetMeetupDisplayAssetsQuery,
 } = meetupSlice;

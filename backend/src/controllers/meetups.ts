@@ -11,6 +11,7 @@ import { MeetupDisplayRecord } from '../entity/MeetupDisplayRecord';
 import { Ticket } from '../entity/Ticket';
 import { type User } from '../entity/User';
 import { type EventbriteAttendee } from '../interfaces/eventbriteInterfaces';
+import { type MeetupDisplayAssets } from '../interfaces/meetupInterfaces';
 import {
   createEventbriteWebhook,
   getEventbriteAttendees,
@@ -645,7 +646,7 @@ export const syncEventbriteAttendees = async (
   return res.status(200).end();
 };
 
-export const getMeetupIdleImages = async (
+export const getMeetupDisplayAssets = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
@@ -662,5 +663,11 @@ export const getMeetupIdleImages = async (
     return res.status(404).json({ message: 'Invalid meetupID.' });
   }
 
-  return res.status(200).json(meetup.displayRecord?.idle_image_urls ?? []);
+  return res.status(200).json({
+    idleImageUrls: meetup.displayRecord?.idle_image_urls ?? null,
+    raffleWinnerBackgroundImageUrl:
+      meetup.displayRecord?.raffle_winner_background_image_url ?? null,
+    batchRaffleWinnerBackgroundImageUrl:
+      meetup.displayRecord?.batch_raffle_winner_background_image_url ?? null,
+  } satisfies MeetupDisplayAssets);
 };

@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import { FiArrowLeft, FiArrowRight, FiPlus, FiTrash2 } from 'react-icons/fi';
 import {
   useEditMeetupMutation,
-  useGetMeetupIdleImagesQuery,
+  useGetMeetupDisplayAssetsQuery,
 } from '../../store/meetupSlice';
 import EditableFormCard from '../Forms/EditableFormCard';
 
@@ -21,16 +21,16 @@ interface Props {
 }
 
 const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
-  const { data: idleImages } = useGetMeetupIdleImagesQuery(meetupId);
+  const { data: displayAssets } = useGetMeetupDisplayAssetsQuery(meetupId);
   const [updateMeetup] = useEditMeetupMutation();
   const [isEditable, setIsEditable] = useBoolean(false);
   const [urls, setUrls] = useState<string[]>([]);
 
   useEffect(() => {
-    if (idleImages == null) return;
+    if (displayAssets?.idleImageUrls == null) return;
 
-    setUrls(idleImages);
-  }, [idleImages]);
+    setUrls(displayAssets.idleImageUrls);
+  }, [displayAssets]);
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setUrls((urls) => {
@@ -87,7 +87,8 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
   };
 
   const onCancel = (): void => {
-    if (idleImages != null) setUrls(idleImages);
+    if (displayAssets?.idleImageUrls != null)
+      setUrls(displayAssets.idleImageUrls);
 
     setIsEditable.off();
   };
