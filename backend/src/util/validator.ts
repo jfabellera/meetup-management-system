@@ -48,6 +48,14 @@ export const editMeetupSchema = z.object({
   has_raffle: z.boolean().optional(),
   default_raffle_entries: z.number().gte(0).optional(),
   display_idle_image_urls: z.string().array().optional(),
+  display_raffle_winner_background_image_url: z
+    .string()
+    .optional()
+    .transform((string) => (string === '' ? null : string)),
+  display_batch_raffle_winner_background_image_url: z
+    .string()
+    .optional()
+    .transform((string) => (string === '' ? null : string)),
 });
 
 export type EditMeetupPayload = z.infer<typeof editMeetupSchema>;
