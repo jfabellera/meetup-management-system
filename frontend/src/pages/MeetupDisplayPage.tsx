@@ -1,10 +1,18 @@
-import { Box, Flex, Heading, Image, Text, VStack } from '@chakra-ui/react';
+import {
+  Box,
+  Flex,
+  Grid,
+  GridItem,
+  Image,
+  Text,
+  VStack,
+} from '@chakra-ui/react';
 import { animate, motion, useMotionValue } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import useMeasure from 'react-use-measure';
 import { socket } from '../socket';
-import { useGetMeetupIdleImagesQuery } from '../store/meetupSlice';
+import { useGetMeetupDisplayAssetsQuery } from '../store/meetupSlice';
 
 // Durstenfeld shuffle taken from https://stackoverflow.com/a/12646864
 const shuffleArray = (array: any[]): any[] => {
@@ -21,7 +29,9 @@ const MeetupDisplayPage = (): JSX.Element => {
     'idle'
   );
   const [raffleType, setRaffleType] = useState<'single' | 'batch'>('single');
-  const { data: idleImages } = useGetMeetupIdleImagesQuery(Number(meetupId));
+  const { data: displayAssets } = useGetMeetupDisplayAssetsQuery(
+    Number(meetupId)
+  );
   const [idleImageIndex, setIdleImageIndex] = useState<number>(0);
   const [winners, setWinners] = useState<string[] | null>(null);
   const [losers, setLosers] = useState<string[] | null>(null);
@@ -49,22 +59,28 @@ const MeetupDisplayPage = (): JSX.Element => {
   }, []);
 
   useEffect(() => {
-    if (idleImages == null || idleImages.length <= 1) return;
+    if (
+      displayAssets?.idleImageUrls == null ||
+      displayAssets.idleImageUrls.length <= 1
+    )
+      return;
 
     // If there are multiple images, cycle through them periodically
     const intervalId = setInterval(() => {
       // Don't change image if display is idle
       if (displayState !== 'idle') return;
 
+      const idleImageCount = displayAssets.idleImageUrls?.length ?? 0;
+
       setIdleImageIndex(
-        (previousIndex) => (previousIndex + 1) % idleImages.length
+        (previousIndex) => (previousIndex + 1) % idleImageCount
       );
     }, 15000);
 
     return () => {
       clearInterval(intervalId);
     };
-  }, [idleImages, displayState]);
+  }, [displayAssets, displayState]);
 
   useEffect(() => {
     if (height === 0) return;
@@ -95,19 +111,71 @@ const MeetupDisplayPage = (): JSX.Element => {
       winners != null &&
       winners.length > 0 ? (
         raffleType === 'batch' ? (
-          <VStack spacing={4}>
-            {winners.map((winner, index) => {
-              return (
-                <Box key={index} textAlign={'left'} width={'100%'}>
-                  <Heading size={'4xl'} fontWeight={''}>
-                    {`${index + 1}. ${winner}`}
-                  </Heading>
-                </Box>
-              );
-            })}
-          </VStack>
+          <>
+            {displayAssets?.batchRaffleWinnerBackgroundImageUrl != null ? (
+              <Image
+                width={'100%'}
+                height={'100%'}
+                objectFit={'contain'}
+                background={'black'}
+                src={displayAssets.batchRaffleWinnerBackgroundImageUrl}
+                fallback={<></>}
+                loading={'eager'}
+              />
+            ) : null}
+
+            <Flex
+              position={'absolute'}
+              top={'15%'}
+              height={'80%'}
+              width={'66%'}
+              overflow={'clip'}
+              justifyContent={'center'}
+              alignItems={'center'}
+              padding={'2rem'}
+            >
+              <Grid
+                width={'100%'}
+                templateColumns={'repeat(2, auto)'}
+                templateRows={'repeat(10, auto)'}
+                gridAutoFlow={'column'}
+                gap={2}
+              >
+                {winners.map((winner, index) => {
+                  return (
+                    <GridItem key={index} textAlign={'left'} width={'100%'}>
+                      <Text
+                        fontSize={
+                          // Handle font size for different amount of winners
+                          (5 / Math.min(Math.max(winners.length, 5), 10)) * 120
+                        }
+                        fontWeight={''}
+                        noOfLines={1}
+                        lineHeight={'normal'}
+                        minWidth={0}
+                        wordBreak={'break-all'}
+                      >
+                        {`${index + 1}. ${winner}`}
+                      </Text>
+                    </GridItem>
+                  );
+                })}
+              </Grid>
+            </Flex>
+          </>
         ) : (
           <>
+            {displayAssets?.raffleWinnerBackgroundImageUrl != null ? (
+              <Image
+                width={'100%'}
+                height={'100%'}
+                objectFit={'contain'}
+                background={'black'}
+                src={displayAssets?.raffleWinnerBackgroundImageUrl ?? ''}
+                fallback={<></>}
+                loading={'eager'}
+              />
+            ) : null}
             <Box
               position={'absolute'}
               height={'33%'}
@@ -138,13 +206,15 @@ const MeetupDisplayPage = (): JSX.Element => {
             </Box>
           </>
         )
-      ) : idleImages != null && idleImages.length > 0 ? (
+      ) : displayAssets?.idleImageUrls != null &&
+        displayAssets.idleImageUrls.length > 0 ? (
         <Image
           width={'100%'}
           height={'100%'}
           objectFit={'contain'}
           background={'black'}
-          src={idleImages[idleImageIndex]}
+          src={displayAssets.idleImageUrls[idleImageIndex]}
+          loading={'eager'}
         />
       ) : null}
     </Flex>

@@ -6,7 +6,7 @@ import {
   getAllMeetups,
   getMeetup,
   getMeetupAttendees,
-  getMeetupIdleImages,
+  getMeetupDisplayAssets,
   syncEventbriteAttendees,
   updateMeetup,
 } from '../controllers/meetups';
@@ -73,7 +73,10 @@ router.post(
   updateTicketViaWebhook as RequestHandler
 );
 
-router.get('/:meetup_id/idle-images', getMeetupIdleImages as RequestHandler);
+router.get(
+  '/:meetup_id/display-assets',
+  getMeetupDisplayAssets as RequestHandler
+);
 
 router.get(
   '/:meetup_id/raffles',

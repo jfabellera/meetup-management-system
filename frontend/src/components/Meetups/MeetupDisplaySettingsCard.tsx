@@ -3,16 +3,18 @@ import {
   Box,
   Grid,
   GridItem,
+  Heading,
   IconButton,
   Image,
   Input,
   useBoolean,
 } from '@chakra-ui/react';
+import type React from 'react';
 import { useEffect, useState } from 'react';
 import { FiArrowLeft, FiArrowRight, FiPlus, FiTrash2 } from 'react-icons/fi';
 import {
   useEditMeetupMutation,
-  useGetMeetupIdleImagesQuery,
+  useGetMeetupDisplayAssetsQuery,
 } from '../../store/meetupSlice';
 import EditableFormCard from '../Forms/EditableFormCard';
 
@@ -21,16 +23,21 @@ interface Props {
 }
 
 const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
-  const { data: idleImages } = useGetMeetupIdleImagesQuery(meetupId);
+  const { data: displayAssets } = useGetMeetupDisplayAssetsQuery(meetupId);
   const [updateMeetup] = useEditMeetupMutation();
   const [isEditable, setIsEditable] = useBoolean(false);
   const [urls, setUrls] = useState<string[]>([]);
+  const [raffleBackgroundUrl, setRaffleBackgroundUrl] = useState<string>('');
+  const [batchRaffleBackgroundUrl, setBatchRaffleBackgroundUrl] =
+    useState<string>('');
 
   useEffect(() => {
-    if (idleImages == null) return;
-
-    setUrls(idleImages);
-  }, [idleImages]);
+    setUrls(displayAssets?.idleImageUrls ?? []);
+    setRaffleBackgroundUrl(displayAssets?.raffleWinnerBackgroundImageUrl ?? '');
+    setBatchRaffleBackgroundUrl(
+      displayAssets?.batchRaffleWinnerBackgroundImageUrl ?? ''
+    );
+  }, [displayAssets]);
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setUrls((urls) => {
@@ -38,6 +45,18 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
       temp[Number(event.target.id)] = event.target.value;
       return temp;
     });
+  };
+
+  const onRaffleBackgroundChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ): void => {
+    setRaffleBackgroundUrl(event.target.value);
+  };
+
+  const onBatchRaffleBackgroundChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ): void => {
+    setBatchRaffleBackgroundUrl(event.target.value);
   };
 
   const onAdd = (): void => {
@@ -79,7 +98,11 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
     void (async () => {
       await updateMeetup({
         meetupId,
-        payload: { display_idle_image_urls: urls },
+        payload: {
+          display_idle_image_urls: urls,
+          display_raffle_background_url: raffleBackgroundUrl,
+          display_batch_raffle_background_url: batchRaffleBackgroundUrl,
+        },
       });
     })();
 
@@ -87,7 +110,8 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
   };
 
   const onCancel = (): void => {
-    if (idleImages != null) setUrls(idleImages);
+    if (displayAssets?.idleImageUrls != null)
+      setUrls(displayAssets.idleImageUrls);
 
     setIsEditable.off();
   };
@@ -101,6 +125,9 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
       onEditSubmit={onSubmit}
       isFormInvalid={false}
     >
+      <Heading size={'md'} fontWeight={'medium'} marginBottom={'0.2rem'}>
+        Idle Images
+      </Heading>
       {urls != null ? (
         <Grid templateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={4}>
           {urls.map((imageUrl, index) => (
@@ -173,6 +200,58 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
           ) : null}
         </Grid>
       ) : null}
+
+      {/* TODO(jan): Find cleaner way to do this. This is just copy and pasted because low on time */}
+
+      <Heading
+        size={'md'}
+        fontWeight={'medium'}
+        marginTop={'1rem'}
+        marginBottom={'0.2rem'}
+      >
+        Raffle Winner Background
+      </Heading>
+      <Grid templateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={4}>
+        <GridItem>
+          <AspectRatio ratio={16 / 9}>
+            <Box border={'1px'}>
+              <Image src={raffleBackgroundUrl} />
+            </Box>
+          </AspectRatio>
+          {isEditable ? (
+            <Input
+              marginTop={'1rem'}
+              value={raffleBackgroundUrl}
+              onChange={onRaffleBackgroundChange}
+            />
+          ) : null}
+        </GridItem>
+      </Grid>
+
+      <Heading
+        size={'md'}
+        fontWeight={'medium'}
+        marginTop={'1rem'}
+        marginBottom={'0.2rem'}
+      >
+        Raffle Winner Background (Batch)
+      </Heading>
+      <Grid templateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={4}>
+        <GridItem>
+          <AspectRatio ratio={16 / 9}>
+            <Box border={'1px'}>
+              <Image src={batchRaffleBackgroundUrl} />
+            </Box>
+          </AspectRatio>
+          {isEditable ? (
+            <Input
+              marginTop={'1rem'}
+              value={batchRaffleBackgroundUrl}
+              onChange={onBatchRaffleBackgroundChange}
+            />
+          ) : null}
+        </GridItem>
+      </Grid>
     </EditableFormCard>
   );
 };
