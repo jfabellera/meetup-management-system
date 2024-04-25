@@ -127,6 +127,7 @@ const MeetupDisplayPage = (): JSX.Element => {
 
             <Flex
               position={'absolute'}
+              top={'15%'}
               height={'80%'}
               width={'66%'}
               overflow={'clip'}
