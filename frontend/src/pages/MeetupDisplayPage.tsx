@@ -191,12 +191,21 @@ const MeetupDisplayPage = (): JSX.Element => {
                   spacing={5}
                   ref={ref}
                 >
-                  <Text fontSize={'144px'} noOfLines={1}>
+                  <Text
+                    fontSize={'144px'}
+                    noOfLines={1}
+                    wordBreak={'break-all'}
+                  >
                     {winners[0]}
                   </Text>
                   {losers != null
                     ? shuffleArray(losers).map((loser, index) => (
-                        <Text key={index} fontSize={'144px'} noOfLines={1}>
+                        <Text
+                          key={index}
+                          fontSize={'144px'}
+                          noOfLines={1}
+                          wordBreak={'break-all'}
+                        >
                           {loser}
                         </Text>
                       ))
