@@ -1,4 +1,13 @@
-import { Box, Flex, Heading, Image, Text, VStack } from '@chakra-ui/react';
+import {
+  Box,
+  Flex,
+  Grid,
+  GridItem,
+  Heading,
+  Image,
+  Text,
+  VStack,
+} from '@chakra-ui/react';
 import { animate, motion, useMotionValue } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -115,17 +124,38 @@ const MeetupDisplayPage = (): JSX.Element => {
                 loading={'eager'}
               />
             ) : null}
-            <VStack spacing={4}>
-              {winners.map((winner, index) => {
-                return (
-                  <Box key={index} textAlign={'left'} width={'100%'}>
-                    <Heading size={'4xl'} fontWeight={''}>
-                      {`${index + 1}. ${winner}`}
-                    </Heading>
-                  </Box>
-                );
-              })}
-            </VStack>
+
+            <Flex
+              position={'absolute'}
+              height={'80%'}
+              width={'66%'}
+              overflow={'clip'}
+              justifyContent={'center'}
+              alignItems={'center'}
+              padding={'2rem'}
+            >
+              <Grid
+                templateColumns={'repeat(2, auto)'}
+                templateRows={'repeat(10, auto)'}
+                gridAutoFlow={'column'}
+                gap={2}
+              >
+                {winners.map((winner, index) => {
+                  return (
+                    <GridItem key={index} textAlign={'left'} width={'100%'}>
+                      <Heading
+                        size={'3xl'}
+                        fontWeight={''}
+                        noOfLines={1}
+                        lineHeight={'normal'}
+                      >
+                        {`${index + 1}. ${winner}`}
+                      </Heading>
+                    </GridItem>
+                  );
+                })}
+              </Grid>
+            </Flex>
           </>
         ) : (
           <>
