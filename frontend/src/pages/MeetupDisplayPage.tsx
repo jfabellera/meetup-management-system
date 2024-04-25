@@ -104,6 +104,16 @@ const MeetupDisplayPage = (): JSX.Element => {
       winners.length > 0 ? (
         raffleType === 'batch' ? (
           <>
+            {displayAssets?.batchRaffleWinnerBackgroundImageUrl != null ? (
+              <Image
+                width={'100%'}
+                height={'100%'}
+                objectFit={'contain'}
+                background={'black'}
+                src={displayAssets.batchRaffleWinnerBackgroundImageUrl}
+                fallback={<></>}
+              />
+            ) : null}
             <VStack spacing={4}>
               {winners.map((winner, index) => {
                 return (
@@ -118,6 +128,16 @@ const MeetupDisplayPage = (): JSX.Element => {
           </>
         ) : (
           <>
+            {displayAssets?.raffleWinnerBackgroundImageUrl != null ? (
+              <Image
+                width={'100%'}
+                height={'100%'}
+                objectFit={'contain'}
+                background={'black'}
+                src={displayAssets?.raffleWinnerBackgroundImageUrl ?? ''}
+                fallback={<></>}
+              />
+            ) : null}
             <Box
               position={'absolute'}
               height={'33%'}
