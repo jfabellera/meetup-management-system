@@ -112,6 +112,7 @@ const MeetupDisplayPage = (): JSX.Element => {
                 background={'black'}
                 src={displayAssets.batchRaffleWinnerBackgroundImageUrl}
                 fallback={<></>}
+                loading={'eager'}
               />
             ) : null}
             <VStack spacing={4}>
@@ -136,6 +137,7 @@ const MeetupDisplayPage = (): JSX.Element => {
                 background={'black'}
                 src={displayAssets?.raffleWinnerBackgroundImageUrl ?? ''}
                 fallback={<></>}
+                loading={'eager'}
               />
             ) : null}
             <Box
@@ -176,6 +178,7 @@ const MeetupDisplayPage = (): JSX.Element => {
           objectFit={'contain'}
           background={'black'}
           src={displayAssets.idleImageUrls[idleImageIndex]}
+          loading={'eager'}
         />
       ) : null}
     </Flex>
