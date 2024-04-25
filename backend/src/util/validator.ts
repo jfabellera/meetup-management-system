@@ -48,11 +48,11 @@ export const editMeetupSchema = z.object({
   has_raffle: z.boolean().optional(),
   default_raffle_entries: z.number().gte(0).optional(),
   display_idle_image_urls: z.string().array().optional(),
-  display_raffle_winner_background_image_url: z
+  display_raffle_background_url: z
     .string()
     .optional()
     .transform((string) => (string === '' ? null : string)),
-  display_batch_raffle_winner_background_image_url: z
+  display_batch_raffle_background_url: z
     .string()
     .optional()
     .transform((string) => (string === '' ? null : string)),

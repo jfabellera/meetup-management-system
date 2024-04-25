@@ -100,9 +100,8 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): JSX.Element => {
         meetupId,
         payload: {
           display_idle_image_urls: urls,
-          display_raffle_winner_background_image_url: raffleBackgroundUrl,
-          display_batch_raffle_winner_background_image_url:
-            batchRaffleBackgroundUrl,
+          display_raffle_background_url: raffleBackgroundUrl,
+          display_batch_raffle_background_url: batchRaffleBackgroundUrl,
         },
       });
     })();

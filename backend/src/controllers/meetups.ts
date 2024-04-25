@@ -495,8 +495,8 @@ export const updateMeetup = async (
   // Handle MeetupDisplayRecord
   if (
     result.data.display_idle_image_urls !== undefined ||
-    result.data.display_raffle_winner_background_image_url !== undefined ||
-    result.data.display_batch_raffle_winner_background_image_url !== undefined
+    result.data.display_raffle_background_url !== undefined ||
+    result.data.display_batch_raffle_background_url !== undefined
   ) {
     // Create display record if one does not exist
     if (meetup.displayRecord == null) {
@@ -507,15 +507,13 @@ export const updateMeetup = async (
       meetup.displayRecord.idle_image_urls =
         result.data.display_idle_image_urls;
 
-    if (result.data.display_raffle_winner_background_image_url !== undefined)
-      meetup.displayRecord.raffle_winner_background_image_url =
-        result.data.display_raffle_winner_background_image_url;
+    if (result.data.display_raffle_background_url !== undefined)
+      meetup.displayRecord.raffle_background_url =
+        result.data.display_raffle_background_url;
 
-    if (
-      result.data.display_batch_raffle_winner_background_image_url !== undefined
-    )
-      meetup.displayRecord.batch_raffle_winner_background_image_url =
-        result.data.display_batch_raffle_winner_background_image_url;
+    if (result.data.display_batch_raffle_background_url !== undefined)
+      meetup.displayRecord.batch_raffle_background_url =
+        result.data.display_batch_raffle_background_url;
 
     await meetup.displayRecord.save();
   }
@@ -682,8 +680,8 @@ export const getMeetupDisplayAssets = async (
   return res.status(200).json({
     idleImageUrls: meetup.displayRecord?.idle_image_urls ?? null,
     raffleWinnerBackgroundImageUrl:
-      meetup.displayRecord?.raffle_winner_background_image_url ?? null,
+      meetup.displayRecord?.raffle_background_url ?? null,
     batchRaffleWinnerBackgroundImageUrl:
-      meetup.displayRecord?.batch_raffle_winner_background_image_url ?? null,
+      meetup.displayRecord?.batch_raffle_background_url ?? null,
   } satisfies MeetupDisplayAssets);
 };
