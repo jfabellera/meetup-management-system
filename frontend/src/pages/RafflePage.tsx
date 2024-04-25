@@ -270,7 +270,12 @@ const RafflePage = (): JSX.Element => {
                         flexDirection={'row'}
                         justifyContent={'space-between'}
                       >
-                        <Text fontSize={'2xl'}>
+                        <Text
+                          fontSize={'2xl'}
+                          noOfLines={1}
+                          minWidth={0}
+                          wordBreak={'break-all'}
+                        >
                           {`${index + 1}. ${winner.displayName}`}
                         </Text>
                         <Button
@@ -293,12 +298,16 @@ const RafflePage = (): JSX.Element => {
                 </VStack>
               </Box>
             ) : (
-              <>
+              <Box height={0}>
                 {/* DIsplay for single person roll */}
                 <Text>WINNER</Text>
-                <Heading size={'4xl'} fontWeight={'medium'}>
+                <Text
+                  fontSize={'3rem'}
+                  fontWeight={'medium'}
+                  wordBreak={'break-all'}
+                >
                   {raffleRecord.winners[0].displayName ?? ''}
-                </Heading>
+                </Text>
                 <Text marginTop={'0.3rem'}>
                   {raffleRecord.winners[0].firstName}{' '}
                   {raffleRecord.winners[0].lastName}
@@ -309,7 +318,7 @@ const RafflePage = (): JSX.Element => {
                     {raffleRecord.winners[0].wins > 1 ? 's' : null}
                   </Text>
                 ) : null}
-              </>
+              </Box>
             )
           ) : (
             <Text lineHeight={'6rem'}>Click roll to select a winner</Text>
