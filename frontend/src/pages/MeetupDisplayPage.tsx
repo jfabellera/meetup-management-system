@@ -3,7 +3,6 @@ import {
   Flex,
   Grid,
   GridItem,
-  Heading,
   Image,
   Text,
   VStack,
@@ -144,14 +143,18 @@ const MeetupDisplayPage = (): JSX.Element => {
                 {winners.map((winner, index) => {
                   return (
                     <GridItem key={index} textAlign={'left'} width={'100%'}>
-                      <Heading
-                        size={'3xl'}
+                      <Text
+                        fontSize={
+                          // Handle font size for different amount of winners
+                          (5 / Math.min(Math.max(winners.length, 5), 10)) * 120
+                        }
                         fontWeight={''}
                         noOfLines={1}
                         lineHeight={'normal'}
+                        minWidth={0}
                       >
                         {`${index + 1}. ${winner}`}
-                      </Heading>
+                      </Text>
                     </GridItem>
                   );
                 })}
