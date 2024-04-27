@@ -44,6 +44,10 @@ const MeetupDisplayPage = (): JSX.Element => {
   const [ref, { height }] = useMeasure();
   const yTranslation = useMotionValue(0);
 
+  // TODO(jan): Handle this better
+  // Prevent raffle text from showing up for a split second before animating
+  const [raffleWinnerActive, setRaffleWinnerActive] = useState<boolean>(true);
+
   useEffect(() => {
     socket.emit('meetup:subscribe', { meetupId: Number(meetupId) });
     // Resubscribe on reconnection after losing connection
@@ -52,6 +56,8 @@ const MeetupDisplayPage = (): JSX.Element => {
     });
 
     socket.on('meetup:display', (payload) => {
+      setRaffleWinnerActive(false);
+
       setWinners(payload.winners);
       setLosers(payload.losers);
       setRaffleType(payload.isBatchRoll === true ? 'batch' : 'single');
@@ -93,6 +99,8 @@ const MeetupDisplayPage = (): JSX.Element => {
 
     const initialY = -height;
     const finalY = 72;
+
+    setRaffleWinnerActive(true);
 
     void (async () => {
       await animate(yTranslation, [initialY, finalY], {
@@ -189,7 +197,12 @@ const MeetupDisplayPage = (): JSX.Element => {
               overflow={'clip'}
             >
               <motion.div
-                style={{ width: '100%', textAlign: 'center', y: yTranslation }}
+                style={{
+                  width: '100%',
+                  textAlign: 'center',
+                  y: yTranslation,
+                  opacity: raffleWinnerActive ? 1 : 0,
+                }}
               >
                 <VStack
                   position={'absolute'}
