@@ -7,7 +7,12 @@ import {
   Text,
   VStack,
 } from '@chakra-ui/react';
-import { animate, motion, useMotionValue } from 'framer-motion';
+import {
+  AnimatePresence,
+  animate,
+  motion,
+  useMotionValue,
+} from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import useMeasure from 'react-use-measure';
@@ -39,6 +44,10 @@ const MeetupDisplayPage = (): JSX.Element => {
   const [ref, { height }] = useMeasure();
   const yTranslation = useMotionValue(0);
 
+  // TODO(jan): Handle this better
+  // Prevent raffle text from showing up for a split second before animating
+  const [raffleWinnerActive, setRaffleWinnerActive] = useState<boolean>(true);
+
   useEffect(() => {
     socket.emit('meetup:subscribe', { meetupId: Number(meetupId) });
     // Resubscribe on reconnection after losing connection
@@ -47,6 +56,8 @@ const MeetupDisplayPage = (): JSX.Element => {
     });
 
     socket.on('meetup:display', (payload) => {
+      setRaffleWinnerActive(false);
+
       setWinners(payload.winners);
       setLosers(payload.losers);
       setRaffleType(payload.isBatchRoll === true ? 'batch' : 'single');
@@ -89,6 +100,8 @@ const MeetupDisplayPage = (): JSX.Element => {
     const initialY = -height;
     const finalY = 72;
 
+    setRaffleWinnerActive(true);
+
     void (async () => {
       await animate(yTranslation, [initialY, finalY], {
         // ease: 'backOut',
@@ -106,6 +119,7 @@ const MeetupDisplayPage = (): JSX.Element => {
       justify={'center'}
       align={'center'}
       direction={'column'}
+      background={'black'}
     >
       {displayState === 'raffle winner' &&
       winners != null &&
@@ -183,7 +197,12 @@ const MeetupDisplayPage = (): JSX.Element => {
               overflow={'clip'}
             >
               <motion.div
-                style={{ width: '100%', textAlign: 'center', y: yTranslation }}
+                style={{
+                  width: '100%',
+                  textAlign: 'center',
+                  y: yTranslation,
+                  opacity: raffleWinnerActive ? 1 : 0,
+                }}
               >
                 <VStack
                   position={'absolute'}
@@ -217,14 +236,32 @@ const MeetupDisplayPage = (): JSX.Element => {
         )
       ) : displayAssets?.idleImageUrls != null &&
         displayAssets.idleImageUrls.length > 0 ? (
-        <Image
-          width={'100%'}
-          height={'100%'}
-          objectFit={'contain'}
-          background={'black'}
-          src={displayAssets.idleImageUrls[idleImageIndex]}
-          loading={'eager'}
-        />
+        <AnimatePresence mode={'sync'}>
+          <motion.img
+            key={idleImageIndex}
+            src={displayAssets.idleImageUrls[idleImageIndex]}
+            loading={'eager'}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              position: 'absolute',
+              zIndex: 1,
+            }}
+          />
+          <Image
+            position={'absolute'}
+            width={'100%'}
+            height={'100%'}
+            objectFit={'contain'}
+            src={displayAssets.idleImageUrls[idleImageIndex]}
+            loading={'eager'}
+          />
+        </AnimatePresence>
       ) : null}
     </Flex>
   );
