@@ -1,4 +1,4 @@
-import { Flex, HStack } from '@chakra-ui/react';
+import { Button, Flex, Grid, GridItem, HStack } from '@chakra-ui/react';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import { useMemo } from 'react';
@@ -39,7 +39,7 @@ const ManageMeetupHomePage = (): JSX.Element => {
   );
 
   return (
-    <Flex margin={'1rem'} justify={'center'}>
+    <Flex margin={'1rem'} justify={'center'} direction={'column'}>
       {meetup != null && attendees != null ? (
         <HStack width={'100%'} spacing={3} maxWidth={'800px'}>
           {/* Show how many have checked in if meetup is currently happening, otherwise show how many have signed up */}
@@ -80,6 +80,27 @@ const ManageMeetupHomePage = (): JSX.Element => {
           />
         </HStack>
       ) : null}
+
+      <Grid
+        templateColumns={'repeat(2, 1fr)'}
+        templateRows={'repeat(2, 100px)'}
+        gap={4}
+        width={'100%'}
+        paddingY={'0.75rem'}
+      >
+        <GridItem colSpan={2}>
+          <Button
+            colorScheme={'blackAlpha'}
+            width={'100%'}
+            height={'100%'}
+            onClick={() => {
+              navigate(`/meetup/${meetupId}/manage/raffle`);
+            }}
+          >
+            Raffles
+          </Button>
+        </GridItem>
+      </Grid>
     </Flex>
   );
 };
