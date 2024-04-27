@@ -1,4 +1,4 @@
-import { Button, Flex, Grid, GridItem } from '@chakra-ui/react';
+import { Box, Button, Flex, Grid, GridItem, Text } from '@chakra-ui/react';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import { useMemo } from 'react';
@@ -6,7 +6,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import CountDownCard from '../components/DataDisplay/CountDownCard';
 import FractionCard from '../components/DataDisplay/FractionCard';
 import { useGetMeetupQuery } from '../store/meetupSlice';
-import { useGetMeetupAttendeesQuery } from '../store/organizerSlice';
+import {
+  useGetMeetupAttendeesQuery,
+  useGetRaffleHistoryQuery,
+} from '../store/organizerSlice';
 import {
   hasMeetupEnded,
   hasMeetupStarted,
@@ -21,6 +24,10 @@ const ManageMeetupHomePage = (): JSX.Element => {
   const { data: attendees } = useGetMeetupAttendeesQuery({
     meetup_id: parseInt(meetupId ?? ''),
   });
+
+  const { data: raffleRecords } = useGetRaffleHistoryQuery(
+    parseInt(meetupId ?? '')
+  );
   const navigate = useNavigate();
 
   const hasStarted = useMemo(
@@ -38,12 +45,35 @@ const ManageMeetupHomePage = (): JSX.Element => {
     [meetup]
   );
 
+  const numRaffleRolls = useMemo(
+    () =>
+      raffleRecords != null
+        ? raffleRecords
+            .map((record) => record.winners.length)
+            .reduce((a, b) => a + b, 0)
+        : 0,
+    [raffleRecords]
+  );
+
+  const numRaffleClaims = useMemo(
+    () =>
+      raffleRecords != null
+        ? raffleRecords
+            .map(
+              (record) =>
+                record.winners.filter((winner) => winner.claimed).length
+            )
+            .reduce((a, b) => a + b, 0)
+        : 0,
+    [raffleRecords]
+  );
+
   return (
     <Flex margin={'1rem'} justify={'center'} direction={'column'}>
       {meetup != null && attendees != null ? (
         <Grid
           templateColumns={'repeat(2, 1fr)'}
-          templateRows={'repeat(2, 100px)'}
+          templateRows={'repeat(3, 100px)'}
           gap={4}
           width={'100%'}
           paddingY={'0.75rem'}
@@ -89,6 +119,43 @@ const ManageMeetupHomePage = (): JSX.Element => {
               width={'100%'}
               simple={!isHappeningNow}
             />
+          </GridItem>
+
+          {/* TODO(jan): Clean this up. This was done last minute before Roundup */}
+          <GridItem colSpan={2}>
+            <Box
+              width={'100%'}
+              height={'100%'}
+              background={'white'}
+              borderRadius={'md'}
+              boxShadow={'sm'}
+            >
+              <Grid templateColumns={'repeat(2, 1fr)'} height={'100%'}>
+                <GridItem>
+                  <Flex
+                    height={'100%'}
+                    justifyContent={'center'}
+                    align={'center'}
+                    direction={'column'}
+                  >
+                    <Text fontSize={'4xl'}>{numRaffleRolls}</Text>
+                    <Text fontSize={'xs'}>WINNERS</Text>
+                  </Flex>
+                </GridItem>
+
+                <GridItem>
+                  <Flex
+                    height={'100%'}
+                    justifyContent={'center'}
+                    align={'center'}
+                    direction={'column'}
+                  >
+                    <Text fontSize={'4xl'}>{numRaffleClaims}</Text>
+                    <Text fontSize={'xs'}>CLAIMED</Text>
+                  </Flex>
+                </GridItem>
+              </Grid>
+            </Box>
           </GridItem>
 
           <GridItem colSpan={2}>
