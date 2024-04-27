@@ -7,7 +7,12 @@ import {
   Text,
   VStack,
 } from '@chakra-ui/react';
-import { animate, motion, useMotionValue } from 'framer-motion';
+import {
+  AnimatePresence,
+  animate,
+  motion,
+  useMotionValue,
+} from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import useMeasure from 'react-use-measure';
@@ -106,6 +111,7 @@ const MeetupDisplayPage = (): JSX.Element => {
       justify={'center'}
       align={'center'}
       direction={'column'}
+      background={'black'}
     >
       {displayState === 'raffle winner' &&
       winners != null &&
@@ -217,14 +223,32 @@ const MeetupDisplayPage = (): JSX.Element => {
         )
       ) : displayAssets?.idleImageUrls != null &&
         displayAssets.idleImageUrls.length > 0 ? (
-        <Image
-          width={'100%'}
-          height={'100%'}
-          objectFit={'contain'}
-          background={'black'}
-          src={displayAssets.idleImageUrls[idleImageIndex]}
-          loading={'eager'}
-        />
+        <AnimatePresence mode={'sync'}>
+          <motion.img
+            key={idleImageIndex}
+            src={displayAssets.idleImageUrls[idleImageIndex]}
+            loading={'eager'}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              position: 'absolute',
+              zIndex: 1,
+            }}
+          />
+          <Image
+            position={'absolute'}
+            width={'100%'}
+            height={'100%'}
+            objectFit={'contain'}
+            src={displayAssets.idleImageUrls[idleImageIndex]}
+            loading={'eager'}
+          />
+        </AnimatePresence>
       ) : null}
     </Flex>
   );
