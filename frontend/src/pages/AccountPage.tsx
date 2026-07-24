@@ -1,3 +1,4 @@
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,6 +11,11 @@ import {
 import { FormField } from '@/components/ui/form-field';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { USERNAME_REGEX } from '@keebmeet/shared';
 import { useFormik } from 'formik';
 import { useState, type ReactNode } from 'react';
@@ -327,27 +333,41 @@ const AccountPage = (): ReactNode => {
               </Button>
             )}
           </div>
-          {user?.is_organizer && (
-            <div className="flex items-center justify-between gap-4">
-              <span>Eventbrite</span>
-              <a
-                href={`${config.apiUrl}/oauth2/eventbrite?redirect_uri=${config.appUrl}/account/authorize-eventbrite`}
-              >
-                <Button disabled={user?.is_eventbrite_linked}>
-                  {(user?.is_eventbrite_linked ?? false)
-                    ? 'Eventbrite linked!'
-                    : 'Link Eventbrite'}
-                </Button>
-              </a>
-            </div>
-          )}
         </div>
         <div className="bg-card text-card-foreground flex flex-col gap-4 rounded-lg p-8 shadow-lg">
           <h2 className="text-lg font-medium">Organizer access</h2>
           {(user?.is_organizer ?? false) ? (
-            <p className="text-sm font-medium text-green-600">
-              You're an organizer.
-            </p>
+            <div className="flex flex-col gap-4">
+              <span className="t text-green-600">You're an organizer.</span>
+
+              <div className="flex items-center justify-between gap-4">
+                <span>Payments</span>
+                <Button disabled>Coming soon!</Button>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <span>Eventbrite</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant={'secondary'}>Legacy</Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Please setup payments through Stripe instead.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <a
+                  href={`${config.apiUrl}/oauth2/eventbrite?redirect_uri=${config.appUrl}/account/authorize-eventbrite`}
+                >
+                  <Button disabled={user?.is_eventbrite_linked}>
+                    {(user?.is_eventbrite_linked ?? false)
+                      ? 'Eventbrite linked!'
+                      : 'Link Eventbrite'}
+                  </Button>
+                </a>
+              </div>
+            </div>
           ) : (user?.has_organizer_request ?? false) ? (
             <p className="text-muted-foreground text-sm">
               Your organizer request is pending review.
