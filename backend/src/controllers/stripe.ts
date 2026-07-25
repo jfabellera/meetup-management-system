@@ -1,8 +1,13 @@
 import { type Request, type Response } from 'express';
 import Stripe from 'stripe';
 import config from '../config';
-import { type User } from '../entity/User';
+import { User } from '../entity/User';
 import { getStripe } from '../util/stripe';
+import {
+  finalizePaidTicket,
+  markTicketRefunded,
+  releasePaidTicketHold,
+} from './ticketPayments';
 
 // Creates the organizer's Express connected account if they don't have one yet.
 // The organizer never signs up on Stripe first -- we create the account on
@@ -165,4 +170,73 @@ export const getConnectStatus = async (
       .status(500)
       .json({ message: 'Unable to retrieve Stripe account status.' });
   }
+};
+
+const syncAccountFromEvent = async (account: Stripe.Account): Promise<void> => {
+  const user = await User.findOne({
+    where: { stripe_account_id: account.id },
+  });
+  if (user == null) return;
+
+  user.stripe_charges_enabled = account.charges_enabled ?? false;
+  user.stripe_payouts_enabled = account.payouts_enabled ?? false;
+  user.stripe_details_submitted = account.details_submitted ?? false;
+  await user.save();
+};
+
+export const handleStripeWebhook = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const signature = req.headers['stripe-signature'];
+  if (signature == null || config.stripeWebhookSecret === '') {
+    return res.status(400).end();
+  }
+
+  let event: Stripe.Event;
+  try {
+    event = getStripe().webhooks.constructEvent(
+      req.body,
+      signature,
+      config.stripeWebhookSecret
+    );
+  } catch {
+    return res.status(400).json({ message: 'Invalid signature.' });
+  }
+
+  try {
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        await finalizePaidTicket(event.data.object.id);
+        break;
+      case 'payment_intent.payment_failed':
+      case 'payment_intent.canceled':
+        await releasePaidTicketHold(event.data.object.id);
+        break;
+      case 'charge.refunded': {
+        const charge = event.data.object;
+        const paymentIntentId =
+          typeof charge.payment_intent === 'string'
+            ? charge.payment_intent
+            : charge.payment_intent?.id;
+        if (charge.refunded && paymentIntentId != null) {
+          await markTicketRefunded(
+            paymentIntentId,
+            charge.refunds?.data?.[0]?.id
+          );
+        }
+        break;
+      }
+      case 'account.updated':
+        await syncAccountFromEvent(event.data.object);
+        break;
+      default:
+        break;
+    }
+  } catch {
+    // Signal Stripe to retry.
+    return res.status(500).end();
+  }
+
+  return res.status(200).json({ received: true });
 };

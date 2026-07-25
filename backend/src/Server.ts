@@ -1,6 +1,8 @@
 import express from 'express';
 import { io } from 'socket.io-client';
 import config from './config';
+import { handleStripeWebhook } from './controllers/stripe';
+import { sweepExpiredHolds } from './controllers/ticketPayments';
 import { AppDataSource } from './datasource';
 import discordRoutes from './routes/discord';
 import eventbriteRoutes from './routes/eventbrite';
@@ -18,6 +20,12 @@ import userRoutes from './routes/users';
 void AppDataSource.initialize();
 export const socket = io(config.socketUrl);
 
+// Abandoned payment garbage collector
+const HOLD_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+setInterval(() => {
+  void sweepExpiredHolds();
+}, HOLD_SWEEP_INTERVAL_MS);
+
 class Server {
   private readonly express: express.Application;
 
@@ -28,6 +36,12 @@ class Server {
   }
 
   private config(): void {
+    this.express.post(
+      '/stripe/webhook',
+      express.raw({ type: 'application/json' }),
+      handleStripeWebhook as express.RequestHandler
+    );
+
     this.express.use(express.json());
     this.express.use(express.urlencoded({ extended: false }));
     this.express.use(function (req, res, next) {

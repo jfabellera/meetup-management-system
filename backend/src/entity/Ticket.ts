@@ -70,4 +70,26 @@ export class Ticket extends BaseEntity {
   })
   @JoinColumn({ name: 'ticket_type_id' })
   ticket_type?: TicketType | null;
+
+  // 'confirmed' = free instant RSVP (no payment)
+  @Column({ type: 'varchar', length: 16, default: 'confirmed' })
+  payment_status: 'confirmed' | 'pending' | 'paid' | 'refunded';
+
+  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
+  stripe_payment_intent_id?: string | null;
+
+  @Column({ type: 'bigint', nullable: true })
+  amount_paid_cents?: string | null;
+
+  @Column({ type: 'bigint', nullable: true })
+  application_fee_cents?: string | null;
+
+  @Column({ type: 'varchar', length: 3, nullable: true })
+  currency?: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  stripe_refund_id?: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  hold_expires_at?: Date | null;
 }
