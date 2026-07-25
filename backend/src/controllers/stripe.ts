@@ -1,4 +1,5 @@
 import { type Request, type Response } from 'express';
+import Stripe from 'stripe';
 import config from '../config';
 import { type User } from '../entity/User';
 import { getStripe } from '../util/stripe';
@@ -41,6 +42,24 @@ const syncAccountStatus = async (
   await user.save();
 };
 
+const isClosedAccountError = (error: unknown): boolean => {
+  if (error instanceof Stripe.errors.StripePermissionError) return true;
+  if (error instanceof Stripe.errors.StripeInvalidRequestError) {
+    return (
+      error.code === 'account_invalid' || error.code === 'resource_missing'
+    );
+  }
+  return false;
+};
+
+const resetStripeAccount = async (user: User): Promise<void> => {
+  user.stripe_account_id = null;
+  user.stripe_charges_enabled = false;
+  user.stripe_payouts_enabled = false;
+  user.stripe_details_submitted = false;
+  await user.save();
+};
+
 export const createConnectAccount = async (
   req: Request,
   res: Response
@@ -50,7 +69,7 @@ export const createConnectAccount = async (
   try {
     const accountId = await ensureConnectedAccount(user);
     return res.status(200).json({ account_id: accountId });
-  } catch (error: any) {
+  } catch {
     return res
       .status(500)
       .json({ message: 'Unable to create Stripe account.' });
@@ -74,7 +93,7 @@ export const createAccountLink = async (
     });
 
     return res.status(200).json({ url: accountLink.url });
-  } catch (error: any) {
+  } catch {
     return res
       .status(500)
       .json({ message: 'Unable to start Stripe onboarding.' });
@@ -100,7 +119,7 @@ export const createLoginLink = async (
     );
 
     return res.status(200).json({ url: loginLink.url });
-  } catch (error: any) {
+  } catch {
     // createLoginLink fails until onboarding is complete.
     return res
       .status(400)
@@ -131,7 +150,17 @@ export const getConnectStatus = async (
       stripe_charges_enabled: account.charges_enabled,
       stripe_details_submitted: account.details_submitted,
     });
-  } catch (error: any) {
+  } catch (error) {
+    // Unlink stripe on closed accounts
+    if (isClosedAccountError(error)) {
+      await resetStripeAccount(user);
+      return res.status(200).json({
+        is_stripe_connected: false,
+        stripe_charges_enabled: false,
+        stripe_details_submitted: false,
+      });
+    }
+
     return res
       .status(500)
       .json({ message: 'Unable to retrieve Stripe account status.' });
