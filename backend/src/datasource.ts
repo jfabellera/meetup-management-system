@@ -12,6 +12,7 @@ import { RaffleRecord } from './entity/RaffleRecord';
 import { RaffleWinner } from './entity/RaffleWinner';
 import { Tag } from './entity/Tag';
 import { Ticket } from './entity/Ticket';
+import { TicketType } from './entity/TicketType';
 import { User } from './entity/User';
 
 export const AppDataSource = new DataSource({
@@ -25,6 +26,7 @@ export const AppDataSource = new DataSource({
     User,
     Meetup,
     Ticket,
+    TicketType,
     EventbriteRecord,
     MeetupDisplayRecord,
     MeetupDiscordMessage,

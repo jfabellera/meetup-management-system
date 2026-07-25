@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Meetup } from './Meetup';
+import { TicketType } from './TicketType';
 import { User } from './User';
 
 @Entity({ name: 'tickets' })
@@ -63,4 +64,10 @@ export class Ticket extends BaseEntity {
   // bigint → string at runtime; holds an external Eventbrite attendee id.
   @Column({ type: 'bigint', default: null, nullable: true })
   eventbrite_attendee_id?: string | null;
+
+  @ManyToOne(() => TicketType, (ticketType) => ticketType.tickets, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'ticket_type_id' })
+  ticket_type?: TicketType | null;
 }

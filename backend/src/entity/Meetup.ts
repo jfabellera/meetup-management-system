@@ -17,6 +17,7 @@ import { MeetupDisplayRecord } from './MeetupDisplayRecord';
 import { RaffleRecord } from './RaffleRecord';
 import { Tag } from './Tag';
 import { Ticket } from './Ticket';
+import { TicketType } from './TicketType';
 import { User } from './User';
 
 @Entity({ name: 'meetups' })
@@ -78,6 +79,9 @@ export class Meetup extends BaseEntity {
 
   @OneToMany(() => Ticket, (ticket) => ticket.meetup)
   tickets: Ticket[];
+
+  @OneToMany(() => TicketType, (ticketType) => ticketType.meetup)
+  ticketTypes: TicketType[];
 
   @OneToOne(() => EventbriteRecord, (ebRecord) => ebRecord.meetup)
   eventbriteRecord?: EventbriteRecord;
