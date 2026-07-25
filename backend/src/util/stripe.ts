@@ -1,6 +1,13 @@
 import Stripe from 'stripe';
 import config from '../config';
 
-// Shared Stripe client. The secret key is backend-only and never leaves the
-// server — see the org credential policy.
-export const stripe = new Stripe(config.stripeSecretKey);
+let client: Stripe | null = null;
+
+export const getStripe = (): Stripe => {
+  if (config.stripeSecretKey === '') {
+    throw new Error('STRIPE_SECRET_KEY is not configured.');
+  }
+
+  client ??= new Stripe(config.stripeSecretKey);
+  return client;
+};

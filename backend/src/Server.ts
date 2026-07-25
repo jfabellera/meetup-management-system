@@ -10,6 +10,7 @@ import oauth2Routes from './routes/oauth2';
 import ogRoutes from './routes/og';
 import organizerRequestRoutes from './routes/organizerRequests';
 import raffleRoutes from './routes/raffles';
+import stripeRoutes from './routes/stripe';
 import tagRoutes from './routes/tags';
 import ticketRoutes from './routes/tickets';
 import userRoutes from './routes/users';
@@ -54,6 +55,7 @@ class Server {
     this.express.use('/oauth2/', oauth2Routes);
     this.express.use('/eventbrite', eventbriteRoutes);
     this.express.use('/raffles', raffleRoutes);
+    this.express.use('/stripe', stripeRoutes);
     this.express.use('/discord', discordRoutes);
     this.express.use('/groups', groupRoutes);
     this.express.use('/tags', tagRoutes);

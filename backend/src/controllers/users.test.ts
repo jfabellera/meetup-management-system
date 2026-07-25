@@ -67,6 +67,10 @@ const fakeUser = (overrides: Record<string, unknown> = {}): any => ({
   is_organizer: false,
   discord_id: null,
   encrypted_eventbrite_token: null,
+  stripe_account_id: null,
+  stripe_charges_enabled: false,
+  stripe_payouts_enabled: false,
+  stripe_details_submitted: false,
   created_at: new Date('2026-01-01T00:00:00.000Z'),
   ...overrides,
 });
@@ -102,6 +106,9 @@ describe('getAllUsers', () => {
       is_organizer: false,
       is_eventbrite_linked: true,
       is_discord_linked: true,
+      is_stripe_connected: false,
+      stripe_charges_enabled: false,
+      stripe_details_submitted: false,
       photo_url: '',
       created_at: '2026-01-01T00:00:00.000Z',
     });

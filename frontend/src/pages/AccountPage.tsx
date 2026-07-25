@@ -32,6 +32,10 @@ import { updateProfile } from '../store/authSlice';
 import { groupSlice } from '../store/groupSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
+  useCreateStripeAccountLinkMutation,
+  useGetStripeStatusQuery,
+} from '../store/stripeSlice';
+import {
   useCheckUsernameAvailableQuery,
   useGetUserQuery,
   useRequestOrganizerMutation,
@@ -78,6 +82,26 @@ const AccountPage = (): ReactNode => {
     useUnlinkDiscordMutation();
   const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
   const { isUploading, onUploadingChange } = usePendingUploads();
+
+  const isOrganizer = user?.is_organizer ?? false;
+  const { data: stripeStatus } = useGetStripeStatusQuery(undefined, {
+    skip: !isOrganizer,
+  });
+  const [createStripeAccountLink] = useCreateStripeAccountLinkMutation();
+  const [isStartingStripe, setIsStartingStripe] = useState(false);
+
+  const onSetupPayments = (): void => {
+    setIsStartingStripe(true);
+    void (async () => {
+      try {
+        const { url } = await createStripeAccountLink().unwrap();
+        window.location.href = url;
+      } catch {
+        setIsStartingStripe(false);
+        toast.error('Could not start Stripe onboarding. Please try again.');
+      }
+    })();
+  };
 
   const onRequestOrganizer = (): void => {
     void (async () => {
@@ -342,7 +366,18 @@ const AccountPage = (): ReactNode => {
 
               <div className="flex items-center justify-between gap-4">
                 <span>Payments</span>
-                <Button disabled>Coming soon!</Button>
+                {(stripeStatus?.stripe_charges_enabled ?? false) ? (
+                  <span className="text-sm font-medium text-green-600">
+                    Payments enabled
+                  </span>
+                ) : (
+                  <Button onClick={onSetupPayments} disabled={isStartingStripe}>
+                    {(stripeStatus?.is_stripe_connected ?? false)
+                      ? 'Continue setup'
+                      : 'Set up payments'}
+                    {isStartingStripe ? <Spinner /> : null}
+                  </Button>
+                )}
               </div>
 
               <div className="flex items-center justify-between gap-4">

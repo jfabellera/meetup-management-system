@@ -42,6 +42,8 @@ import { ManageMeetupDisplayPage } from './pages/ManageMeetupDisplayPage';
 import MeetupDisplayPage from './pages/MeetupDisplayPage';
 import NewArchiveMeetupPage from './pages/NewArchiveMeetupPage';
 import NewMeetupFromEventbritePage from './pages/NewMeetupFromEventbritePage';
+import StripeRefreshPage from './pages/StripeRefreshPage';
+import StripeReturnPage from './pages/StripeReturnPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import { store } from './store/store';
 
@@ -142,6 +144,22 @@ const App = (): ReactNode => {
                 <RequireAuth>
                   <AuthorizeEventbritePage />
                 </RequireAuth>
+              }
+            />
+            <Route
+              path="/account/stripe/return"
+              element={
+                <RequireOrganizer>
+                  <StripeReturnPage />
+                </RequireOrganizer>
+              }
+            />
+            <Route
+              path="/account/stripe/refresh"
+              element={
+                <RequireOrganizer>
+                  <StripeRefreshPage />
+                </RequireOrganizer>
               }
             />
             <Route
