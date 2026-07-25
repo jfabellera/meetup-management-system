@@ -34,6 +34,7 @@ import { groupSlice } from '../store/groupSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
   useCreateStripeAccountLinkMutation,
+  useCreateStripeLoginLinkMutation,
   useGetStripeStatusQuery,
 } from '../store/stripeSlice';
 import {
@@ -89,6 +90,8 @@ const AccountPage = (): ReactNode => {
     skip: !isOrganizer,
   });
   const [createStripeAccountLink] = useCreateStripeAccountLinkMutation();
+  const [createStripeLoginLink, { isLoading: isOpeningDashboard }] =
+    useCreateStripeLoginLinkMutation();
   const [isStartingStripe, setIsStartingStripe] = useState(false);
 
   const onSetupPayments = (): void => {
@@ -100,6 +103,17 @@ const AccountPage = (): ReactNode => {
       } catch {
         setIsStartingStripe(false);
         toast.error('Could not start Stripe onboarding. Please try again.');
+      }
+    })();
+  };
+
+  const onOpenDashboard = (): void => {
+    void (async () => {
+      try {
+        const { url } = await createStripeLoginLink().unwrap();
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } catch {
+        toast.error('Could not open your Stripe dashboard. Please try again.');
       }
     })();
   };
@@ -368,9 +382,20 @@ const AccountPage = (): ReactNode => {
               <div className="flex items-center justify-between gap-4">
                 <span>Payments</span>
                 {(stripeStatus?.stripe_charges_enabled ?? false) ? (
-                  <span className="text-sm font-medium text-green-600">
-                    Payments enabled
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-green-600">
+                      Payments enabled
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onOpenDashboard}
+                      disabled={isOpeningDashboard}
+                    >
+                      Stripe dashboard
+                      {isOpeningDashboard ? <Spinner /> : null}
+                    </Button>
+                  </div>
                 ) : (
                   <Button onClick={onSetupPayments} disabled={isStartingStripe}>
                     {(stripeStatus?.is_stripe_connected ?? false)

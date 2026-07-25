@@ -81,6 +81,33 @@ export const createAccountLink = async (
   }
 };
 
+/**
+ * Create single use login link for organizer's express account dashboard
+ */
+export const createLoginLink = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const user = res.locals.requestor as User;
+
+  if (user.stripe_account_id == null) {
+    return res.status(400).json({ message: 'No Stripe account connected.' });
+  }
+
+  try {
+    const loginLink = await getStripe().accounts.createLoginLink(
+      user.stripe_account_id
+    );
+
+    return res.status(200).json({ url: loginLink.url });
+  } catch (error: any) {
+    // createLoginLink fails until onboarding is complete.
+    return res
+      .status(400)
+      .json({ message: 'Stripe dashboard is not available yet.' });
+  }
+};
+
 export const getConnectStatus = async (
   req: Request,
   res: Response

@@ -2,6 +2,7 @@ import express, { type RequestHandler } from 'express';
 import {
   createAccountLink,
   createConnectAccount,
+  createLoginLink,
   getConnectStatus,
 } from '../controllers/stripe';
 import { authChecker, Rule } from '../middleware/authChecker';
@@ -18,6 +19,12 @@ router.post(
   '/connect/account-link',
   authChecker([Rule.requireOrganizer]) as RequestHandler,
   createAccountLink as RequestHandler
+);
+
+router.post(
+  '/connect/login-link',
+  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  createLoginLink as RequestHandler
 );
 
 router.get(

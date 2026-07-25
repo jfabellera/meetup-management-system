@@ -40,8 +40,18 @@ export const stripeSlice = createApi({
         method: 'POST',
       }),
     }),
+    // Returns a single-use link into the organizer's Express Dashboard.
+    createStripeLoginLink: builder.mutation<{ url: string }, void>({
+      query: () => ({
+        url: 'stripe/connect/login-link',
+        method: 'POST',
+      }),
+    }),
   }),
 });
 
-export const { useGetStripeStatusQuery, useCreateStripeAccountLinkMutation } =
-  stripeSlice;
+export const {
+  useGetStripeStatusQuery,
+  useCreateStripeAccountLinkMutation,
+  useCreateStripeLoginLinkMutation,
+} = stripeSlice;
