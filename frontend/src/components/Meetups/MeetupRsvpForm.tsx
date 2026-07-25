@@ -12,19 +12,22 @@ import { FormField } from '@/components/ui/form-field';
 import { Spinner } from '@/components/ui/spinner';
 import { type MeetupInfo, type SimpleTicketInfo } from '@keebmeet/shared';
 import { useFormik } from 'formik';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { FiArrowLeft, FiLock, FiUserCheck, FiUserX } from 'react-icons/fi';
 import { toast } from 'sonner';
 import * as Yup from 'yup';
-import { useAppSelector } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
+  ticketSlice,
   useCreateTicketMutation,
   useDeleteTicketMutation,
   useGetTicketQuery,
   useUpdateTicketMutation,
 } from '../../store/ticketSlice';
 import { useGetUserQuery } from '../../store/userSlice';
+import { formatMoney } from '../../util/money';
 import { hasMeetupEnded } from '../../util/timeUtil';
+import { PaidRsvpPayment } from './PaidRsvpPayment';
 
 const TicketHolderSchema = Yup.object().shape({
   displayName: Yup.string().required('Required'),
@@ -47,16 +50,23 @@ export const MeetupRsvpForm = ({
   onCollapse,
 }: MeetupRsvpFormProps): ReactNode => {
   const { user } = useAppSelector((state) => state.user);
+  const dispatch = useAppDispatch();
+
+  const onPaymentSuccess = (): void => {
+    const refreshTickets = (): void => {
+      dispatch(ticketSlice.util.invalidateTags(['Tickets']));
+    };
+    refreshTickets();
+    setTimeout(refreshTickets, 2500);
+    onCollapse();
+  };
 
   const { data: fullUser } = useGetUserQuery(user?.id ?? '', {
     skip: user == null,
   });
 
-  const [isManaging, setIsManaging] = useState(ticket != null);
-  const submittedRef = useRef(false);
-  useEffect(() => {
-    if (!submittedRef.current) setIsManaging(ticket != null);
-  }, [ticket]);
+  const isPendingHold = ticket?.payment_status === 'pending';
+  const isManaging = ticket != null && !isPendingHold;
   const { data: ticketDetails } = useGetTicketQuery(ticket?.id ?? '', {
     skip: ticket == null,
   });
@@ -67,8 +77,22 @@ export const MeetupRsvpForm = ({
   const isBusy = isRsvping || isUpdating || isCancelling;
 
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
 
   const hasEnded = hasMeetupEnded(meetup);
+
+  const ticketType = meetup.ticket_types?.[0];
+  const isPaid = ticketType != null && ticketType.price_cents > 0;
+  const priceLabel = isPaid
+    ? formatMoney(ticketType.price_cents, ticketType.currency)
+    : null;
+  const canCancel =
+    ticket != null &&
+    ticket.payment_status !== 'paid' &&
+    ticket.payment_status !== 'refunded';
+
+  const isPaymentStep = clientSecret != null && priceLabel != null;
 
   const formik = useFormik({
     // When managing, prefill from the existing ticket; otherwise from the
@@ -89,9 +113,6 @@ export const MeetupRsvpForm = ({
     validationSchema: TicketHolderSchema,
     onSubmit: (values) => {
       void (async () => {
-        // Latch the mode before the mutation so the ticket-cache update it
-        // triggers can't flip the copy while the panel collapses.
-        submittedRef.current = true;
         const ticketHolder = {
           display_name: values.displayName,
           first_name: values.firstName,
@@ -99,14 +120,22 @@ export const MeetupRsvpForm = ({
           email: values.email,
         };
         try {
-          if (ticket != null) {
+          if (ticket != null && !isPendingHold) {
             await updateTicket({
               ticketId: ticket.id,
               ticketHolder,
             }).unwrap();
             toast.success('Your RSVP details were updated.');
           } else {
-            await rsvp({ meetupId: meetup.id, ticketHolder }).unwrap();
+            const result = await rsvp({
+              meetupId: meetup.id,
+              ticketHolder,
+            }).unwrap();
+            if (result.clientSecret != null) {
+              setClientSecret(result.clientSecret);
+              setHoldExpiresAt(result.holdExpiresAt ?? null);
+              return;
+            }
             toast.success(`You're going to ${meetup.name}!`);
           }
           onCollapse();
@@ -120,7 +149,6 @@ export const MeetupRsvpForm = ({
   const onCancelRsvp = (): void => {
     void (async () => {
       if (ticket == null) return;
-      submittedRef.current = true;
       try {
         await deleteTicket(ticket.id).unwrap();
         setCancelConfirmOpen(false);
@@ -152,91 +180,114 @@ export const MeetupRsvpForm = ({
           </Button>
           <div>
             <h1 className="text-2xl font-bold">
-              {isManaging ? 'Manage your RSVP' : 'Confirm your RSVP'}
+              {isManaging
+                ? 'Manage your RSVP'
+                : isPendingHold || isPaymentStep
+                  ? 'Complete your payment'
+                  : 'Confirm your RSVP'}
             </h1>
             <p className="text-muted-foreground text-sm">
               {isManaging
                 ? 'Update your details for '
-                : 'Reserve your spot at '}
+                : isPendingHold || isPaymentStep
+                  ? 'Finish paying to confirm your spot at '
+                  : 'Reserve your spot at '}
               <span className="font-semibold">{meetup.name}</span>.
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <p className="text-md font-semibold">Ticket holder details</p>
-          <FormField
-            formik={formik}
-            name="displayName"
-            label="Display Name"
-            disabled={!isLoggedIn}
+        {isPaymentStep ? (
+          <PaidRsvpPayment
+            clientSecret={clientSecret}
+            amountLabel={priceLabel}
+            holdExpiresAt={holdExpiresAt}
+            onSuccess={onPaymentSuccess}
           />
-          {/* Name and email come from the account and can't be edited here;
-            change them in account settings. Shown read-only for context. */}
-          <div className="border-border flex flex-col gap-4 rounded-md border border-dashed p-3">
-            <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-              <FiLock className="size-3 shrink-0" />
-              From your account · only visible to organizers
-            </p>
-            <div className="flex flex-row gap-2">
+        ) : (
+          <>
+            <div className="flex flex-col gap-4">
+              <p className="text-md font-semibold">Ticket holder details</p>
               <FormField
                 formik={formik}
-                name="firstName"
-                label="First Name"
-                className="flex-1"
-                disabled
+                name="displayName"
+                label="Display Name"
+                disabled={!isLoggedIn}
               />
-              <FormField
-                formik={formik}
-                name="lastName"
-                label="Last Name"
-                className="flex-1"
-                disabled
-              />
+              <div className="border-border flex flex-col gap-4 rounded-md border border-dashed p-3">
+                <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                  <FiLock className="size-3 shrink-0" />
+                  From your account · only visible to organizers
+                </p>
+                <div className="flex flex-row gap-2">
+                  <FormField
+                    formik={formik}
+                    name="firstName"
+                    label="First Name"
+                    className="flex-1"
+                    disabled
+                  />
+                  <FormField
+                    formik={formik}
+                    name="lastName"
+                    label="Last Name"
+                    className="flex-1"
+                    disabled
+                  />
+                </div>
+                <FormField
+                  formik={formik}
+                  name="email"
+                  label="Email"
+                  type="email"
+                  disabled
+                />
+              </div>
             </div>
-            <FormField
-              formik={formik}
-              name="email"
-              label="Email"
-              type="email"
-              disabled
-            />
-          </div>
-        </div>
 
-        {hasEnded ? (
-          <p className="text-sm font-semibold text-red-500">
-            This meetup has already ended.
-          </p>
-        ) : !isLoggedIn ? (
-          <p className="text-sm font-semibold text-yellow-600">
-            You must be logged in to RSVP.
-          </p>
-        ) : null}
+            {hasEnded ? (
+              <p className="text-sm font-semibold text-red-500">
+                This meetup has already ended.
+              </p>
+            ) : !isLoggedIn ? (
+              <p className="text-sm font-semibold text-yellow-600">
+                You must be logged in to RSVP.
+              </p>
+            ) : null}
+          </>
+        )}
       </div>
 
-      <div className="flex shrink-0 flex-col gap-3 p-4">
-        <Button
-          type="submit"
-          size="lg"
-          disabled={!isLoggedIn || hasEnded || isBusy || !formik.isValid}
-        >
-          <FiUserCheck />
-          {isManaging ? 'Update RSVP' : 'Confirm RSVP'}
-          {(isRsvping || isUpdating) && <Spinner />}
-        </Button>
-        {isManaging ? (
+      {!isPaymentStep ? (
+        <div className="flex shrink-0 flex-col gap-3 p-4">
           <Button
-            type="button"
-            variant="destructive"
-            onClick={() => setCancelConfirmOpen(true)}
-            disabled={!isLoggedIn || hasEnded || isBusy}
+            type="submit"
+            size="lg"
+            disabled={!isLoggedIn || hasEnded || isBusy || !formik.isValid}
           >
-            <FiUserX />
-            Cancel RSVP
+            <FiUserCheck />
+            {isManaging
+              ? 'Update RSVP'
+              : isPendingHold
+                ? `Complete payment · ${priceLabel}`
+                : isPaid
+                  ? `Continue to payment · ${priceLabel}`
+                  : 'Confirm RSVP'}
+            {(isRsvping || isUpdating) && <Spinner />}
           </Button>
-        ) : null}
-      </div>
+          {canCancel ? (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setCancelConfirmOpen(true)}
+              disabled={!isLoggedIn || hasEnded || isBusy}
+            >
+              <FiUserX />
+              {isPendingHold ? 'Cancel reservation' : 'Cancel RSVP'}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
 
       <Dialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
         <DialogContent>

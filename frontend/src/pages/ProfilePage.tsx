@@ -23,6 +23,7 @@ import { GalleryCard } from '../components/Meetups/GalleryCard';
 import { MeetupCard } from '../components/Meetups/MeetupCard';
 import { MeetupModal } from '../components/Meetups/MeetupModal';
 import Page from '../components/Page/Page';
+import { useHoldExpiryRefetch } from '../hooks/useHoldExpiryRefetch';
 import { useGetUserGalleriesQuery } from '../store/gallerySlice';
 import { useAppSelector } from '../store/hooks';
 import { useGetMeetupsQuery } from '../store/meetupSlice';
@@ -71,6 +72,7 @@ const ProfilePage = (): ReactNode => {
   const { data: tickets } = useGetTicketsQuery(user != null ? user.id : '', {
     skip: user == null,
   });
+  useHoldExpiryRefetch(tickets);
 
   // Galleries aren't organizer-gated.
   const { data: galleries = [], isLoading: isGalleriesLoading } =
@@ -152,7 +154,13 @@ const ProfilePage = (): ReactNode => {
             >
               <MeetupCard
                 meetup={meetup}
-                attending={getTicketForMeetup(meetup.id) != null}
+                attending={
+                  getTicketForMeetup(meetup.id) != null &&
+                  getTicketForMeetup(meetup.id)?.payment_status !== 'pending'
+                }
+                paymentPending={
+                  getTicketForMeetup(meetup.id)?.payment_status === 'pending'
+                }
                 imageOverlay={
                   meetup.organizers?.some(
                     (organizer) => organizer.id === organizerId
