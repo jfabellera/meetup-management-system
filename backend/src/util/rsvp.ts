@@ -1,4 +1,4 @@
-import { IsNull } from 'typeorm';
+import { type EntityManager, IsNull } from 'typeorm';
 import { type Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { type User } from '../entity/User';
@@ -11,14 +11,34 @@ export const getMeetupEnd = (meetup: Meetup): Date => {
   return end;
 };
 
-// Whether the meetup already has at least `capacity` tickets.
+/**
+ * Tickets that occupy a seat: confirmed/paid, plus pending holds that haven't
+ * expired. Refunded tickets and abandoned (expired) do not count
+ */
+export const countActiveTickets = async (
+  meetupId: string,
+  manager?: EntityManager
+): Promise<number> => {
+  const queryBuilder =
+    manager != null
+      ? manager.getRepository(Ticket).createQueryBuilder('ticket')
+      : Ticket.createQueryBuilder('ticket');
+  return await queryBuilder
+    .where('ticket.meetup_id = :meetupId', { meetupId })
+    .andWhere(
+      "(ticket.payment_status IN ('confirmed', 'paid') OR (ticket.payment_status = 'pending' AND ticket.hold_expires_at > now()))"
+    )
+    .getCount();
+};
+
+/**
+ * Whether the meetup already has at least `capacity` active tickets.
+ */
 export const isMeetupAtCapacity = async (
   meetupId: string,
   capacity: number
 ): Promise<boolean> => {
-  const ticketCount = await Ticket.count({
-    where: { meetup: { id: meetupId } },
-  });
+  const ticketCount = await countActiveTickets(meetupId);
   return ticketCount >= capacity;
 };
 

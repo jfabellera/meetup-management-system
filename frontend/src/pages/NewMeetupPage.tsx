@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Spinner } from '@/components/ui/spinner';
 import {
   Field,
   FieldDescription,
@@ -10,6 +9,7 @@ import {
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useAppSelector } from '@/store/hooks';
@@ -18,8 +18,8 @@ import { useFormik } from 'formik';
 import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import MeetupImageField from '../components/Meetups/MeetupImageField';
 import GroupCombobox from '../components/Meetups/GroupCombobox';
+import MeetupImageField from '../components/Meetups/MeetupImageField';
 import OrganizerCombobox from '../components/Meetups/OrganizerCombobox';
 import TagCombobox from '../components/Meetups/TagCombobox';
 import {
@@ -51,6 +51,7 @@ const NewMeetupPage = (): ReactNode => {
       address: '',
       duration: 0,
       capacity: 0,
+      price: 0,
       imageUrl: '',
       imageKey: '',
       description: '',
@@ -81,6 +82,10 @@ const NewMeetupPage = (): ReactNode => {
         organizer_ids: formik.values.organizerIds,
         group_ids: formik.values.groupIds,
         tag_ids: formik.values.tagIds,
+        ticket_type:
+          formik.values.price > 0
+            ? { price_cents: Math.round(formik.values.price * 100) }
+            : undefined,
       });
 
       if ('error' in result && result.error != null && 'data' in result.error) {
@@ -271,6 +276,13 @@ const NewMeetupPage = (): ReactNode => {
                     className="flex-1"
                   />
                 </div>
+
+                <FormField
+                  formik={formik}
+                  name="price"
+                  label="Ticket price in USD (0 = free)"
+                  type="number"
+                />
 
                 <FormField formik={formik} name="address" label="Address" />
 

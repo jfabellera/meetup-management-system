@@ -26,8 +26,8 @@ import {
 } from '../../store/meetupSlice';
 import EditableFormCard from '../Forms/EditableFormCard';
 import EditableFormField from '../Forms/EditableFormField';
-import MeetupImageField from './MeetupImageField';
 import GroupCombobox from './GroupCombobox';
+import MeetupImageField from './MeetupImageField';
 import OrganizerCombobox from './OrganizerCombobox';
 import TagCombobox from './TagCombobox';
 import {
@@ -59,6 +59,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
       address: '',
       duration: 0,
       capacity: 0,
+      price: 0,
       imageUrl: '',
       imageKey: '',
       description: '',
@@ -86,6 +87,11 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         payload.duration_hours = values.duration;
       if (formik.initialValues.capacity !== values.capacity)
         payload.capacity = values.capacity;
+      if (formik.initialValues.price !== values.price)
+        payload.ticket_type =
+          values.price > 0
+            ? { price_cents: Math.round(values.price * 100) }
+            : null;
       // A new upload sets imageKey; clearing an existing image empties imageUrl.
       if (values.imageKey !== '') {
         payload.image_key = values.imageKey;
@@ -165,6 +171,10 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         address: meetup?.location.full_address ?? '',
         duration: meetup?.duration_hours ?? 0,
         capacity: meetup?.tickets?.total ?? 0,
+        price:
+          meetup?.ticket_types?.[0] != null
+            ? meetup.ticket_types[0].price_cents / 100
+            : 0,
         imageUrl: meetup?.image_url ?? '',
         imageKey: '',
         description: meetup?.description ?? '',
@@ -451,6 +461,21 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
               errorMessage={formik.errors.capacity}
+            />
+            <EditableFormField
+              name={'Ticket price in USD (0 = free)'}
+              value={
+                meetup?.ticket_types?.[0] != null
+                  ? String(meetup.ticket_types[0].price_cents / 100)
+                  : '0'
+              }
+              editable={isEditable}
+              id={'price'}
+              type={'number'}
+              isInvalid={formik.errors.price != null && formik.touched.price}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              errorMessage={formik.errors.price}
             />
           </>
         ) : null}
