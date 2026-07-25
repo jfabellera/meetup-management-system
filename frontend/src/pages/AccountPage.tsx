@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/tooltip';
 import { USERNAME_REGEX } from '@keebmeet/shared';
 import { useFormik } from 'formik';
+import { Loader2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { FaDiscord } from 'react-icons/fa';
 import { toast } from 'sonner';
@@ -375,7 +376,6 @@ const AccountPage = (): ReactNode => {
                     {(stripeStatus?.is_stripe_connected ?? false)
                       ? 'Continue setup'
                       : 'Set up payments'}
-                    {isStartingStripe ? <Spinner /> : null}
                   </Button>
                 )}
               </div>
@@ -456,6 +456,13 @@ const AccountPage = (): ReactNode => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {isStartingStripe ? (
+        <div className="bg-background/80 fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 backdrop-blur-sm">
+          <Loader2 className="size-10 animate-spin" />
+          <p className="text-muted-foreground">Redirecting to Stripe…</p>
+        </div>
+      ) : null}
     </Page>
   );
 };
