@@ -13,6 +13,8 @@
     "@keebmeet/shared": "*",
     "@marsidev/react-turnstile": "^1.5.3",
     "@reduxjs/toolkit": "^2.12.0",
+    "@stripe/react-stripe-js": "^3.10.0",
+    "@stripe/stripe-js": "^5.10.0",
     "@tailwindcss/vite": "^4.3.1",
     "axios": "^1.6.1",
     "class-variance-authority": "^0.7.1",
