@@ -1,30 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import config from '../../config';
-import { HoldCountdown } from './HoldCountdown';
 
 export const stripePromise = loadStripe(config.stripePublishableKey);
-
-// Must render inside an <Elements> provider (see MeetupRsvpForm).
-export const PaymentSection = ({
-  holdExpiresAt,
-}: {
-  holdExpiresAt?: string | null;
-}): ReactNode => (
-  <div className="flex flex-col gap-4">
-    {holdExpiresAt != null ? (
-      <HoldCountdown
-        holdExpiresAt={holdExpiresAt}
-        className="sticky top-0 z-10 backdrop-blur-sm"
-      />
-    ) : null}
-    <PaymentElement />
-  </div>
-);
 
 export const PayButton = ({
   amountLabel,

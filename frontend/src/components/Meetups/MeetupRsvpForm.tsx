@@ -27,8 +27,10 @@ import {
 import { useGetUserQuery } from '../../store/userSlice';
 import { formatMoney } from '../../util/money';
 import { hasMeetupEnded } from '../../util/timeUtil';
-import { PayButton, PaymentSection, stripePromise } from './PaidRsvpPayment';
-import { Elements } from '@stripe/react-stripe-js';
+import { PayButton, stripePromise } from './PaidRsvpPayment';
+import { Elements, PaymentElement } from '@stripe/react-stripe-js';
+import { useHoldCountdown } from '../../hooks/useHoldCountdown';
+import { HoldCountdown } from './HoldCountdown';
 
 const TicketHolderSchema = Yup.object().shape({
   displayName: Yup.string().required('Required'),
@@ -93,7 +95,10 @@ export const MeetupRsvpForm = ({
     ticket.payment_status !== 'paid' &&
     ticket.payment_status !== 'refunded';
 
-  const isPaymentStep = clientSecret != null && priceLabel != null;
+  const holdExpired = useHoldCountdown(holdExpiresAt)?.expired === true;
+  // Once the hold lapses the PaymentIntent is dead, so drop back to the fields.
+  const isPaymentStep =
+    clientSecret != null && priceLabel != null && !holdExpired;
 
   const formik = useFormik({
     // When managing, prefill from the existing ticket; otherwise from the
@@ -200,7 +205,9 @@ export const MeetupRsvpForm = ({
               {isManaging ? 'Manage your RSVP' : 'Confirm your RSVP'}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {isManaging ? 'Update your details for ' : 'Reserve your spot at '}
+              {isManaging
+                ? 'Update your details for '
+                : 'Reserve your spot at '}
               <span className="font-semibold">{meetup.name}</span>.
             </p>
           </div>
@@ -246,9 +253,11 @@ export const MeetupRsvpForm = ({
           </div>
         </div>
 
-        {isPaymentStep ? (
-          <PaymentSection holdExpiresAt={holdExpiresAt} />
+        {holdExpiresAt != null ? (
+          <HoldCountdown holdExpiresAt={holdExpiresAt} />
         ) : null}
+
+        {isPaymentStep ? <PaymentElement /> : null}
 
         {hasEnded ? (
           <p className="text-sm font-semibold text-red-500">
@@ -284,17 +293,17 @@ export const MeetupRsvpForm = ({
           </Button>
         )}
         {canCancel ? (
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => setCancelConfirmOpen(true)}
-              disabled={!isLoggedIn || hasEnded || isBusy}
-            >
-              <FiUserX />
-              {isPendingHold ? 'Cancel reservation' : 'Cancel RSVP'}
-            </Button>
-          ) : null}
-        </div>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => setCancelConfirmOpen(true)}
+            disabled={!isLoggedIn || hasEnded || isBusy}
+          >
+            <FiUserX />
+            {isPendingHold ? 'Cancel reservation' : 'Cancel RSVP'}
+          </Button>
+        ) : null}
+      </div>
 
       <Dialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
         <DialogContent>
