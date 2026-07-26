@@ -80,6 +80,13 @@ export const organizerSlice = createApi({
       }),
       invalidatesTags: ['Attendees'],
     }),
+    refundAttendee: builder.mutation<void, string>({
+      query: (ticketId) => ({
+        url: `tickets/${ticketId}/refund`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Attendees'],
+    }),
     syncEventbriteAttendees: builder.mutation<void, string>({
       query: (meetupId) => ({
         url: `meetups/${meetupId}/sync-eventbrite`,
@@ -147,6 +154,7 @@ export const {
   useGetMeetupAttendeesQuery,
   useCheckInAttendeeMutation,
   useEditAttendeeMutation,
+  useRefundAttendeeMutation,
   useSyncEventbriteAttendeesMutation,
   useRollRaffleWinnerMutation,
   useClaimRaffleWinnerMutation,

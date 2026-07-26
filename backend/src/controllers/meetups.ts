@@ -1453,6 +1453,7 @@ export const getMeetupAttendees = async (
         raffle_wins: true,
         eventbrite_attendee_id: true,
         rsvp_method: true,
+        payment_status: true,
       },
     },
     relations: { tickets: { user: true }, eventbriteRecord: true },
@@ -1480,6 +1481,7 @@ export const getMeetupAttendees = async (
       raffle_wins: ticket.raffle_wins,
       qr_code_value: qrCodeValue,
       rsvp_method: ticket.rsvp_method,
+      payment_status: ticket.payment_status,
     };
 
     if (ticket.is_checked_in) {

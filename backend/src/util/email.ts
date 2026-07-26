@@ -4,6 +4,7 @@ import {
   OrganizerApprovedEmail,
   OrganizerDeniedEmail,
   OrganizerRequestEmail,
+  RefundEmail,
   RsvpConfirmationEmail,
   VerifyEmail,
 } from '@keebmeet/emails';
@@ -115,6 +116,24 @@ export const sendMeetupTransferredEmail = async (
     to: [email],
     subject: `You're now the lead organizer for ${meetupName}`,
     react: MeetupTransferredEmail({ meetupName, previousLeadName, manageLink }),
+  });
+
+  if (error) {
+    console.error('Error sending email:', error);
+  }
+};
+
+export const sendRefundEmail = async (
+  email: string,
+  meetupName: string,
+  amountRefunded?: string,
+  receiptUrl?: string
+) => {
+  const { error } = await getResendClient().emails.send({
+    from: 'KeebMeet <noreply@keebmeet.com>',
+    to: [email],
+    subject: `Your ticket for ${meetupName} was refunded`,
+    react: RefundEmail({ meetupName, amountRefunded, receiptUrl }),
   });
 
   if (error) {

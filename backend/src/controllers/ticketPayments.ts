@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import { type Response } from 'express';
+import { type Request, type Response } from 'express';
 import { LessThan } from 'typeorm';
 import { socket } from '../Server';
 import config from '../config';
@@ -9,7 +9,8 @@ import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { type TicketType } from '../entity/TicketType';
 import { type User } from '../entity/User';
-import { sendRsvpConfirmationEmail } from '../util/email';
+import { checkMeetupOrganizer } from '../middleware/authChecker';
+import { sendRefundEmail, sendRsvpConfirmationEmail } from '../util/email';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
 import { countActiveTickets } from '../util/rsvp';
 import { getStripe } from '../util/stripe';
@@ -101,6 +102,30 @@ export const ticketHolderFields = (
   ticket_holder_email: data.email ?? user.email,
 });
 
+const formatTicketAmount = (cents: string, currency: string): string =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+  }).format(Number(cents) / 100);
+
+const fetchReceiptUrl = async (
+  paymentIntentId: string
+): Promise<string | undefined> => {
+  try {
+    const paymentIntent = await getStripe().paymentIntents.retrieve(
+      paymentIntentId,
+      { expand: ['latest_charge'] }
+    );
+    const charge = paymentIntent.latest_charge;
+    if (charge != null && typeof charge !== 'string') {
+      return charge.receipt_url ?? undefined;
+    }
+  } catch {
+    // ignore
+  }
+  return undefined;
+};
+
 const buildTicketReceipt = async (
   ticket: Ticket
 ): Promise<{ amountPaid: string; receiptUrl?: string } | undefined> => {
@@ -112,26 +137,15 @@ const buildTicketReceipt = async (
     return undefined;
   }
 
-  const amountPaid = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: ticket.currency.toUpperCase(),
-  }).format(Number(ticket.amount_paid_cents) / 100);
+  const amountPaid = formatTicketAmount(
+    ticket.amount_paid_cents,
+    ticket.currency
+  );
 
-  let receiptUrl: string | undefined;
-  if (ticket.stripe_payment_intent_id != null) {
-    try {
-      const paymentIntent = await getStripe().paymentIntents.retrieve(
-        ticket.stripe_payment_intent_id,
-        { expand: ['latest_charge'] }
-      );
-      const charge = paymentIntent.latest_charge;
-      if (charge != null && typeof charge !== 'string') {
-        receiptUrl = charge.receipt_url ?? undefined;
-      }
-    } catch {
-      // Receipt link is best-effort; the confirmation still sends without it.
-    }
-  }
+  const receiptUrl =
+    ticket.stripe_payment_intent_id != null
+      ? await fetchReceiptUrl(ticket.stripe_payment_intent_id)
+      : undefined;
 
   return { amountPaid, receiptUrl };
 };
@@ -356,9 +370,61 @@ export const markTicketRefunded = async (
   if (refundId != null) ticket.stripe_refund_id = refundId;
   await ticket.save();
 
+  const amountRefunded =
+    ticket.amount_paid_cents != null && ticket.currency != null
+      ? formatTicketAmount(ticket.amount_paid_cents, ticket.currency)
+      : undefined;
+  const receiptUrl =
+    ticket.stripe_payment_intent_id != null
+      ? await fetchReceiptUrl(ticket.stripe_payment_intent_id)
+      : undefined;
+  await sendRefundEmail(
+    ticket.ticket_holder_email,
+    ticket.meetup.name,
+    amountRefunded,
+    receiptUrl
+  );
+
   const meetupId = ticket.meetup.id;
   socket.emit('meetup:update', { meetupId });
   await refreshMeetupDiscordMessage(meetupId);
+};
+
+export const refundTicket = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const ticket = res.locals.ticket as Ticket;
+  const requestor = res.locals.requestor as User;
+
+  // The ticket auth also lets the ticket's own owner through, so confirm the
+  // requestor actually organizes this meetup before moving money.
+  if (!(await checkMeetupOrganizer(ticket.meetup.id, requestor.id))) {
+    return res
+      .status(403)
+      .json({ message: 'Only organizers can refund tickets.' });
+  }
+
+  if (ticket.payment_status !== 'paid') {
+    return res
+      .status(400)
+      .json({ message: 'Only paid tickets can be refunded.' });
+  }
+  if (ticket.stripe_payment_intent_id == null) {
+    return res.status(400).json({ message: 'This ticket has no payment.' });
+  }
+
+  try {
+    const refund = await getStripe().refunds.create({
+      payment_intent: ticket.stripe_payment_intent_id,
+      reverse_transfer: true,
+      refund_application_fee: true,
+    });
+    await markTicketRefunded(ticket.stripe_payment_intent_id, refund.id);
+    return res.status(200).json({ message: 'Ticket refunded.' });
+  } catch {
+    return res.status(502).json({ message: 'Unable to process refund.' });
+  }
 };
 
 /**

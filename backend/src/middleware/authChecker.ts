@@ -26,7 +26,7 @@ const reject = (res: Response): Response => {
   return res.status(401).json({ message: 'Invalid authorization.' });
 };
 
-const checkMeetupOrganizer = async (
+export const checkMeetupOrganizer = async (
   meetupId: string,
   userId: string
 ): Promise<boolean> => {
