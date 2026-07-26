@@ -2,62 +2,89 @@ import { Loader2 } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { stripePromise } from '../components/Meetups/PaidRsvpPayment';
 import Page from '../components/Page/Page';
 import { useWaitForPaidTicket } from '../hooks/useWaitForPaidTicket';
-import { useAppDispatch } from '../store/hooks';
-import { ticketSlice } from '../store/ticketSlice';
+import {
+  postRsvpReturnMessage,
+  RSVP_RETURN_CHANNEL,
+  type RsvpReturnMessage,
+} from '../util/rsvpReturnChannel';
 
-const isSuccessfulStatus = (status?: string): boolean =>
-  status === 'succeeded' || status === 'processing';
+const ACK_TIMEOUT_MS = 400;
+// The original tab polls up to 30s before reporting 'finalized'.
+const FINALIZED_TIMEOUT_MS = 35_000;
 
 const RsvpReturnPage = (): ReactNode => {
-  const [params] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const waitForPaidTicket = useWaitForPaidTicket();
-  const handledRef = useRef(false);
+  const announcedRef = useRef(false);
+
+  const ticketId = searchParams.get('ticket');
+  const meetup = searchParams.get('meetup');
+  const meetupPath =
+    meetup != null ? `/meetup/${encodeURIComponent(meetup)}` : '/';
+  const redirectStatus = searchParams.get('redirect_status');
+  const redirectFailed =
+    redirectStatus != null &&
+    redirectStatus !== 'succeeded' &&
+    redirectStatus !== 'processing';
 
   useEffect(() => {
-    if (handledRef.current) return;
-    handledRef.current = true;
+    const channel = new BroadcastChannel(RSVP_RETURN_CHANNEL);
+    let finalizedTimer: number | undefined;
+    let settled = false;
 
-    void (async () => {
-      const ticketId = params.get('ticket');
-      const meetupSlug = params.get('meetup');
-      const clientSecret = params.get('payment_intent_client_secret');
-      const meetupPath =
-        meetupSlug != null && meetupSlug !== '' ? `/meetup/${meetupSlug}` : '/';
-
-      // Prefer the authoritative PaymentIntent status; fall back to the
-      // redirect_status Stripe appends to the URL.
-      let status = params.get('redirect_status') ?? undefined;
-      const stripe = await stripePromise;
-      if (stripe != null && clientSecret != null) {
-        const { paymentIntent } =
-          await stripe.retrievePaymentIntent(clientSecret);
-        status = paymentIntent?.status ?? status;
-      }
-
-      if (!isSuccessfulStatus(status)) {
-        toast.error('Payment was not completed. Please try again.');
+    const settleHere = (): void => {
+      if (settled) return;
+      settled = true;
+      if (redirectFailed) {
+        toast.error('Payment failed. Please try again.');
         void navigate(meetupPath, { replace: true });
         return;
       }
+      void (async () => {
+        const paid =
+          ticketId != null ? await waitForPaidTicket(ticketId) : false;
+        toast.success(
+          paid
+            ? 'Payment successful! Your spot is confirmed.'
+            : 'Payment received. Your ticket will be confirmed shortly.'
+        );
+        void navigate(meetupPath, { replace: true });
+      })();
+    };
 
-      const paid =
-        ticketId != null && ticketId !== ''
-          ? await waitForPaidTicket(ticketId)
-          : false;
-      dispatch(ticketSlice.util.invalidateTags(['Tickets']));
-      toast.success(
-        paid
-          ? 'RSVP successful! '
-          : 'Payment received. Your ticket will be confirmed shortly.'
-      );
-      void navigate(meetupPath, { replace: true });
-    })();
-  }, [params, navigate, dispatch, waitForPaidTicket]);
+    const ackTimer = window.setTimeout(settleHere, ACK_TIMEOUT_MS);
+
+    channel.onmessage = (event: MessageEvent<RsvpReturnMessage>) => {
+      if (event.data.ticketId !== ticketId) return;
+      if (event.data.type === 'ack') {
+        clearTimeout(ackTimer);
+        finalizedTimer = window.setTimeout(settleHere, FINALIZED_TIMEOUT_MS);
+      } else if (event.data.type === 'finalized') {
+        // If the browser refuses to close, settle here.
+        window.close();
+        settleHere();
+      }
+    };
+
+    // StrictMode double-mounts effects.
+    if (!announcedRef.current) {
+      announcedRef.current = true;
+      postRsvpReturnMessage({
+        type: 'return',
+        ticketId,
+        failed: redirectFailed,
+      });
+    }
+
+    return () => {
+      clearTimeout(ackTimer);
+      clearTimeout(finalizedTimer);
+      channel.close();
+    };
+  }, [ticketId, redirectFailed, meetupPath, navigate, waitForPaidTicket]);
 
   return (
     <Page>

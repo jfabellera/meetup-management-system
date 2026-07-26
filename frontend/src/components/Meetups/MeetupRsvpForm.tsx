@@ -31,6 +31,11 @@ import { useGetUserQuery } from '../../store/userSlice';
 import { formatMoney } from '../../util/money';
 import { hasMeetupEnded } from '../../util/timeUtil';
 import { HoldCountdown } from './HoldCountdown';
+import {
+  postRsvpReturnMessage,
+  RSVP_RETURN_CHANNEL,
+  type RsvpReturnMessage,
+} from '../../util/rsvpReturnChannel';
 import { PayButton, stripePromise } from './PaidRsvpPayment';
 
 const TicketHolderSchema = Yup.object().shape({
@@ -77,8 +82,16 @@ export const MeetupRsvpForm = ({
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
   const [paidTicketId, setPaidTicketId] = useState<string | null>(null);
 
+  // confirmPayment and the return tab's broadcast can both report the same
+  // payment.
+  const finalizedTicketRef = useRef<string | null>(null);
+
   // Only return to the modal once the webhook has secured the ticket as paid.
   const onPaymentSuccess = async (): Promise<void> => {
+    if (paidTicketId != null && finalizedTicketRef.current === paidTicketId) {
+      return;
+    }
+    finalizedTicketRef.current = paidTicketId;
     const paid =
       paidTicketId != null ? await waitForPaidTicket(paidTicketId) : false;
     dispatch(ticketSlice.util.invalidateTags(['Tickets']));
@@ -159,6 +172,36 @@ export const MeetupRsvpForm = ({
       })();
     },
   });
+
+  const onPaymentSuccessRef = useRef(onPaymentSuccess);
+  useEffect(() => {
+    onPaymentSuccessRef.current = onPaymentSuccess;
+  });
+  useEffect(() => {
+    if (paidTicketId == null) return;
+    const channel = new BroadcastChannel(RSVP_RETURN_CHANNEL);
+    channel.onmessage = (event: MessageEvent<RsvpReturnMessage>) => {
+      if (
+        event.data.type !== 'return' ||
+        event.data.ticketId !== paidTicketId
+      ) {
+        return;
+      }
+      postRsvpReturnMessage({ type: 'ack', ticketId: paidTicketId });
+      const done = (): void => {
+        postRsvpReturnMessage({ type: 'finalized', ticketId: paidTicketId });
+      };
+      if (event.data.failed === true) {
+        // confirmPayment already surfaced the failure; leave the step open.
+        done();
+      } else {
+        void onPaymentSuccessRef.current().finally(done);
+      }
+    };
+    return () => {
+      channel.close();
+    };
+  }, [paidTicketId]);
 
   // A reopened pending hold already holds a seat, so resume its payment.
   const resumeStartedRef = useRef(false);

@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useLazyGetTicketQuery } from '../store/ticketSlice';
 
 const POLL_ATTEMPTS = 30;
@@ -11,16 +12,19 @@ export const useWaitForPaidTicket = (): ((
 ) => Promise<boolean>) => {
   const [pollTicket] = useLazyGetTicketQuery();
 
-  return async (ticketId: string): Promise<boolean> => {
-    for (let i = 0; i < POLL_ATTEMPTS; i++) {
-      try {
-        const details = await pollTicket(ticketId).unwrap();
-        if (details.payment_status === 'paid') return true;
-      } catch {
-        // keep polling
+  return useCallback(
+    async (ticketId: string): Promise<boolean> => {
+      for (let i = 0; i < POLL_ATTEMPTS; i++) {
+        try {
+          const details = await pollTicket(ticketId).unwrap();
+          if (details.payment_status === 'paid') return true;
+        } catch {
+          // keep polling
+        }
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
       }
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-    }
-    return false;
-  };
+      return false;
+    },
+    [pollTicket]
+  );
 };
