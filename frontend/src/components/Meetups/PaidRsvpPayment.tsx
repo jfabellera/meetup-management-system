@@ -15,29 +15,30 @@ export const PayButton = ({
 }: {
   amountLabel: string;
   disabled?: boolean;
-  onSuccess: () => void;
+  onSuccess: () => void | Promise<void>;
 }): ReactNode => {
   const stripe = useStripe();
   const elements = useElements();
-  const [isPaying, setIsPaying] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'paying' | 'finalizing'>(
+    'idle'
+  );
 
   const onPay = (): void => {
     void (async () => {
       if (stripe == null || elements == null) return;
-      setIsPaying(true);
-      // redirect: 'if_required' keeps card payments on-site; the webhook
-      // finalizes the ticket.
+      setStatus('paying');
+      // redirect: 'if_required' keeps card payments on-site.
       const { error } = await stripe.confirmPayment({
         elements,
         redirect: 'if_required',
       });
       if (error != null) {
-        setIsPaying(false);
+        setStatus('idle');
         toast.error(error.message ?? 'Payment failed. Please try again.');
         return;
       }
-      toast.success('Payment received! Finalizing your ticket…');
-      onSuccess();
+      setStatus('finalizing');
+      await onSuccess();
     })();
   };
 
@@ -46,10 +47,10 @@ export const PayButton = ({
       type="button"
       size="lg"
       onClick={onPay}
-      disabled={stripe == null || isPaying || disabled}
+      disabled={stripe == null || status !== 'idle' || disabled}
     >
-      Pay {amountLabel}
-      {isPaying ? <Spinner /> : null}
+      {status === 'finalizing' ? 'Finalizing…' : `Pay ${amountLabel}`}
+      {status !== 'idle' ? <Spinner /> : null}
     </Button>
   );
 };

@@ -11,26 +11,27 @@ import {
 import { FormField } from '@/components/ui/form-field';
 import { Spinner } from '@/components/ui/spinner';
 import { type MeetupInfo, type SimpleTicketInfo } from '@keebmeet/shared';
+import { Elements, PaymentElement } from '@stripe/react-stripe-js';
 import { useFormik } from 'formik';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FiArrowLeft, FiLock, FiUserCheck, FiUserX } from 'react-icons/fi';
 import { toast } from 'sonner';
 import * as Yup from 'yup';
+import { useHoldCountdown } from '../../hooks/useHoldCountdown';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   ticketSlice,
   useCreateTicketMutation,
   useDeleteTicketMutation,
   useGetTicketQuery,
+  useLazyGetTicketQuery,
   useUpdateTicketMutation,
 } from '../../store/ticketSlice';
 import { useGetUserQuery } from '../../store/userSlice';
 import { formatMoney } from '../../util/money';
 import { hasMeetupEnded } from '../../util/timeUtil';
-import { PayButton, stripePromise } from './PaidRsvpPayment';
-import { Elements, PaymentElement } from '@stripe/react-stripe-js';
-import { useHoldCountdown } from '../../hooks/useHoldCountdown';
 import { HoldCountdown } from './HoldCountdown';
+import { PayButton, stripePromise } from './PaidRsvpPayment';
 
 const TicketHolderSchema = Yup.object().shape({
   displayName: Yup.string().required('Required'),
@@ -54,15 +55,7 @@ export const MeetupRsvpForm = ({
 }: MeetupRsvpFormProps): ReactNode => {
   const { user } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
-
-  const onPaymentSuccess = (): void => {
-    const refreshTickets = (): void => {
-      dispatch(ticketSlice.util.invalidateTags(['Tickets']));
-    };
-    refreshTickets();
-    setTimeout(refreshTickets, 2500);
-    onCollapse();
-  };
+  const [pollTicket] = useLazyGetTicketQuery();
 
   const { data: fullUser } = useGetUserQuery(user?.id ?? '', {
     skip: user == null,
@@ -82,6 +75,28 @@ export const MeetupRsvpForm = ({
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
+  const [paidTicketId, setPaidTicketId] = useState<string | null>(null);
+
+  // Only return to the modal once the webhook has secured the ticket as paid.
+  const onPaymentSuccess = async (): Promise<void> => {
+    let paid = false;
+    for (let i = 0; i < 30 && !paid && paidTicketId != null; i++) {
+      try {
+        const details = await pollTicket(paidTicketId).unwrap();
+        paid = details.payment_status === 'paid';
+      } catch {
+        // keep polling
+      }
+      if (!paid) await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    dispatch(ticketSlice.util.invalidateTags(['Tickets']));
+    toast.success(
+      paid
+        ? `You're going to ${meetup.name}!`
+        : 'Payment received. Your ticket will be confirmed shortly.'
+    );
+    onCollapse();
+  };
 
   const hasEnded = hasMeetupEnded(meetup);
 
@@ -140,6 +155,7 @@ export const MeetupRsvpForm = ({
             if (result.clientSecret != null) {
               setClientSecret(result.clientSecret);
               setHoldExpiresAt(result.holdExpiresAt ?? null);
+              setPaidTicketId(result.ticketId ?? null);
               return;
             }
             toast.success(`You're going to ${meetup.name}!`);
@@ -165,6 +181,7 @@ export const MeetupRsvpForm = ({
         if (result.clientSecret != null) {
           setClientSecret(result.clientSecret);
           setHoldExpiresAt(result.holdExpiresAt ?? null);
+          setPaidTicketId(result.ticketId ?? null);
         }
       } catch {
         // Fall back to the manual button.
