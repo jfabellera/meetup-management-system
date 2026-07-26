@@ -127,7 +127,8 @@ export const sendRsvpConfirmationEmail = async (
   meetupName: string,
   meetupDate: string,
   meetupLocation: string,
-  ticketId: string
+  ticketId: string,
+  receipt?: { amountPaid: string; receiptUrl?: string }
 ) => {
   const qrCode = await generateQrCodeBuffer(ticketId);
 
@@ -135,7 +136,13 @@ export const sendRsvpConfirmationEmail = async (
     from: 'KeebMeet <noreply@keebmeet.com>',
     to: [email],
     subject: `RSVP Confirmation for ${meetupName}`,
-    react: RsvpConfirmationEmail({ meetupName, meetupDate, meetupLocation }),
+    react: RsvpConfirmationEmail({
+      meetupName,
+      meetupDate,
+      meetupLocation,
+      amountPaid: receipt?.amountPaid,
+      receiptUrl: receipt?.receiptUrl,
+    }),
     attachments: [
       {
         filename: 'qr-code.png',

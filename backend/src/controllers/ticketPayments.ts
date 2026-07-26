@@ -53,6 +53,41 @@ export const ticketHolderFields = (
   ticket_holder_email: data.email ?? user.email,
 });
 
+const buildTicketReceipt = async (
+  ticket: Ticket
+): Promise<{ amountPaid: string; receiptUrl?: string } | undefined> => {
+  if (
+    ticket.payment_status !== 'paid' ||
+    ticket.amount_paid_cents == null ||
+    ticket.currency == null
+  ) {
+    return undefined;
+  }
+
+  const amountPaid = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: ticket.currency.toUpperCase(),
+  }).format(Number(ticket.amount_paid_cents) / 100);
+
+  let receiptUrl: string | undefined;
+  if (ticket.stripe_payment_intent_id != null) {
+    try {
+      const paymentIntent = await getStripe().paymentIntents.retrieve(
+        ticket.stripe_payment_intent_id,
+        { expand: ['latest_charge'] }
+      );
+      const charge = paymentIntent.latest_charge;
+      if (charge != null && typeof charge !== 'string') {
+        receiptUrl = charge.receipt_url ?? undefined;
+      }
+    } catch {
+      // Receipt link is best-effort; the confirmation still sends without it.
+    }
+  }
+
+  return { amountPaid, receiptUrl };
+};
+
 export const finalizeTicketSideEffects = async (
   ticket: Ticket,
   meetup: Meetup
@@ -66,7 +101,8 @@ export const finalizeTicketSideEffects = async (
       .utcOffset(meetup.utc_offset)
       .format('dddd, MMMM D, YYYY [at] h:mm A'),
     meetup.address,
-    ticket.id
+    ticket.id,
+    await buildTicketReceipt(ticket)
   );
 };
 
