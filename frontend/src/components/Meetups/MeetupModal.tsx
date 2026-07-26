@@ -25,6 +25,7 @@ import {
   FiExternalLink,
   FiLink,
   FiMapPin,
+  FiTag,
   FiUser,
   FiUserCheck,
   FiX,
@@ -333,6 +334,18 @@ export const MeetupModal = ({
                   </DialogTitle>
                 </DialogHeader>
                 <div className="flex flex-col gap-1 pb-4 font-semibold">
+                  {paidTicketType != null ? (
+                    <div className="flex items-start gap-2">
+                      <FiTag className="mt-1 shrink-0" />
+                      <p>
+                        {formatMoney(
+                          paidTicketType.price_cents,
+                          paidTicketType.currency
+                        )}
+                      </p>
+                    </div>
+                  ) : null}
+
                   {/* Date */}
                   <div className="flex items-start gap-2">
                     <FiCalendar className="mt-1 shrink-0" />
@@ -424,21 +437,11 @@ export const MeetupModal = ({
               ) : null}
 
               {showCapacity && meetup.tickets != null ? (
-                <div className="flex items-center gap-3">
-                  <MeetupCapacityStatus
-                    available={meetup.tickets.available}
-                    total={meetup.tickets.total}
-                    ended={hasEnded}
-                  />
-                  {paidTicketType != null ? (
-                    <span className="text-sm font-semibold">
-                      {formatMoney(
-                        paidTicketType.price_cents,
-                        paidTicketType.currency
-                      )}
-                    </span>
-                  ) : null}
-                </div>
+                <MeetupCapacityStatus
+                  available={meetup.tickets.available}
+                  total={meetup.tickets.total}
+                  ended={hasEnded}
+                />
               ) : (
                 <span />
               )}
