@@ -15,6 +15,11 @@ const MeetupFormSchema = Yup.object().shape({
   capacity: Yup.number()
     .moreThan(0, 'Must be greater than 0')
     .required('Required'),
+  price: Yup.number().when('isPaid', {
+    is: true,
+    then: (schema) => schema.moreThan(0, 'Must be greater than 0'),
+    otherwise: (schema) => schema.min(0, 'Must be non-negative'),
+  }),
   imageKey: Yup.string(),
   defaultRaffleEntries: Yup.number()
     .min(0, 'Must be non-negative')

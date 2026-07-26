@@ -59,6 +59,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
       address: '',
       duration: 0,
       capacity: 0,
+      isPaid: false,
       price: 0,
       imageUrl: '',
       imageKey: '',
@@ -171,6 +172,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         address: meetup?.location.full_address ?? '',
         duration: meetup?.duration_hours ?? 0,
         capacity: meetup?.tickets?.total ?? 0,
+        isPaid: meetup?.ticket_types?.[0] != null,
         price:
           meetup?.ticket_types?.[0] != null
             ? meetup.ticket_types[0].price_cents / 100
@@ -462,16 +464,29 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               onBlur={formik.handleBlur}
               errorMessage={formik.errors.capacity}
             />
+            {isEditable ? (
+              <div className="flex items-center gap-2 py-2">
+                <Checkbox
+                  id="isPaid"
+                  name="isPaid"
+                  checked={formik.values.isPaid}
+                  onCheckedChange={(checked) => {
+                    const isPaid = checked === true;
+                    void formik.setFieldValue('isPaid', isPaid);
+                    if (!isPaid) void formik.setFieldValue('price', 0);
+                  }}
+                />
+                <Label htmlFor="isPaid">Charge for tickets</Label>
+              </div>
+            ) : null}
             <EditableFormField
-              name={'Ticket price in USD (0 = free)'}
-              value={
-                meetup?.ticket_types?.[0] != null
-                  ? String(meetup.ticket_types[0].price_cents / 100)
-                  : '0'
-              }
+              name={'Ticket price in USD'}
+              key={`price-${formik.values.isPaid}`}
+              value={formik.values.price}
               editable={isEditable}
               id={'price'}
               type={'number'}
+              disabled={!formik.values.isPaid}
               isInvalid={formik.errors.price != null && formik.touched.price}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}

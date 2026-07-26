@@ -51,6 +51,7 @@ const NewMeetupPage = (): ReactNode => {
       address: '',
       duration: 0,
       capacity: 0,
+      isPaid: false,
       price: 0,
       imageUrl: '',
       imageKey: '',
@@ -83,7 +84,7 @@ const NewMeetupPage = (): ReactNode => {
         group_ids: formik.values.groupIds,
         tag_ids: formik.values.tagIds,
         ticket_type:
-          formik.values.price > 0
+          formik.values.isPaid && formik.values.price > 0
             ? { price_cents: Math.round(formik.values.price * 100) }
             : undefined,
       });
@@ -277,11 +278,29 @@ const NewMeetupPage = (): ReactNode => {
                   />
                 </div>
 
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="isPaid" className="pr-4">
+                    Will this meetup charge for tickets?
+                  </Label>
+                  <Checkbox
+                    id="isPaid"
+                    name="isPaid"
+                    checked={formik.values.isPaid}
+                    onCheckedChange={(checked) => {
+                      const isPaid = checked === true;
+                      void formik.setFieldValue('isPaid', isPaid);
+                      if (!isPaid) void formik.setFieldValue('price', 0);
+                    }}
+                  />
+                  <span>Yes</span>
+                </div>
+
                 <FormField
                   formik={formik}
                   name="price"
-                  label="Ticket price in USD (0 = free)"
+                  label="Ticket price in USD"
                   type="number"
+                  disabled={!formik.values.isPaid}
                 />
 
                 <FormField formik={formik} name="address" label="Address" />

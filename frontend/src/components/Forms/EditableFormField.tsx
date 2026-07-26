@@ -10,6 +10,7 @@ interface FieldDisplayProps {
   id: string;
   type?: React.HTMLInputTypeAttribute;
   multiline?: boolean;
+  disabled?: boolean;
   isInvalid?: boolean;
   onChange?: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
   onBlur?: React.FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
@@ -24,6 +25,7 @@ const EditableFormField = ({
   id,
   type,
   multiline,
+  disabled,
   isInvalid,
   onChange,
   onBlur,
@@ -55,6 +57,7 @@ const EditableFormField = ({
               id={id}
               type={type}
               name={id}
+              disabled={disabled}
               aria-invalid={isInvalid}
               onChange={onChange}
               onBlur={onBlur}
