@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { type Response } from 'express';
+import { LessThan } from 'typeorm';
 import { socket } from '../Server';
 import config from '../config';
 import { AppDataSource } from '../datasource';
@@ -192,6 +193,10 @@ export const createPaidTicket = async (
     ticket.currency = ticketType.currency;
     await ticket.save();
 
+    // The hold counts against availability, so tell other clients to refetch.
+    socket.emit('meetup:update', { meetupId: meetup.id });
+    await refreshMeetupDiscordMessage(meetup.id);
+
     return res.status(201).json({
       ticketId: ticket.id,
       clientSecret: paymentIntent.client_secret,
@@ -308,10 +313,19 @@ export const markTicketRefunded = async (
  * pending rows, this just clears them out.
  */
 export const sweepExpiredHolds = async (): Promise<void> => {
-  await Ticket.createQueryBuilder()
-    .delete()
-    .where(
-      "payment_status = 'pending' AND hold_expires_at IS NOT NULL AND hold_expires_at < now()"
-    )
-    .execute();
+  const expired = await Ticket.find({
+    where: { payment_status: 'pending', hold_expires_at: LessThan(new Date()) },
+    relations: { meetup: true },
+    select: { id: true, meetup: { id: true } },
+  });
+  if (expired.length === 0) return;
+
+  await Ticket.remove(expired);
+
+  // Each freed seat is now available again, so refresh the affected meetups.
+  const meetupIds = [...new Set(expired.map((ticket) => ticket.meetup.id))];
+  for (const meetupId of meetupIds) {
+    socket.emit('meetup:update', { meetupId });
+    await refreshMeetupDiscordMessage(meetupId);
+  }
 };
