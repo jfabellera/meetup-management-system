@@ -1,7 +1,12 @@
 /// <reference types="jest" />
 
 jest.mock('../entity/Ticket', () => ({
-  Ticket: { count: jest.fn(), find: jest.fn(), findOne: jest.fn() },
+  Ticket: {
+    count: jest.fn(),
+    find: jest.fn(),
+    findOne: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  },
 }));
 jest.mock('./meetupDiscordMessage', () => ({
   refreshMeetupDiscordMessage: jest.fn(),
@@ -35,17 +40,24 @@ describe('getMeetupEnd', () => {
 });
 
 describe('isMeetupAtCapacity', () => {
-  it('is true when the ticket count meets or exceeds capacity', async () => {
-    mockedTicket.count.mockResolvedValue(5);
+  const mockActiveCount = (count: number): void => {
+    const qb = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getCount: jest.fn().mockResolvedValue(count),
+    };
+    mockedTicket.createQueryBuilder.mockReturnValue(qb as any);
+  };
+
+  it('is true when the active ticket count meets or exceeds capacity', async () => {
+    mockActiveCount(5);
 
     expect(await isMeetupAtCapacity('1', 5)).toBe(true);
-    expect(mockedTicket.count).toHaveBeenCalledWith({
-      where: { meetup: { id: '1' } },
-    });
+    expect(mockedTicket.createQueryBuilder).toHaveBeenCalledWith('ticket');
   });
 
   it('is false when below capacity', async () => {
-    mockedTicket.count.mockResolvedValue(4);
+    mockActiveCount(4);
 
     expect(await isMeetupAtCapacity('1', 5)).toBe(false);
   });

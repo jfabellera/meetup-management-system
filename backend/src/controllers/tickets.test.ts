@@ -1,5 +1,6 @@
 /// <reference types="jest" />
 import { type Request, type Response } from 'express';
+import { In } from 'typeorm';
 
 // ---- Mocks -----------------------------------------------------------------
 
@@ -12,10 +13,14 @@ jest.mock('../entity/Ticket', () => ({
     findOneBy: jest.fn(),
     create: jest.fn(),
     count: jest.fn(),
+    createQueryBuilder: jest.fn(),
   },
 }));
 jest.mock('../entity/Meetup', () => ({
   Meetup: { findOne: jest.fn() },
+}));
+jest.mock('../entity/TicketType', () => ({
+  TicketType: { findOne: jest.fn() },
 }));
 jest.mock('../util/eventbriteApi', () => ({
   getEventbriteAttendeeByUri: jest.fn(),
@@ -30,6 +35,7 @@ jest.mock('../util/meetupDiscordMessage', () => ({
 import { socket } from '../Server';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
+import { TicketType } from '../entity/TicketType';
 import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
 import { sendRsvpConfirmationEmail } from '../util/email';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
@@ -47,6 +53,16 @@ import {
 
 const mockedTicket = jest.mocked(Ticket);
 const mockedMeetup = jest.mocked(Meetup);
+const mockedTicketType = jest.mocked(TicketType);
+
+// isMeetupAtCapacity now counts via a query builder; stub its getCount.
+const setActiveTicketCount = (count: number): void => {
+  mockedTicket.createQueryBuilder.mockReturnValue({
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    getCount: jest.fn().mockResolvedValue(count),
+  } as any);
+};
 const mockedGetAttendee = jest.mocked(getEventbriteAttendeeByUri);
 const mockedSocket = jest.mocked(socket);
 const mockedRefresh = jest.mocked(refreshMeetupDiscordMessage);
@@ -134,8 +150,9 @@ beforeEach(() => {
     });
     return ticket;
   });
-  // Default: meetup is below capacity.
-  mockedTicket.count.mockResolvedValue(0);
+  // Default: free meetup (no ticket type) and below capacity.
+  mockedTicketType.findOne.mockResolvedValue(null);
+  setActiveTicketCount(0);
 });
 
 // ---- getAllTickets / getTicket ---------------------------------------------
@@ -230,7 +247,7 @@ describe('createTicket', () => {
 
   it('returns 400 when the meetup is at capacity', async () => {
     mockedTicket.findOne.mockResolvedValue(null);
-    mockedTicket.count.mockResolvedValue(5);
+    setActiveTicketCount(5);
     const res = mockResponse();
     res.locals.meetup = fakeMeetup({ capacity: 5 });
     res.locals.requestor = fakeRequestor();
@@ -299,7 +316,9 @@ describe('createTicket', () => {
       'Keeb Night',
       expect.any(String),
       '123 Main St',
-      'new-ticket-id'
+      'new-ticket-id',
+      // Free RSVP: no receipt.
+      undefined
     );
     expect(res.statusCode).toBe(201);
   });
@@ -376,6 +395,24 @@ describe('createTicket', () => {
 
     expect(res.statusCode).toBe(400);
     expect(mockedTicket.create).not.toHaveBeenCalled();
+  });
+
+  it('excludes refunded tickets from the duplicate check so a refunded attendee can RSVP again', async () => {
+    mockedTicket.findOne.mockResolvedValue(null);
+    const res = mockResponse();
+    res.locals.meetup = fakeMeetup();
+    res.locals.requestor = fakeRequestor();
+
+    await createTicket(mockRequest(), res);
+
+    expect(mockedTicket.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          payment_status: In(['confirmed', 'pending', 'paid']),
+        }),
+      })
+    );
+    expect(res.statusCode).toBe(201);
   });
 });
 
@@ -539,8 +576,39 @@ describe('updateTicket', () => {
 // ---- deleteTicket ----------------------------------------------------------
 
 describe('deleteTicket', () => {
+  it('rejects (400) cancelling a paid ticket (the organizer refunds instead)', async () => {
+    const ticket = {
+      payment_status: 'paid',
+      meetup: { id: '10' },
+      remove: jest.fn().mockResolvedValue(undefined),
+    };
+    const res = mockResponse();
+    res.locals.ticket = ticket;
+
+    await deleteTicket(mockRequest(), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(ticket.remove).not.toHaveBeenCalled();
+  });
+
+  it('rejects (400) cancelling an already-refunded ticket', async () => {
+    const ticket = {
+      payment_status: 'refunded',
+      meetup: { id: '10' },
+      remove: jest.fn().mockResolvedValue(undefined),
+    };
+    const res = mockResponse();
+    res.locals.ticket = ticket;
+
+    await deleteTicket(mockRequest(), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(ticket.remove).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when the meetup has fully ended (past its date + duration)', async () => {
     const ticket = {
+      payment_status: 'confirmed',
       // Started 3h ago, ran for 2h -> ended 1h ago.
       meetup: { id: '10', date: hoursFromNow(-3), duration_hours: 2 },
       remove: jest.fn().mockResolvedValue(undefined),
@@ -606,6 +674,30 @@ describe('checkInTicket', () => {
     expect(res.statusCode).toBe(400);
     expect(res.body).toEqual({
       message: 'Ticket must be checked in via Eventbrite.',
+    });
+  });
+
+  it('rejects (400) a refunded ticket as invalid', async () => {
+    const res = mockResponse();
+    res.locals.ticket = { payment_status: 'refunded' };
+
+    await checkInTicket(mockRequest(), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({
+      message: 'This ticket is not valid for check-in.',
+    });
+  });
+
+  it('rejects (400) a pending (unpaid) hold as invalid', async () => {
+    const res = mockResponse();
+    res.locals.ticket = { payment_status: 'pending' };
+
+    await checkInTicket(mockRequest(), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({
+      message: 'This ticket is not valid for check-in.',
     });
   });
 

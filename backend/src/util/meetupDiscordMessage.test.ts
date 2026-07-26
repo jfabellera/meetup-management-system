@@ -25,6 +25,7 @@ import {
   getMeetupAttendeeDisplayNames,
   refreshMeetupDiscordMessage,
 } from './meetupDiscordMessage';
+import { In } from 'typeorm';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { editEmbedMessage } from './discord';
@@ -74,7 +75,10 @@ describe('getMeetupAttendeeDisplayNames', () => {
     expect(result).toEqual(['Alice', 'Bob']);
     expect(mockedTicket.find).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { meetup: { id: '1' } },
+        where: {
+          meetup: { id: '1' },
+          payment_status: In(['confirmed', 'paid']),
+        },
         order: { created_at: 'ASC' },
       })
     );
