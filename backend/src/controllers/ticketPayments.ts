@@ -32,6 +32,53 @@ const RESUMABLE_PI_STATUSES: string[] = [
 
 class CapacityError extends Error {}
 
+const holdTimers = new Map<string, NodeJS.Timeout>();
+
+const releaseExpiredHold = async (ticketId: string): Promise<void> => {
+  holdTimers.delete(ticketId);
+  const ticket = await Ticket.findOne({
+    where: { id: ticketId },
+    relations: { meetup: true },
+  });
+  // A paid/cancelled hold resolved before the timer fired; nothing to release.
+  if (ticket == null || ticket.payment_status !== 'pending') return;
+
+  const meetupId = ticket.meetup.id;
+  await ticket.remove();
+  socket.emit('meetup:update', { meetupId });
+  await refreshMeetupDiscordMessage(meetupId);
+};
+
+const cancelHoldRelease = (ticketId: string): void => {
+  const timer = holdTimers.get(ticketId);
+  if (timer != null) {
+    clearTimeout(timer);
+    holdTimers.delete(ticketId);
+  }
+};
+
+const scheduleHoldRelease = (ticketId: string, expiresAt: Date): void => {
+  cancelHoldRelease(ticketId);
+  const delay = Math.max(0, expiresAt.getTime() - Date.now());
+  holdTimers.set(
+    ticketId,
+    setTimeout(() => void releaseExpiredHold(ticketId), delay)
+  );
+};
+
+// Re-arm timers for holds already in the DB (called once on boot).
+export const scheduleExistingHolds = async (): Promise<void> => {
+  const holds = await Ticket.find({
+    where: { payment_status: 'pending' },
+    select: { id: true, hold_expires_at: true },
+  });
+  for (const hold of holds) {
+    if (hold.hold_expires_at != null) {
+      scheduleHoldRelease(hold.id, hold.hold_expires_at);
+    }
+  }
+};
+
 /** Ticket-holder details, defaulting to the requestor's account fields. */
 export const ticketHolderFields = (
   data: {
@@ -197,6 +244,10 @@ export const createPaidTicket = async (
     socket.emit('meetup:update', { meetupId: meetup.id });
     await refreshMeetupDiscordMessage(meetup.id);
 
+    if (ticket.hold_expires_at != null) {
+      scheduleHoldRelease(ticket.id, ticket.hold_expires_at);
+    }
+
     return res.status(201).json({
       ticketId: ticket.id,
       clientSecret: paymentIntent.client_secret,
@@ -261,6 +312,7 @@ export const finalizePaidTicket = async (
   });
   if (ticket == null || ticket.payment_status === 'paid') return;
 
+  cancelHoldRelease(ticket.id);
   ticket.payment_status = 'paid';
   ticket.hold_expires_at = null;
   await ticket.save();
@@ -280,6 +332,7 @@ export const releasePaidTicketHold = async (
   });
   if (ticket == null || ticket.payment_status !== 'pending') return;
 
+  cancelHoldRelease(ticket.id);
   const meetupId = ticket.meetup.id;
   await ticket.remove();
   socket.emit('meetup:update', { meetupId });
@@ -320,6 +373,7 @@ export const sweepExpiredHolds = async (): Promise<void> => {
   });
   if (expired.length === 0) return;
 
+  expired.forEach((ticket) => cancelHoldRelease(ticket.id));
   await Ticket.remove(expired);
 
   // Each freed seat is now available again, so refresh the affected meetups.

@@ -2,7 +2,10 @@ import express from 'express';
 import { io } from 'socket.io-client';
 import config from './config';
 import { handleStripeWebhook } from './controllers/stripe';
-import { sweepExpiredHolds } from './controllers/ticketPayments';
+import {
+  scheduleExistingHolds,
+  sweepExpiredHolds,
+} from './controllers/ticketPayments';
 import { AppDataSource } from './datasource';
 import discordRoutes from './routes/discord';
 import eventbriteRoutes from './routes/eventbrite';
@@ -17,7 +20,7 @@ import tagRoutes from './routes/tags';
 import ticketRoutes from './routes/tickets';
 import userRoutes from './routes/users';
 
-void AppDataSource.initialize();
+void AppDataSource.initialize().then(scheduleExistingHolds);
 export const socket = io(config.socketUrl);
 
 // Abandoned payment garbage collector
