@@ -63,7 +63,7 @@ export const createTicket = async (
     return res.status(400).json(result.error);
   }
 
-  // Check if ticket already exists
+  // Check if an active ticket already exists
   const existingTicket = await Ticket.findOne({
     relations: {
       meetup: true,
@@ -72,6 +72,7 @@ export const createTicket = async (
     where: {
       meetup: { id: meetup.id },
       user: { id: user.id },
+      payment_status: In(['confirmed', 'pending', 'paid']),
     },
   });
 
@@ -257,6 +258,15 @@ export const checkInTicket = async (
   res: Response
 ): Promise<Response> => {
   const ticket = res.locals.ticket as Ticket;
+
+  if (
+    ticket.payment_status === 'refunded' ||
+    ticket.payment_status === 'pending'
+  ) {
+    return res
+      .status(400)
+      .json({ message: 'This ticket is not valid for check-in.' });
+  }
 
   if (ticket.eventbrite_attendee_id != null) {
     return res.status(400).json({

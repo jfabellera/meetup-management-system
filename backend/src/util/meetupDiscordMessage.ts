@@ -1,3 +1,4 @@
+import { In } from 'typeorm';
 import config from '../config';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
@@ -66,7 +67,10 @@ export const getMeetupAttendeeDisplayNames = async (
   meetupId: string
 ): Promise<string[]> => {
   const tickets = await Ticket.find({
-    where: { meetup: { id: meetupId } },
+    where: {
+      meetup: { id: meetupId },
+      payment_status: In(['confirmed', 'paid']),
+    },
     select: { ticket_holder_display_name: true },
     order: { created_at: 'ASC' },
   });
