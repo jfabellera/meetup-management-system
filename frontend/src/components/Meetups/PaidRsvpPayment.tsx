@@ -29,9 +29,7 @@ export const PayButton = ({
     void (async () => {
       if (stripe == null || elements == null) return;
       setStatus('paying');
-      // redirect: 'if_required' keeps cards on-site; redirect methods still
-      // need a return_url to come back to.
-      const { error } = await stripe.confirmPayment({
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: { return_url: returnUrl },
         redirect: 'if_required',
@@ -41,8 +39,16 @@ export const PayButton = ({
         toast.error(error.message ?? 'Payment failed. Please try again.');
         return;
       }
-      setStatus('finalizing');
-      await onSuccess();
+      if (
+        paymentIntent?.status === 'succeeded' ||
+        paymentIntent?.status === 'processing'
+      ) {
+        setStatus('finalizing');
+        await onSuccess();
+      } else {
+        setStatus('idle');
+        toast.error('Payment was not completed. Please try again.');
+      }
     })();
   };
 
