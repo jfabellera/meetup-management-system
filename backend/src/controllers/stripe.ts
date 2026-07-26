@@ -209,7 +209,6 @@ export const handleStripeWebhook = async (
       case 'payment_intent.succeeded':
         await finalizePaidTicket(event.data.object.id);
         break;
-      case 'payment_intent.payment_failed':
       case 'payment_intent.canceled':
         await releasePaidTicketHold(event.data.object.id);
         break;
