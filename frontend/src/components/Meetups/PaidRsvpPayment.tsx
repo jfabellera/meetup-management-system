@@ -11,10 +11,12 @@ export const stripePromise = loadStripe(config.stripePublishableKey);
 export const PayButton = ({
   amountLabel,
   disabled,
+  returnUrl,
   onSuccess,
 }: {
   amountLabel: string;
   disabled?: boolean;
+  returnUrl: string;
   onSuccess: () => void | Promise<void>;
 }): ReactNode => {
   const stripe = useStripe();
@@ -27,9 +29,11 @@ export const PayButton = ({
     void (async () => {
       if (stripe == null || elements == null) return;
       setStatus('paying');
-      // redirect: 'if_required' keeps card payments on-site.
+      // redirect: 'if_required' keeps cards on-site; redirect methods still
+      // need a return_url to come back to.
       const { error } = await stripe.confirmPayment({
         elements,
+        confirmParams: { return_url: returnUrl },
         redirect: 'if_required',
       });
       if (error != null) {

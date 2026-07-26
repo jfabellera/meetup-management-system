@@ -24,9 +24,9 @@ import {
   useCreateTicketMutation,
   useDeleteTicketMutation,
   useGetTicketQuery,
-  useLazyGetTicketQuery,
   useUpdateTicketMutation,
 } from '../../store/ticketSlice';
+import { useWaitForPaidTicket } from '../../hooks/useWaitForPaidTicket';
 import { useGetUserQuery } from '../../store/userSlice';
 import { formatMoney } from '../../util/money';
 import { hasMeetupEnded } from '../../util/timeUtil';
@@ -55,7 +55,7 @@ export const MeetupRsvpForm = ({
 }: MeetupRsvpFormProps): ReactNode => {
   const { user } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
-  const [pollTicket] = useLazyGetTicketQuery();
+  const waitForPaidTicket = useWaitForPaidTicket();
 
   const { data: fullUser } = useGetUserQuery(user?.id ?? '', {
     skip: user == null,
@@ -79,16 +79,8 @@ export const MeetupRsvpForm = ({
 
   // Only return to the modal once the webhook has secured the ticket as paid.
   const onPaymentSuccess = async (): Promise<void> => {
-    let paid = false;
-    for (let i = 0; i < 30 && !paid && paidTicketId != null; i++) {
-      try {
-        const details = await pollTicket(paidTicketId).unwrap();
-        paid = details.payment_status === 'paid';
-      } catch {
-        // keep polling
-      }
-      if (!paid) await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    const paid =
+      paidTicketId != null ? await waitForPaidTicket(paidTicketId) : false;
     dispatch(ticketSlice.util.invalidateTags(['Tickets']));
     toast.success(
       paid
@@ -292,6 +284,7 @@ export const MeetupRsvpForm = ({
           <PayButton
             amountLabel={priceLabel}
             disabled={!isLoggedIn || hasEnded}
+            returnUrl={`${window.location.origin}/rsvp/return?ticket=${paidTicketId ?? ''}&meetup=${meetup.slug}`}
             onSuccess={onPaymentSuccess}
           />
         ) : (
