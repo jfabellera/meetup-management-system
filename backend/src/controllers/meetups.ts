@@ -4,6 +4,7 @@ import {
   createMeetupSchema,
   editMeetupSchema,
   SLUG_REGEX,
+  TICKET_CURRENCY,
   transferMeetupSchema,
   type EditMeetupPayload,
   type MeetupDisplayAssets,
@@ -32,6 +33,7 @@ import { RaffleRecord } from '../entity/RaffleRecord';
 import { RaffleWinner } from '../entity/RaffleWinner';
 import { Tag } from '../entity/Tag';
 import { Ticket } from '../entity/Ticket';
+import { TicketType } from '../entity/TicketType';
 import { User } from '../entity/User';
 import { deleteEmbedMessage } from '../util/discord';
 import { sendMeetupTransferredEmail } from '../util/email';
@@ -66,6 +68,7 @@ import {
 } from '../util/objectStorage';
 import { notifyAddedOrganizers } from '../util/organizerAddedNotification';
 import { hmacTicket } from '../util/qrCode';
+import { countActiveTickets } from '../util/rsvp';
 import { decrypt } from '../util/security';
 import { slugify, uniqueMeetupSlug } from '../util/slug';
 import { syncEventbriteAttendee } from './tickets';
@@ -148,18 +151,24 @@ const mapMeetupInfo = async (
     }
 
     // Get ticket details
-    const ticketCount = await Ticket.count({
-      where: {
-        meetup: {
-          id: meetup.id,
-        },
-      },
-    });
+    const ticketCount = await countActiveTickets(meetup.id);
+    const available = meetup.capacity - ticketCount;
 
     meetupInfo.tickets = {
       total: meetup.capacity,
-      available: meetup.capacity - ticketCount,
+      available,
     };
+
+    if (meetup.ticketTypes != null) {
+      meetupInfo.ticket_types = meetup.ticketTypes.map((ticketType) => ({
+        id: ticketType.id,
+        name: ticketType.name,
+        price_cents: Number(ticketType.price_cents),
+        currency: ticketType.currency,
+        capacity: ticketType.capacity ?? undefined,
+        available,
+      }));
+    }
   }
 
   return meetupInfo;
@@ -207,7 +216,9 @@ const getMeetupIdsWithTags = async (tagIds: string[]): Promise<string[]> => {
     .from('meetups_tags', 'mt')
     .where('mt.tag_id IN (:...tagIds)', { tagIds })
     .groupBy('mt.meetup_id')
-    .having('COUNT(DISTINCT mt.tag_id) = :tagCount', { tagCount: tagIds.length })
+    .having('COUNT(DISTINCT mt.tag_id) = :tagCount', {
+      tagCount: tagIds.length,
+    })
     .getRawMany<{ meetup_id: string }>();
   return rows.map((row) => String(row.meetup_id));
 };
@@ -394,6 +405,7 @@ export const getMeetup = async (
       eventbriteRecord: true,
       groups: true,
       tags: true,
+      ticketTypes: true,
     },
     where: {
       slug,
@@ -507,6 +519,18 @@ export const createMeetup = async (
 
   const requestor = res.locals.requestor as User;
 
+  // A paid ticket type needs the lead organizer's payouts wired up
+  if (
+    result.data.ticket_type != null &&
+    result.data.ticket_type.price_cents > 0 &&
+    !requestor.stripe_charges_enabled
+  ) {
+    return res.status(400).json({
+      message:
+        'Connect a Stripe account with payments enabled before charging for tickets.',
+    });
+  }
+
   // The creator owns the meetup as its lead organizer. `organizers` holds only
   // the additional (co-)organizers, so the requestor is not added there.
   newMeetup.lead_organizer = requestor;
@@ -583,6 +607,18 @@ export const createMeetup = async (
   newMeetup.tags = await resolveTags(result.data.tag_ids ?? []);
 
   await newMeetup.save();
+
+  if (result.data.ticket_type != null) {
+    const ticketType = TicketType.create({
+      meetup: newMeetup,
+      price_cents: String(result.data.ticket_type.price_cents),
+      currency: TICKET_CURRENCY,
+    });
+    if (result.data.ticket_type.name != null) {
+      ticketType.name = result.data.ticket_type.name;
+    }
+    await ticketType.save();
+  }
 
   return res.status(201).json(newMeetup);
 };
@@ -941,6 +977,18 @@ export const updateMeetup = async (
     });
   }
 
+  // A paid ticket type needs the lead organizer's payouts wired up
+  if (
+    result.data.ticket_type != null &&
+    result.data.ticket_type.price_cents > 0 &&
+    !(meetup.lead_organizer?.stripe_charges_enabled ?? false)
+  ) {
+    return res.status(400).json({
+      message:
+        'The lead organizer must connect a Stripe account with payments enabled before charging for tickets.',
+    });
+  }
+
   // Check if meetup name is taken
   const existingMeetup = await Meetup.findOne({
     where: {
@@ -1128,6 +1176,34 @@ export const updateMeetup = async (
         .relation(Meetup, 'tags')
         .of(meetup.id)
         .addAndRemove(toAddTags, toRemoveTags);
+    }
+  }
+
+  // TODO: When we support multiple ticket types, this will need to be updated
+  // to handle that. For now, we only support a single ticket type per meetup.
+  // Sync the meetup's single ticket type: undefined = leave as-is, null =
+  // remove, object = create or update the one type
+  if (result.data.ticket_type !== undefined) {
+    const desired = result.data.ticket_type;
+    const existing = await TicketType.findOne({
+      where: { meetup: { id: meetup.id } },
+    });
+
+    if (desired == null) {
+      if (existing != null) await existing.remove();
+    } else if (existing != null) {
+      existing.price_cents = String(desired.price_cents);
+      existing.currency = TICKET_CURRENCY;
+      if (desired.name != null) existing.name = desired.name;
+      await existing.save();
+    } else {
+      const ticketType = TicketType.create({
+        meetup,
+        price_cents: String(desired.price_cents),
+        currency: TICKET_CURRENCY,
+      });
+      if (desired.name != null) ticketType.name = desired.name;
+      await ticketType.save();
     }
   }
 
@@ -1377,6 +1453,7 @@ export const getMeetupAttendees = async (
         raffle_wins: true,
         eventbrite_attendee_id: true,
         rsvp_method: true,
+        payment_status: true,
       },
     },
     relations: { tickets: { user: true }, eventbriteRecord: true },
@@ -1404,6 +1481,7 @@ export const getMeetupAttendees = async (
       raffle_wins: ticket.raffle_wins,
       qr_code_value: qrCodeValue,
       rsvp_method: ticket.rsvp_method,
+      payment_status: ticket.payment_status,
     };
 
     if (ticket.is_checked_in) {

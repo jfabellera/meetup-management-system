@@ -1,7 +1,9 @@
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -27,7 +29,31 @@ import { useGetMeetupQuery } from '../store/meetupSlice';
 import {
   useEditAttendeeMutation,
   useGetMeetupAttendeesQuery,
+  useRefundAttendeeMutation,
 } from '../store/organizerSlice';
+
+const paymentStatusBadge = (
+  status: TicketInfo['payment_status']
+): ReactNode => {
+  switch (status) {
+    case 'paid':
+      return <Badge className="bg-green-600 text-white">Paid</Badge>;
+    case 'pending':
+      return (
+        <Badge
+          variant="outline"
+          className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+        >
+          Pending
+        </Badge>
+      );
+    case 'refunded':
+      return <Badge variant="secondary">Refunded</Badge>;
+    default:
+      // Free RSVP ('confirmed') — no payment to show.
+      return null;
+  }
+};
 
 const ManageMeetupAttendeesPage = (): ReactNode => {
   const { meetupId } = useParams();
@@ -43,11 +69,17 @@ const ManageMeetupAttendeesPage = (): ReactNode => {
   );
 
   const [editAttendee, { isLoading: isSaving }] = useEditAttendeeMutation();
+  const [refundAttendee, { isLoading: isRefunding }] =
+    useRefundAttendeeMutation();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const [viewing, setViewing] = useState<TicketInfo | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [raffleEntries, setRaffleEntries] = useState<string>('');
+  const [refundConfirmOpen, setRefundConfirmOpen] = useState(false);
+
+  const isPaidMeetup =
+    meetup?.ticket_types?.some((type) => type.price_cents > 0) ?? false;
 
   const sortedAttendees = useMemo(
     () =>
@@ -120,6 +152,26 @@ const ManageMeetupAttendeesPage = (): ReactNode => {
     })();
   };
 
+  const handleRefund = (): void => {
+    if (viewing == null) return;
+
+    void (async () => {
+      const result = await refundAttendee(viewing.id);
+
+      if ('error' in result) {
+        toast.error('Refund failed', {
+          description: `Could not refund ${viewing.ticket_holder_display_name}`,
+        });
+      } else {
+        toast.success('Ticket refunded', {
+          description: `${viewing.ticket_holder_display_name} was refunded`,
+        });
+        setViewing({ ...viewing, payment_status: 'refunded' });
+        setRefundConfirmOpen(false);
+      }
+    })();
+  };
+
   return (
     <div className="bg-card text-card-foreground m-2 rounded-md p-2 shadow-sm md:m-4">
       <h2 className="px-6 py-4 text-2xl font-semibold">Attendees</h2>
@@ -127,6 +179,7 @@ const ManageMeetupAttendeesPage = (): ReactNode => {
         <TableHeader>
           <TableRow>
             <TableHead>Display Name</TableHead>
+            {isPaidMeetup ? <TableHead>Status</TableHead> : null}
             <TableHead className="hidden md:table-cell">First Name</TableHead>
             <TableHead className="hidden md:table-cell">Last Name</TableHead>
             <TableHead className="hidden text-center md:table-cell">
@@ -150,6 +203,11 @@ const ManageMeetupAttendeesPage = (): ReactNode => {
                   }}
                 >
                   <TableCell>{attendee.ticket_holder_display_name}</TableCell>
+                  {isPaidMeetup ? (
+                    <TableCell>
+                      {paymentStatusBadge(attendee.payment_status)}
+                    </TableCell>
+                  ) : null}
                   <TableCell className="hidden md:table-cell">
                     {attendee.ticket_holder_first_name}
                   </TableCell>
@@ -203,6 +261,15 @@ const ManageMeetupAttendeesPage = (): ReactNode => {
                 {viewing.ticket_holder_display_name}
               </dd>
 
+              {isPaidMeetup ? (
+                <>
+                  <dt className="text-muted-foreground">Status</dt>
+                  <dd className="ml-auto">
+                    {paymentStatusBadge(viewing.payment_status) ?? '—'}
+                  </dd>
+                </>
+              ) : null}
+
               <dt className="text-muted-foreground">First Name</dt>
               <dd className="text-right">{viewing.ticket_holder_first_name}</dd>
 
@@ -247,10 +314,50 @@ const ManageMeetupAttendeesPage = (): ReactNode => {
                 </Button>
               </>
             ) : (
-              <Button variant="outline" onClick={closeDialog}>
-                Close
-              </Button>
+              <>
+                {isPaidMeetup && viewing?.payment_status === 'paid' ? (
+                  <Button
+                    variant="destructive"
+                    className="mr-auto"
+                    onClick={() => setRefundConfirmOpen(true)}
+                  >
+                    Refund ticket
+                  </Button>
+                ) : null}
+                <Button variant="outline" onClick={closeDialog}>
+                  Close
+                </Button>
+              </>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={refundConfirmOpen} onOpenChange={setRefundConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Refund this ticket?</DialogTitle>
+            <DialogDescription>
+              {viewing?.ticket_holder_display_name} will be refunded in full and
+              their spot released. Their ticket is kept but marked refunded.
+              This can&apos;t be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRefundConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isRefunding}
+              onClick={handleRefund}
+            >
+              Refund
+              {isRefunding && <Spinner />}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

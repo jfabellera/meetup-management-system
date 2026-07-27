@@ -17,3 +17,6 @@ export type { MeetupTransferredEmailProps } from './emails/meetup-transferred-em
 
 export { RsvpConfirmationEmail } from './emails/rsvp-confirmation-email';
 export type { RsvpConfirmationEmailProps } from './emails/rsvp-confirmation-email';
+
+export { RefundEmail } from './emails/refund-email';
+export type { RefundEmailProps } from './emails/refund-email';

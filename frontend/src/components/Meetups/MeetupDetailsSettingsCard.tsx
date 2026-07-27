@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useFormik } from 'formik';
 import { useEffect, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   useCheckSlugAvailableQuery,
@@ -26,8 +27,8 @@ import {
 } from '../../store/meetupSlice';
 import EditableFormCard from '../Forms/EditableFormCard';
 import EditableFormField from '../Forms/EditableFormField';
-import MeetupImageField from './MeetupImageField';
 import GroupCombobox from './GroupCombobox';
+import MeetupImageField from './MeetupImageField';
 import OrganizerCombobox from './OrganizerCombobox';
 import TagCombobox from './TagCombobox';
 import {
@@ -59,6 +60,8 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
       address: '',
       duration: 0,
       capacity: 0,
+      isPaid: false,
+      price: 0,
       imageUrl: '',
       imageKey: '',
       description: '',
@@ -86,6 +89,11 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         payload.duration_hours = values.duration;
       if (formik.initialValues.capacity !== values.capacity)
         payload.capacity = values.capacity;
+      if (formik.initialValues.price !== values.price)
+        payload.ticket_type =
+          values.price > 0
+            ? { price_cents: Math.round(values.price * 100) }
+            : null;
       // A new upload sets imageKey; clearing an existing image empties imageUrl.
       if (values.imageKey !== '') {
         payload.image_key = values.imageKey;
@@ -165,6 +173,11 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         address: meetup?.location.full_address ?? '',
         duration: meetup?.duration_hours ?? 0,
         capacity: meetup?.tickets?.total ?? 0,
+        isPaid: meetup?.ticket_types?.[0] != null,
+        price:
+          meetup?.ticket_types?.[0] != null
+            ? meetup.ticket_types[0].price_cents / 100
+            : 0,
         imageUrl: meetup?.image_url ?? '',
         imageKey: '',
         description: meetup?.description ?? '',
@@ -452,6 +465,47 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               onBlur={formik.handleBlur}
               errorMessage={formik.errors.capacity}
             />
+            {isEditable ? (
+              <div className="flex flex-col gap-1 py-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="isPaid"
+                    name="isPaid"
+                    checked={formik.values.isPaid}
+                    onCheckedChange={(checked) => {
+                      const isPaid = checked === true;
+                      void formik.setFieldValue('isPaid', isPaid);
+                      if (!isPaid) void formik.setFieldValue('price', 0);
+                    }}
+                  />
+                  <Label htmlFor="isPaid">Charge for tickets</Label>
+                </div>
+              </div>
+            ) : null}
+            <EditableFormField
+              name={'Ticket price in USD'}
+              key={`price-${formik.values.isPaid}`}
+              value={formik.values.price}
+              editable={isEditable}
+              id={'price'}
+              type={'number'}
+              disabled={!formik.values.isPaid}
+              isInvalid={formik.errors.price != null && formik.touched.price}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              errorMessage={formik.errors.price}
+            />
+            <p className="text-muted-foreground text-xs">
+              Paid tickets are subject to the{' '}
+              <Link
+                to="/legal/organizer-payment-terms"
+                target="_blank"
+                className="underline underline-offset-2"
+              >
+                Organizer Payment Terms
+              </Link>
+              .
+            </p>
           </>
         ) : null}
         <MeetupImageField

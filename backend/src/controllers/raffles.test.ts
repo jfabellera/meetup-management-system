@@ -1,5 +1,6 @@
 /// <reference types="jest" />
 import { type Request, type Response } from 'express';
+import { In } from 'typeorm';
 
 // ---- Mocks -----------------------------------------------------------------
 
@@ -137,6 +138,20 @@ describe('rollRaffleWinner', () => {
 
     const whereArg = (mockedTicket.find.mock.calls[0][0] as any).where;
     expect(whereArg.is_checked_in).toBeUndefined();
+  });
+
+  it('excludes refunded and unpaid-hold tickets from eligibility', async () => {
+    mockedTicket.find.mockResolvedValue([]);
+    const res = mockResponse();
+    res.locals.meetup = { id: '10' };
+
+    await rollRaffleWinner(
+      mockRequest({ quantity: 1, includeNotCheckedIn: true, allIn: true }),
+      res
+    );
+
+    const whereArg = (mockedTicket.find.mock.calls[0][0] as any).where;
+    expect(whereArg.payment_status).toEqual(In(['confirmed', 'paid']));
   });
 
   it('rolls a winner, persists the record, and emits an update', async () => {

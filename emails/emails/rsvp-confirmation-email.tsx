@@ -1,10 +1,12 @@
-import { Heading, Img, Section, Text } from '@react-email/components';
+import { Heading, Img, Link, Section, Text } from '@react-email/components';
 import { EmailLayout } from '../components/EmailLayout';
 
 export interface RsvpConfirmationEmailProps {
   meetupName: string;
   meetupDate: string;
   meetupLocation: string;
+  amountPaid?: string;
+  receiptUrl?: string;
   /**
    * Content ID of the QR code image attached to the email (defaults to
    * `qr-code`). The backend attaches the PNG with a matching `contentId`.
@@ -16,24 +18,39 @@ export const RsvpConfirmationEmail = ({
   meetupName,
   meetupDate,
   meetupLocation,
+  amountPaid,
+  receiptUrl,
   qrCodeCid = 'qr-code',
 }: RsvpConfirmationEmailProps) => (
   <EmailLayout preview={`RSVP confirmation for ${meetupName}`}>
-    <Heading className="m-0 mb-4 text-[22px] font-semibold text-foreground">
+    <Heading className="text-foreground m-0 mb-4 text-[22px] font-semibold">
       You&apos;re going to {meetupName}!
     </Heading>
-    <Text className="m-0 mb-6 text-[15px] leading-6 text-foreground">
+    <Text className="text-foreground m-0 mb-6 text-[15px] leading-6">
       Thanks for RSVPing. Here are the details:
     </Text>
-    <Section className="mb-6 rounded-md border border-solid border-border bg-background p-4">
-      <Text className="m-0 text-[14px] leading-6 text-foreground">
+    <Section className="border-border bg-background mb-6 rounded-md border border-solid p-4">
+      <Text className="text-foreground m-0 text-[14px] leading-6">
         <strong>Date:</strong> {meetupDate}
       </Text>
-      <Text className="m-0 text-[14px] leading-6 text-foreground">
+      <Text className="text-foreground m-0 text-[14px] leading-6">
         <strong>Location:</strong> {meetupLocation}
       </Text>
+      {amountPaid != null ? (
+        <Text className="text-foreground m-0 text-[14px] leading-6">
+          <strong>Paid:</strong> {amountPaid}
+          {receiptUrl != null ? (
+            <>
+              {' · '}
+              <Link href={receiptUrl} className="text-primary underline">
+                View receipt
+              </Link>
+            </>
+          ) : null}
+        </Text>
+      ) : null}
     </Section>
-    <Text className="m-0 mb-3 text-center text-[15px] leading-6 text-foreground">
+    <Text className="text-foreground m-0 mb-3 text-center text-[15px] leading-6">
       If asked, present this QR code at the event:
     </Text>
     <Img

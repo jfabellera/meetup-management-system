@@ -1,6 +1,11 @@
 import express from 'express';
 import { io } from 'socket.io-client';
 import config from './config';
+import { handleStripeWebhook } from './controllers/stripe';
+import {
+  scheduleExistingHolds,
+  sweepExpiredHolds,
+} from './controllers/ticketPayments';
 import { AppDataSource } from './datasource';
 import discordRoutes from './routes/discord';
 import eventbriteRoutes from './routes/eventbrite';
@@ -10,12 +15,19 @@ import oauth2Routes from './routes/oauth2';
 import ogRoutes from './routes/og';
 import organizerRequestRoutes from './routes/organizerRequests';
 import raffleRoutes from './routes/raffles';
+import stripeRoutes from './routes/stripe';
 import tagRoutes from './routes/tags';
 import ticketRoutes from './routes/tickets';
 import userRoutes from './routes/users';
 
-void AppDataSource.initialize();
+void AppDataSource.initialize().then(scheduleExistingHolds);
 export const socket = io(config.socketUrl);
+
+// Abandoned payment garbage collector
+const HOLD_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+setInterval(() => {
+  void sweepExpiredHolds();
+}, HOLD_SWEEP_INTERVAL_MS);
 
 class Server {
   private readonly express: express.Application;
@@ -27,6 +39,12 @@ class Server {
   }
 
   private config(): void {
+    this.express.post(
+      '/stripe/webhook',
+      express.raw({ type: 'application/json' }),
+      handleStripeWebhook as express.RequestHandler
+    );
+
     this.express.use(express.json());
     this.express.use(express.urlencoded({ extended: false }));
     this.express.use(function (req, res, next) {
@@ -54,6 +72,7 @@ class Server {
     this.express.use('/oauth2/', oauth2Routes);
     this.express.use('/eventbrite', eventbriteRoutes);
     this.express.use('/raffles', raffleRoutes);
+    this.express.use('/stripe', stripeRoutes);
     this.express.use('/discord', discordRoutes);
     this.express.use('/groups', groupRoutes);
     this.express.use('/tags', tagRoutes);

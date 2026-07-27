@@ -4,6 +4,7 @@ import {
   OrganizerApprovedEmail,
   OrganizerDeniedEmail,
   OrganizerRequestEmail,
+  RefundEmail,
   RsvpConfirmationEmail,
   VerifyEmail,
 } from '@keebmeet/emails';
@@ -122,12 +123,31 @@ export const sendMeetupTransferredEmail = async (
   }
 };
 
+export const sendRefundEmail = async (
+  email: string,
+  meetupName: string,
+  amountRefunded?: string,
+  receiptUrl?: string
+) => {
+  const { error } = await getResendClient().emails.send({
+    from: 'KeebMeet <noreply@keebmeet.com>',
+    to: [email],
+    subject: `Your ticket for ${meetupName} was refunded`,
+    react: RefundEmail({ meetupName, amountRefunded, receiptUrl }),
+  });
+
+  if (error) {
+    console.error('Error sending email:', error);
+  }
+};
+
 export const sendRsvpConfirmationEmail = async (
   email: string,
   meetupName: string,
   meetupDate: string,
   meetupLocation: string,
-  ticketId: string
+  ticketId: string,
+  receipt?: { amountPaid: string; receiptUrl?: string }
 ) => {
   const qrCode = await generateQrCodeBuffer(ticketId);
 
@@ -135,7 +155,13 @@ export const sendRsvpConfirmationEmail = async (
     from: 'KeebMeet <noreply@keebmeet.com>',
     to: [email],
     subject: `RSVP Confirmation for ${meetupName}`,
-    react: RsvpConfirmationEmail({ meetupName, meetupDate, meetupLocation }),
+    react: RsvpConfirmationEmail({
+      meetupName,
+      meetupDate,
+      meetupLocation,
+      amountPaid: receipt?.amountPaid,
+      receiptUrl: receipt?.receiptUrl,
+    }),
     attachments: [
       {
         filename: 'qr-code.png',

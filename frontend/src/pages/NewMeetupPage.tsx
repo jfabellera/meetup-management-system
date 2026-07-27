@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Spinner } from '@/components/ui/spinner';
 import {
   Field,
   FieldDescription,
@@ -10,16 +9,17 @@ import {
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useAppSelector } from '@/store/hooks';
 import { SLUG_REGEX, slugify } from '@keebmeet/shared';
 import { useFormik } from 'formik';
 import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import MeetupImageField from '../components/Meetups/MeetupImageField';
 import GroupCombobox from '../components/Meetups/GroupCombobox';
+import MeetupImageField from '../components/Meetups/MeetupImageField';
 import OrganizerCombobox from '../components/Meetups/OrganizerCombobox';
 import TagCombobox from '../components/Meetups/TagCombobox';
 import {
@@ -51,6 +51,8 @@ const NewMeetupPage = (): ReactNode => {
       address: '',
       duration: 0,
       capacity: 0,
+      isPaid: false,
+      price: 0,
       imageUrl: '',
       imageKey: '',
       description: '',
@@ -81,6 +83,10 @@ const NewMeetupPage = (): ReactNode => {
         organizer_ids: formik.values.organizerIds,
         group_ids: formik.values.groupIds,
         tag_ids: formik.values.tagIds,
+        ticket_type:
+          formik.values.isPaid && formik.values.price > 0
+            ? { price_cents: Math.round(formik.values.price * 100) }
+            : undefined,
       });
 
       if ('error' in result && result.error != null && 'data' in result.error) {
@@ -271,6 +277,47 @@ const NewMeetupPage = (): ReactNode => {
                     className="flex-1"
                   />
                 </div>
+
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="isPaid" className="pr-4">
+                      Will this meetup charge for tickets?
+                    </Label>
+                    <Checkbox
+                      id="isPaid"
+                      name="isPaid"
+                      checked={formik.values.isPaid}
+                      onCheckedChange={(checked) => {
+                        const isPaid = checked === true;
+                        void formik.setValues({
+                          ...formik.values,
+                          isPaid,
+                          price: isPaid ? formik.values.price : 0,
+                        });
+                      }}
+                    />
+                    <span>Yes</span>
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    Paid tickets are subject to the{' '}
+                    <Link
+                      to="/legal/organizer-payment-terms"
+                      target="_blank"
+                      className="underline underline-offset-2"
+                    >
+                      Organizer Payment Terms
+                    </Link>
+                    .
+                  </p>
+                </div>
+
+                <FormField
+                  formik={formik}
+                  name="price"
+                  label="Ticket price in USD"
+                  type="number"
+                  disabled={!formik.values.isPaid}
+                />
 
                 <FormField formik={formik} name="address" label="Address" />
 

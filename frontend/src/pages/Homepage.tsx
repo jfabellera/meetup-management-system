@@ -10,6 +10,7 @@ import { MeetupSearchInput } from '../components/Meetups/MeetupSearchInput';
 import { MeetupTagFilter } from '../components/Meetups/MeetupTagFilter';
 import Page from '../components/Page/Page';
 import { useIsMobile } from '../hooks/use-mobile';
+import { useHoldExpiryRefetch } from '../hooks/useHoldExpiryRefetch';
 import { useMeetupSearch } from '../hooks/useMeetupSearch';
 import { useAppSelector } from '../store/hooks';
 import { useGetMeetupsQuery } from '../store/meetupSlice';
@@ -27,12 +28,14 @@ import {
 interface PrefetchingMeetupCardProps {
   meetup: MeetupInfo;
   attending: boolean;
+  paymentPending: boolean;
   onClick: () => void;
 }
 
 const PrefetchingMeetupCard = ({
   meetup,
   attending,
+  paymentPending,
   onClick,
 }: PrefetchingMeetupCardProps): ReactNode => {
   const prefetchMeetup = useMeetupPrefetch();
@@ -46,7 +49,11 @@ const PrefetchingMeetupCard = ({
         prefetchMeetup(meetup);
       }}
     >
-      <MeetupCard meetup={meetup} attending={attending} />
+      <MeetupCard
+        meetup={meetup}
+        attending={attending}
+        paymentPending={paymentPending}
+      />
     </div>
   );
 };
@@ -88,6 +95,7 @@ const Homepage = (): ReactNode => {
   const { data: tickets } = useGetTicketsQuery(user != null ? user.id : '', {
     skip: user == null,
   });
+  useHoldExpiryRefetch(tickets);
   // The modal is open whenever a meetup is selected via the URL. The modal
   // itself renders nothing until its data has loaded, so there is no empty flash.
   const isOpen = slug !== '';
@@ -174,16 +182,21 @@ const Homepage = (): ReactNode => {
 
   const meetupGrid = (meetups: MeetupInfo[], gridClass: string): ReactNode => (
     <div className={gridClass}>
-      {meetups.map((meetup) => (
-        <PrefetchingMeetupCard
-          key={meetup.id}
-          meetup={meetup}
-          attending={getTicketForMeetup(meetup.id) != null}
-          onClick={() => {
-            meetupCardOnClick(meetup.slug);
-          }}
-        />
-      ))}
+      {meetups.map((meetup) => {
+        const ticket = getTicketForMeetup(meetup.id);
+        const isPending = ticket?.payment_status === 'pending';
+        return (
+          <PrefetchingMeetupCard
+            key={meetup.id}
+            meetup={meetup}
+            attending={ticket != null && !isPending}
+            paymentPending={isPending}
+            onClick={() => {
+              meetupCardOnClick(meetup.slug);
+            }}
+          />
+        );
+      })}
     </div>
   );
 

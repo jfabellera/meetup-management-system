@@ -32,6 +32,15 @@ const usernameField = z
   )
   .regex(/[a-z]/, 'Username must include a letter');
 
+export const TICKET_CURRENCY = 'usd';
+
+export const ticketTypeSchema = z.object({
+  name: z.string().max(60).optional(),
+  price_cents: z.number().int().gte(0),
+});
+
+export type TicketTypePayload = z.infer<typeof ticketTypeSchema>;
+
 export const createMeetupSchema = z.object({
   name: z.string().min(3),
   slug: slugField,
@@ -50,6 +59,7 @@ export const createMeetupSchema = z.object({
   has_raffle: z.boolean().optional().default(true),
   default_raffle_entries: z.number().gte(0).optional().default(1),
   is_unlisted: z.boolean().optional().default(false),
+  ticket_type: ticketTypeSchema.optional(),
 });
 
 export type CreateMeetupPayload = z.infer<typeof createMeetupSchema>;
@@ -110,6 +120,7 @@ export const editMeetupSchema = z.object({
   has_raffle: z.boolean().optional(),
   default_raffle_entries: z.number().gte(0).optional(),
   is_unlisted: z.boolean().optional(),
+  ticket_type: ticketTypeSchema.nullable().optional(),
   display_idle_image_urls: z.string().array().optional(),
   display_raffle_background_url: z
     .string()

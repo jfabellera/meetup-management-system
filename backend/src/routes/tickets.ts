@@ -7,6 +7,7 @@ import {
   getTicket,
   updateTicket,
 } from '../controllers/tickets';
+import { refundTicket } from '../controllers/ticketPayments';
 import { authChecker, Rule } from '../middleware/authChecker';
 
 const router = express.Router();
@@ -42,6 +43,15 @@ router.post(
     Rule.overrideMeetupOrganizer,
   ]) as RequestHandler,
   checkInTicket as RequestHandler
+);
+
+router.post(
+  '/:ticket_id/refund',
+  authChecker([
+    Rule.requireOrganizer,
+    Rule.overrideMeetupOrganizer,
+  ]) as RequestHandler,
+  refundTicket as RequestHandler
 );
 
 router.post(

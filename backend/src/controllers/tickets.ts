@@ -4,19 +4,22 @@ import {
   createTicketSchema,
   editTicketSchema,
 } from '@keebmeet/shared';
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
+import { In } from 'typeorm';
 import { socket } from '../Server';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
+import { TicketType } from '../entity/TicketType';
 import { type User } from '../entity/User';
-import { sendRsvpConfirmationEmail } from '../util/email';
 import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
 import { getMeetupEnd, isMeetupAtCapacity } from '../util/rsvp';
-
-dayjs.extend(utc);
+import {
+  createPaidTicket,
+  finalizeTicketSideEffects,
+  resumePendingHold,
+  ticketHolderFields,
+} from './ticketPayments';
 
 export const getAllTickets = async (
   req: Request,
@@ -60,7 +63,7 @@ export const createTicket = async (
     return res.status(400).json(result.error);
   }
 
-  // Check if ticket already exists
+  // Check if an active ticket already exists
   const existingTicket = await Ticket.findOne({
     relations: {
       meetup: true,
@@ -69,15 +72,31 @@ export const createTicket = async (
     where: {
       meetup: { id: meetup.id },
       user: { id: user.id },
+      payment_status: In(['confirmed', 'pending', 'paid']),
     },
   });
 
   if (existingTicket != null) {
-    return res.status(409).json({ message: 'Ticket already exists.' });
+    // Only a 'pending' hold can be retried
+    if (existingTicket.payment_status !== 'pending') {
+      return res.status(409).json({ message: 'Ticket already exists.' });
+    }
+    // Resume the hold's existing payment, or drop it if it can't be reused.
+    const resumed = await resumePendingHold(res, existingTicket);
+    if (resumed != null) return resumed;
   }
 
   if (getMeetupEnd(meetup) < new Date()) {
     return res.status(400).json({ message: 'Meetup has already occurred.' });
+  }
+
+  const holder = ticketHolderFields(result.data.ticket_holder ?? {}, user);
+
+  const ticketType = await TicketType.findOne({
+    where: { meetup: { id: meetup.id } },
+  });
+  if (ticketType != null && Number(ticketType.price_cents) > 0) {
+    return await createPaidTicket(res, meetup, user, holder, ticketType);
   }
 
   if (await isMeetupAtCapacity(meetup.id, meetup.capacity)) {
@@ -91,28 +110,11 @@ export const createTicket = async (
     discord_id: null,
     rsvp_method: 'keebmeet',
     raffle_entries: meetup.default_raffle_entries,
-    ticket_holder_display_name:
-      result.data.ticket_holder?.display_name ?? user.nick_name,
-    ticket_holder_first_name:
-      result.data.ticket_holder?.first_name ?? user.first_name,
-    ticket_holder_last_name:
-      result.data.ticket_holder?.last_name ?? user.last_name,
-    ticket_holder_email: result.data.ticket_holder?.email ?? user.email,
+    ...holder,
   });
   await newTicket.save();
 
-  socket.emit('meetup:update', { meetupId: meetup.id });
-  await refreshMeetupDiscordMessage(meetup.id);
-
-  await sendRsvpConfirmationEmail(
-    newTicket.ticket_holder_email,
-    meetup.name,
-    dayjs(meetup.date)
-      .utcOffset(meetup.utc_offset)
-      .format('dddd, MMMM D, YYYY [at] h:mm A'),
-    meetup.address,
-    newTicket.id
-  );
+  await finalizeTicketSideEffects(newTicket, meetup);
 
   return res.status(201).json(newTicket);
 };
@@ -178,7 +180,22 @@ export const deleteTicket = async (
   const ticket = res.locals.ticket as Ticket;
   const meetupId = ticket.meetup.id;
 
-  if (getMeetupEnd(ticket.meetup) < new Date()) {
+  if (
+    ticket.payment_status === 'paid' ||
+    ticket.payment_status === 'refunded'
+  ) {
+    return res.status(400).json({
+      message:
+        "Paid tickets can't be cancelled here — contact the organizer for a refund.",
+    });
+  }
+
+  // A 'pending' hold is an abandoned checkout and is always releasable; only a
+  // confirmed (free) RSVP is blocked once the meetup has occurred.
+  if (
+    ticket.payment_status === 'confirmed' &&
+    getMeetupEnd(ticket.meetup) < new Date()
+  ) {
     return res.status(400).json({ message: 'Meetup has already occurred.' });
   }
 
@@ -201,6 +218,8 @@ export const getUserTickets = async (
     relations: { meetup: true },
     select: {
       id: true,
+      payment_status: true,
+      hold_expires_at: true,
       meetup: {
         id: true,
       },
@@ -209,16 +228,27 @@ export const getUserTickets = async (
       user: {
         id: user_id,
       },
+      // Include 'pending' holds so the holder can resume payment, but drop
+      // 'refunded' (void) ticket
+      payment_status: In(['confirmed', 'paid', 'pending']),
     },
   });
 
-  const ticketsInfo: SimpleTicketInfo[] = tickets.map((ticket) => {
-    const ticketInfo: SimpleTicketInfo = {
+  const now = new Date();
+  const ticketsInfo: SimpleTicketInfo[] = tickets
+    // An expired hold has released its seat, so it's no longer a reservation.
+    // This is just for the case that it hasn't been swept yet
+    .filter(
+      (ticket) =>
+        ticket.payment_status !== 'pending' ||
+        (ticket.hold_expires_at != null && ticket.hold_expires_at > now)
+    )
+    .map((ticket) => ({
       id: ticket.id,
       meetup_id: ticket.meetup.id,
-    };
-    return ticketInfo;
-  });
+      payment_status: ticket.payment_status,
+      hold_expires_at: ticket.hold_expires_at?.toISOString(),
+    }));
 
   return res.json(ticketsInfo);
 };
@@ -228,6 +258,15 @@ export const checkInTicket = async (
   res: Response
 ): Promise<Response> => {
   const ticket = res.locals.ticket as Ticket;
+
+  if (
+    ticket.payment_status === 'refunded' ||
+    ticket.payment_status === 'pending'
+  ) {
+    return res
+      .status(400)
+      .json({ message: 'This ticket is not valid for check-in.' });
+  }
 
   if (ticket.eventbrite_attendee_id != null) {
     return res.status(400).json({

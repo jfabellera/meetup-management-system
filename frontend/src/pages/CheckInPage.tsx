@@ -77,6 +77,11 @@ const CheckInPage = (): ReactNode => {
     const filtered = attendees
       .filter(
         (attendee: TicketInfo) =>
+          attendee.payment_status !== 'refunded' &&
+          attendee.payment_status !== 'pending'
+      )
+      .filter(
+        (attendee: TicketInfo) =>
           Boolean(
             attendee.ticket_holder_display_name
               .toLowerCase()

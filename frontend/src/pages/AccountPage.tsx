@@ -1,4 +1,6 @@
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -8,15 +10,24 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FormField } from '@/components/ui/form-field';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { USERNAME_REGEX } from '@keebmeet/shared';
 import { useFormik } from 'formik';
+import { Loader2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { FaDiscord } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import * as Yup from 'yup';
 import GroupsCard from '../components/Account/GroupsCard';
+import OrganizerPaymentTerms from '../components/Account/OrganizerPaymentTerms';
 import Page from '../components/Page/Page';
 import BackButton from '../components/shared/BackButton';
 import ImageUploadField from '../components/shared/ImageUploadField';
@@ -25,6 +36,11 @@ import { usePendingUploads } from '../hooks/usePendingUploads';
 import { updateProfile } from '../store/authSlice';
 import { groupSlice } from '../store/groupSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
+import {
+  useCreateStripeAccountLinkMutation,
+  useCreateStripeLoginLinkMutation,
+  useGetStripeStatusQuery,
+} from '../store/stripeSlice';
 import {
   useCheckUsernameAvailableQuery,
   useGetUserQuery,
@@ -72,6 +88,52 @@ const AccountPage = (): ReactNode => {
     useUnlinkDiscordMutation();
   const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
   const { isUploading, onUploadingChange } = usePendingUploads();
+
+  const isOrganizer = user?.is_organizer ?? false;
+  const { data: stripeStatus } = useGetStripeStatusQuery(undefined, {
+    skip: !isOrganizer,
+  });
+  const [createStripeAccountLink] = useCreateStripeAccountLinkMutation();
+  const [createStripeLoginLink, { isLoading: isOpeningDashboard }] =
+    useCreateStripeLoginLinkMutation();
+  const [isStartingStripe, setIsStartingStripe] = useState(false);
+  const [showPaymentTerms, setShowPaymentTerms] = useState(false);
+  const [agreedToPaymentTerms, setAgreedToPaymentTerms] = useState(false);
+
+  const startStripeOnboarding = (acceptPaymentTerms: boolean): void => {
+    setIsStartingStripe(true);
+    void (async () => {
+      try {
+        const { url } = await createStripeAccountLink({
+          acceptPaymentTerms,
+        }).unwrap();
+        window.location.href = url;
+      } catch {
+        setIsStartingStripe(false);
+        toast.error('Could not start Stripe onboarding. Please try again.');
+      }
+    })();
+  };
+
+  const onSetupPayments = (): void => {
+    if (stripeStatus?.payment_terms_accepted ?? false) {
+      startStripeOnboarding(false);
+    } else {
+      setAgreedToPaymentTerms(false);
+      setShowPaymentTerms(true);
+    }
+  };
+
+  const onOpenDashboard = (): void => {
+    void (async () => {
+      try {
+        const { url } = await createStripeLoginLink().unwrap();
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } catch {
+        toast.error('Could not open your Stripe dashboard. Please try again.');
+      }
+    })();
+  };
 
   const onRequestOrganizer = (): void => {
     void (async () => {
@@ -327,27 +389,78 @@ const AccountPage = (): ReactNode => {
               </Button>
             )}
           </div>
-          {user?.is_organizer && (
-            <div className="flex items-center justify-between gap-4">
-              <span>Eventbrite</span>
-              <a
-                href={`${config.apiUrl}/oauth2/eventbrite?redirect_uri=${config.appUrl}/account/authorize-eventbrite`}
-              >
-                <Button disabled={user?.is_eventbrite_linked}>
-                  {(user?.is_eventbrite_linked ?? false)
-                    ? 'Eventbrite linked!'
-                    : 'Link Eventbrite'}
-                </Button>
-              </a>
-            </div>
-          )}
         </div>
         <div className="bg-card text-card-foreground flex flex-col gap-4 rounded-lg p-8 shadow-lg">
           <h2 className="text-lg font-medium">Organizer access</h2>
           {(user?.is_organizer ?? false) ? (
-            <p className="text-sm font-medium text-green-600">
-              You're an organizer.
-            </p>
+            <div className="flex flex-col gap-4">
+              <span className="t text-green-600">You're an organizer.</span>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-4">
+                  <span>Payments</span>
+                  {(stripeStatus?.stripe_charges_enabled ?? false) ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-green-600">
+                        Payments enabled
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onOpenDashboard}
+                        disabled={isOpeningDashboard}
+                      >
+                        Stripe dashboard
+                        {isOpeningDashboard ? <Spinner /> : null}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={onSetupPayments}
+                      disabled={isStartingStripe}
+                    >
+                      {(stripeStatus?.is_stripe_connected ?? false)
+                        ? 'Continue setup'
+                        : 'Set up payments'}
+                    </Button>
+                  )}
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Selling tickets is subject to the{' '}
+                  <Link
+                    to="/legal/organizer-payment-terms"
+                    target="_blank"
+                    className="underline underline-offset-2"
+                  >
+                    Organizer Payment Terms
+                  </Link>
+                  .
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <span>Eventbrite</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant={'secondary'}>Legacy</Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Please setup payments through Stripe instead.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <a
+                  href={`${config.apiUrl}/oauth2/eventbrite?redirect_uri=${config.appUrl}/account/authorize-eventbrite`}
+                >
+                  <Button disabled={user?.is_eventbrite_linked}>
+                    {(user?.is_eventbrite_linked ?? false)
+                      ? 'Eventbrite linked!'
+                      : 'Link Eventbrite'}
+                  </Button>
+                </a>
+              </div>
+            </div>
           ) : (user?.has_organizer_request ?? false) ? (
             <p className="text-muted-foreground text-sm">
               Your organizer request is pending review.
@@ -401,6 +514,62 @@ const AccountPage = (): ReactNode => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={showPaymentTerms}
+        onOpenChange={(open) => {
+          if (!open) setShowPaymentTerms(false);
+        }}
+      >
+        <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Organizer Payment Terms</DialogTitle>
+            <DialogDescription>
+              Review and agree to these terms before connecting your Stripe
+              account. You can revisit them anytime from this page.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto rounded-md border p-4">
+            <OrganizerPaymentTerms />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="agreePaymentTerms"
+              checked={agreedToPaymentTerms}
+              onCheckedChange={(checked) =>
+                setAgreedToPaymentTerms(checked === true)
+              }
+            />
+            <Label htmlFor="agreePaymentTerms" className="font-normal">
+              I have read and agree to the Organizer Payment Terms
+            </Label>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => setShowPaymentTerms(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={!agreedToPaymentTerms || isStartingStripe}
+              onClick={() => {
+                setShowPaymentTerms(false);
+                startStripeOnboarding(true);
+              }}
+            >
+              Agree and continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {isStartingStripe ? (
+        <div className="bg-background/80 fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 backdrop-blur-sm">
+          <Loader2 className="size-10 animate-spin" />
+          <p className="text-muted-foreground">Redirecting to Stripe…</p>
+        </div>
+      ) : null}
     </Page>
   );
 };

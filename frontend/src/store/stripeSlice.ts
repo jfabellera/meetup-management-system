@@ -1,0 +1,63 @@
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import config from '../config';
+import { apiCacheDefaults } from './apiCacheDefaults';
+import { type RootState } from './store';
+
+export interface StripeConnectStatus {
+  is_stripe_connected: boolean;
+  stripe_charges_enabled: boolean;
+  stripe_details_submitted: boolean;
+  payment_terms_accepted: boolean;
+}
+
+export const stripeSlice = createApi({
+  reducerPath: 'stripeSlice',
+  ...apiCacheDefaults,
+  tagTypes: ['StripeStatus'],
+  baseQuery: fetchBaseQuery({
+    baseUrl: `${config.apiUrl}/`,
+    prepareHeaders: (headers, { getState }) => {
+      const token = (getState() as RootState).user.user?.token;
+
+      if (token != null) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+
+      return headers;
+    },
+  }),
+  endpoints: (builder) => ({
+    getStripeStatus: builder.query<StripeConnectStatus, void>({
+      query: () => ({
+        url: 'stripe/connect/status',
+      }),
+      providesTags: ['StripeStatus'],
+    }),
+    // Creates the connected account if needed and returns a hosted-onboarding
+    // URL to redirect the organizer to.
+    createStripeAccountLink: builder.mutation<
+      { url: string },
+      { acceptPaymentTerms: boolean }
+    >({
+      query: ({ acceptPaymentTerms }) => ({
+        url: 'stripe/connect/account-link',
+        method: 'POST',
+        body: { accept_payment_terms: acceptPaymentTerms },
+      }),
+      invalidatesTags: ['StripeStatus'],
+    }),
+    // Returns a single-use link into the organizer's Express Dashboard.
+    createStripeLoginLink: builder.mutation<{ url: string }, void>({
+      query: () => ({
+        url: 'stripe/connect/login-link',
+        method: 'POST',
+      }),
+    }),
+  }),
+});
+
+export const {
+  useGetStripeStatusQuery,
+  useCreateStripeAccountLinkMutation,
+  useCreateStripeLoginLinkMutation,
+} = stripeSlice;

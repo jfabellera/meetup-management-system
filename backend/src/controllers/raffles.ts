@@ -7,7 +7,7 @@ import {
   type RollRaffleWinnerResponse,
 } from '@keebmeet/shared';
 import { type Request, type Response } from 'express';
-import { MoreThan, Raw } from 'typeorm';
+import { In, MoreThan, Raw } from 'typeorm';
 import { socket } from '../Server';
 import { AppDataSource } from '../datasource';
 import { type Meetup } from '../entity/Meetup';
@@ -59,6 +59,7 @@ export const rollRaffleWinner = async (
       meetup: {
         id: meetup.id,
       },
+      payment_status: In(['confirmed', 'paid']),
       ...(!result.data.includeNotCheckedIn ? { is_checked_in: true } : null),
       ...(!result.data.allIn
         ? {

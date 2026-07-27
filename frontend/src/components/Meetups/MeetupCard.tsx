@@ -10,7 +10,7 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { EyeOffIcon } from 'lucide-react';
 import { type ReactNode } from 'react';
-import { FiCheck, FiImage } from 'react-icons/fi';
+import { FiCheck, FiClock, FiImage } from 'react-icons/fi';
 import { hasMeetupEnded } from '../../util/timeUtil';
 import { TagBadge } from './TagBadge';
 
@@ -28,12 +28,14 @@ export const UNLISTED_REASON_TEXT: Record<
 export interface MeetupCardProps {
   meetup: MeetupInfo;
   attending?: boolean;
+  paymentPending?: boolean;
   imageOverlay?: ReactNode;
 }
 
 export const MeetupCard = ({
   meetup,
   attending,
+  paymentPending,
   imageOverlay,
 }: MeetupCardProps): ReactNode => {
   const attendedLabel = hasMeetupEnded(meetup)
@@ -67,6 +69,19 @@ export const MeetupCard = ({
                   <FiCheck className="size-4.5" strokeWidth={2.5} />
                 </TooltipTrigger>
                 <TooltipContent>{attendedLabel}</TooltipContent>
+              </Tooltip>
+            ) : paymentPending === true ? (
+              <Tooltip>
+                <TooltipTrigger
+                  className="flex text-amber-600"
+                  aria-label="Payment pending"
+                >
+                  <FiClock className="size-4.5" strokeWidth={2.5} />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Payment pending. If not paid in time, your spot will be
+                  released to others.
+                </TooltipContent>
               </Tooltip>
             ) : null}
             {meetup.is_unlisted === true ? (

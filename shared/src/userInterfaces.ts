@@ -10,6 +10,9 @@ export interface User {
   is_organizer: boolean;
   is_eventbrite_linked: boolean;
   is_discord_linked: boolean;
+  is_stripe_connected: boolean;
+  stripe_charges_enabled: boolean;
+  stripe_details_submitted: boolean;
   // Resolved profile photo URL; '' when the user has no photo.
   photo_url: string;
   created_at: string;

@@ -25,6 +25,7 @@ export interface MeetupInfo {
     total: number;
     available: number;
   };
+  ticket_types?: TicketTypeInfo[];
   duration_hours?: number;
   image_url: string;
   eventbrite_url?: string;
@@ -39,9 +40,19 @@ export interface MeetupInfo {
   unlisted_reason?: 'organizer' | 'attendee' | 'group';
 }
 
+export interface TicketTypeInfo {
+  id: string;
+  name: string;
+  price_cents: number;
+  currency: string;
+  capacity?: number;
+  available?: number;
+}
+
 export interface TicketInfo {
   id: string;
   created_at: Date;
+  payment_status?: 'confirmed' | 'pending' | 'paid' | 'refunded';
   is_checked_in: boolean;
   checked_in_at?: Date;
   ticket_holder_display_name: string;
@@ -57,6 +68,8 @@ export interface TicketInfo {
 export interface SimpleTicketInfo {
   id: string;
   meetup_id: string;
+  payment_status?: 'confirmed' | 'pending' | 'paid' | 'refunded';
+  hold_expires_at?: string;
 }
 
 export interface GalleryInfo {

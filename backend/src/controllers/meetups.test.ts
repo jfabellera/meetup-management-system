@@ -218,7 +218,9 @@ const galleryQueryBuilder = {
 const ticketQueryBuilder = {
   select: jest.fn().mockReturnThis(),
   where: jest.fn().mockReturnThis(),
+  andWhere: jest.fn().mockReturnThis(),
   getRawMany: jest.fn().mockResolvedValue([]),
+  getCount: jest.fn().mockResolvedValue(0),
 };
 const mockedSocket = jest.mocked(socket);
 const mockedGeocode = jest.mocked(geocode);
@@ -292,6 +294,7 @@ beforeEach(() => {
     galleryQueryBuilder as any
   );
   ticketQueryBuilder.getRawMany.mockResolvedValue([]);
+  ticketQueryBuilder.getCount.mockResolvedValue(0);
   mockedTicket.createQueryBuilder.mockReturnValue(ticketQueryBuilder as any);
   mockedMeetup.countBy.mockResolvedValue(0);
   mockedMeetup.create.mockImplementation((attrs: any) => ({
@@ -344,7 +347,7 @@ describe('getAllMeetups', () => {
 
   it('includes ticket availability when detailed', async () => {
     mockedMeetup.find.mockResolvedValue([fakeMeetupRow({ capacity: 100 })]);
-    mockedTicket.count.mockResolvedValue(30);
+    ticketQueryBuilder.getCount.mockResolvedValue(30);
     const res = mockResponse();
 
     await getAllMeetups(mockRequest({}, {}, { detail_level: 'detailed' }), res);
@@ -602,7 +605,7 @@ describe('getMeetup', () => {
 
   it('defaults to the detailed shape', async () => {
     mockedMeetup.findOne.mockResolvedValue(fakeMeetupRow());
-    mockedTicket.count.mockResolvedValue(10);
+    ticketQueryBuilder.getCount.mockResolvedValue(10);
     const res = mockResponse();
 
     await getMeetup(mockRequest({}, { meetup_id: '10' }), res);

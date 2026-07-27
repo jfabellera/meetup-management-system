@@ -62,6 +62,21 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 96, nullable: true })
   encrypted_eventbrite_token?: string;
 
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  stripe_account_id?: string | null;
+
+  @Column({ type: 'boolean', default: false })
+  stripe_charges_enabled: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  stripe_payouts_enabled: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  stripe_details_submitted: boolean;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  payment_terms_accepted_at?: Date | null;
+
   @Column({ type: 'boolean', default: false })
   is_verified: boolean;
 

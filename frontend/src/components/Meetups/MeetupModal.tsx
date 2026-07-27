@@ -25,23 +25,27 @@ import {
   FiExternalLink,
   FiLink,
   FiMapPin,
+  FiTag,
   FiUser,
   FiUserCheck,
   FiX,
 } from 'react-icons/fi';
 import { Link, useNavigate } from 'react-router-dom';
+import { useHoldCountdown } from '../../hooks/useHoldCountdown';
 import { socket } from '../../socket';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { meetupSlice, useGetMeetupQuery } from '../../store/meetupSlice';
+import { formatMoney } from '../../util/money';
 import { hasMeetupEnded, isMeetupHappeningNow } from '../../util/timeUtil';
+import { CopyButton } from '../CopyButton';
 import { isNotFoundError } from '../Guards/Guards';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-import { CopyButton } from '../CopyButton';
-import { UNLISTED_REASON_TEXT } from './MeetupCard';
+import { HoldCountdown } from './HoldCountdown';
 import { MeetupCapacityStatus } from './MeetupCapacityStatus';
-import { TagBadge } from './TagBadge';
+import { UNLISTED_REASON_TEXT } from './MeetupCard';
 import { MeetupGallery } from './MeetupGallery';
 import { MeetupRsvpForm } from './MeetupRsvpForm';
+import { TagBadge } from './TagBadge';
 
 dayjs.extend(customParseFormat);
 
@@ -99,6 +103,7 @@ export const MeetupModal = ({
     if (isOpen) setRetainedTicket(ticket);
   }, [isOpen, ticket]);
   const displayTicket = isOpen ? ticket : retainedTicket;
+  const holdCountdown = useHoldCountdown(displayTicket?.hold_expires_at);
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user.user);
   const navigate = useNavigate();
@@ -109,7 +114,6 @@ export const MeetupModal = ({
     enabled: !isWide,
     onDismiss: onClose,
   });
-
 
   // A meetup id in the URL that doesn't resolve to a real meetup sends the
   // visitor back to the homepage rather than leaving a dead modal open.
@@ -170,6 +174,17 @@ export const MeetupModal = ({
 
   const hasImage = meetup.image_url != null && meetup.image_url !== '';
   const showCapacity = meetup.tickets != null && !meetup.is_archive;
+  const paidTicketType = meetup.ticket_types?.find(
+    (ticketType) => ticketType.price_cents > 0
+  );
+  const effectiveTicket =
+    displayTicket != null &&
+    displayTicket.payment_status === 'pending' &&
+    holdCountdown?.expired === true
+      ? null
+      : displayTicket;
+  const hasPendingHold = effectiveTicket?.payment_status === 'pending';
+  const isConfirmedAttendee = effectiveTicket != null && !hasPendingHold;
   const showRsvpAction = !isRsvp && isRsvpable;
 
   const linkedOrganizers =
@@ -203,7 +218,7 @@ export const MeetupModal = ({
       <MeetupRsvpForm
         meetup={meetup}
         isLoggedIn={isLoggedIn}
-        ticket={displayTicket}
+        ticket={effectiveTicket}
         onCollapse={handleCollapse}
       />
     </div>
@@ -319,6 +334,18 @@ export const MeetupModal = ({
                   </DialogTitle>
                 </DialogHeader>
                 <div className="flex flex-col gap-1 pb-4 font-semibold">
+                  {paidTicketType != null ? (
+                    <div className="flex items-start gap-2">
+                      <FiTag className="mt-1 shrink-0" />
+                      <p>
+                        {formatMoney(
+                          paidTicketType.price_cents,
+                          paidTicketType.currency
+                        )}
+                      </p>
+                    </div>
+                  ) : null}
+
                   {/* Date */}
                   <div className="flex items-start gap-2">
                     <FiCalendar className="mt-1 shrink-0" />
@@ -382,7 +409,7 @@ export const MeetupModal = ({
                 {!rsvpPanelOpen ? (
                   <MeetupGallery
                     meetup={meetup}
-                    isAttendee={displayTicket != null}
+                    isAttendee={isConfirmedAttendee}
                   />
                 ) : null}
 
@@ -401,6 +428,14 @@ export const MeetupModal = ({
             </div>
 
             <DialogFooter className="shrink-0 flex-row flex-wrap items-center justify-between gap-3 p-4">
+              {hasPendingHold &&
+              !rsvpPanelOpen &&
+              effectiveTicket?.hold_expires_at != null ? (
+                <HoldCountdown
+                  holdExpiresAt={effectiveTicket.hold_expires_at}
+                />
+              ) : null}
+
               {showCapacity && meetup.tickets != null ? (
                 <MeetupCapacityStatus
                   available={meetup.tickets.available}
@@ -441,14 +476,14 @@ export const MeetupModal = ({
                         RSVP
                       </Button>
                     </a>
-                  ) : displayTicket != null ? (
+                  ) : effectiveTicket != null ? (
                     <Button
-                      variant="outline"
+                      variant={hasPendingHold ? 'default' : 'outline'}
                       disabled={!isLoggedIn}
                       onClick={goToRsvp}
                     >
                       <FiUserCheck />
-                      Manage RSVP
+                      {hasPendingHold ? 'Complete payment' : 'Manage RSVP'}
                     </Button>
                   ) : (
                     <Tooltip>

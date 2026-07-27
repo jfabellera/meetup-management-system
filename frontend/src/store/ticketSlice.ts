@@ -1,6 +1,8 @@
+import {
+  type CreateTicketPayload,
+  type SimpleTicketInfo,
+} from '@keebmeet/shared';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { type SimpleTicketInfo } from '@keebmeet/shared';
-import { type CreateTicketPayload } from '@keebmeet/shared';
 import config from '../config';
 import { apiCacheDefaults } from './apiCacheDefaults';
 import { type RootState } from './store';
@@ -25,6 +27,13 @@ export interface TicketDetails {
   ticket_holder_first_name: string;
   ticket_holder_last_name: string;
   ticket_holder_email: string;
+  payment_status?: 'confirmed' | 'pending' | 'paid' | 'refunded';
+}
+
+export interface RsvpResult {
+  ticketId?: string;
+  clientSecret?: string;
+  holdExpiresAt?: string;
 }
 
 export const ticketSlice = createApi({
@@ -58,12 +67,13 @@ export const ticketSlice = createApi({
         { type: 'Tickets', id: ticketId },
       ],
     }),
-    createTicket: builder.mutation<void, CreateTicketOptions>({
+    createTicket: builder.mutation<RsvpResult, CreateTicketOptions>({
       query: ({ meetupId, ticketHolder }) => ({
         url: `meetups/${meetupId}/rsvp`,
         method: 'POST',
         // Omit the body entirely to fall back to the requestor's details.
-        body: ticketHolder != null ? { ticket_holder: ticketHolder } : undefined,
+        body:
+          ticketHolder != null ? { ticket_holder: ticketHolder } : undefined,
       }),
       invalidatesTags: ['Tickets'],
     }),
@@ -91,6 +101,7 @@ export const ticketSlice = createApi({
 export const {
   useGetTicketsQuery,
   useGetTicketQuery,
+  useLazyGetTicketQuery,
   useCreateTicketMutation,
   useUpdateTicketMutation,
   useDeleteTicketMutation,

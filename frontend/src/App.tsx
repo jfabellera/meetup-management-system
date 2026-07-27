@@ -42,6 +42,10 @@ import { ManageMeetupDisplayPage } from './pages/ManageMeetupDisplayPage';
 import MeetupDisplayPage from './pages/MeetupDisplayPage';
 import NewArchiveMeetupPage from './pages/NewArchiveMeetupPage';
 import NewMeetupFromEventbritePage from './pages/NewMeetupFromEventbritePage';
+import OrganizerPaymentTermsPage from './pages/OrganizerPaymentTermsPage';
+import StripeRefreshPage from './pages/StripeRefreshPage';
+import RsvpReturnPage from './pages/RsvpReturnPage';
+import StripeReturnPage from './pages/StripeReturnPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import { store } from './store/store';
 
@@ -77,6 +81,7 @@ const App = (): ReactNode => {
             <Route path="/auth/discord/link" element={<DiscordLinkPage />} />
             {/* Same element as the meetup route so the modal expands in place. */}
             <Route path="/meetup/:meetupId/rsvp" element={<Homepage />} />
+            <Route path="/rsvp/return" element={<RsvpReturnPage />} />
             <Route
               path="/organizer"
               element={
@@ -143,6 +148,26 @@ const App = (): ReactNode => {
                   <AuthorizeEventbritePage />
                 </RequireAuth>
               }
+            />
+            <Route
+              path="/account/stripe/return"
+              element={
+                <RequireOrganizer>
+                  <StripeReturnPage />
+                </RequireOrganizer>
+              }
+            />
+            <Route
+              path="/account/stripe/refresh"
+              element={
+                <RequireOrganizer>
+                  <StripeRefreshPage />
+                </RequireOrganizer>
+              }
+            />
+            <Route
+              path="/legal/organizer-payment-terms"
+              element={<OrganizerPaymentTermsPage />}
             />
             <Route
               path="/account"
