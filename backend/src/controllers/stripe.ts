@@ -215,27 +215,41 @@ const syncAccountFromEvent = async (account: Stripe.Account): Promise<void> => {
   await user.save();
 };
 
-export const handleStripeWebhook = async (
+const processWebhook = async (
   req: Request,
-  res: Response
+  res: Response,
+  secret: string,
+  handleEvent: (event: Stripe.Event) => Promise<void>
 ): Promise<Response> => {
   const signature = req.headers['stripe-signature'];
-  if (signature == null || config.stripeWebhookSecret === '') {
+  if (signature == null || secret === '') {
     return res.status(400).end();
   }
 
   let event: Stripe.Event;
   try {
-    event = getStripe().webhooks.constructEvent(
-      req.body,
-      signature,
-      config.stripeWebhookSecret
-    );
+    event = getStripe().webhooks.constructEvent(req.body, signature, secret);
   } catch {
     return res.status(400).json({ message: 'Invalid signature.' });
   }
 
   try {
+    await handleEvent(event);
+  } catch {
+    // Signal Stripe to retry.
+    return res.status(500).end();
+  }
+
+  return res.status(200).json({ received: true });
+};
+
+// Platform ("Your account") events: payments are destination charges created
+// on the platform account, so their events arrive here.
+export const handleStripeWebhook = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  await processWebhook(req, res, config.stripeWebhookSecret, async (event) => {
     switch (event.type) {
       case 'payment_intent.succeeded':
         await finalizePaidTicket(event.data.object.id);
@@ -257,16 +271,28 @@ export const handleStripeWebhook = async (
         }
         break;
       }
-      case 'account.updated':
-        await syncAccountFromEvent(event.data.object);
-        break;
       default:
         break;
     }
-  } catch {
-    // Signal Stripe to retry.
-    return res.status(500).end();
-  }
+  });
 
-  return res.status(200).json({ received: true });
-};
+// "Connected accounts" events: organizer Express account lifecycle. This is a
+// separate destination in Stripe with its own signing secret.
+export const handleStripeConnectWebhook = async (
+  req: Request,
+  res: Response
+): Promise<Response> =>
+  await processWebhook(
+    req,
+    res,
+    config.stripeConnectWebhookSecret,
+    async (event) => {
+      switch (event.type) {
+        case 'account.updated':
+          await syncAccountFromEvent(event.data.object);
+          break;
+        default:
+          break;
+      }
+    }
+  );

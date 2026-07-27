@@ -27,6 +27,7 @@ interface Config {
   turnstileSecretKey: string;
   stripeSecretKey: string;
   stripeWebhookSecret: string;
+  stripeConnectWebhookSecret: string;
   stripePlatformFeeBps: string;
   apiUrl: string;
   socketUrl: string;
@@ -66,6 +67,7 @@ const config: Config = {
   turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY ?? '',
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? '',
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+  stripeConnectWebhookSecret: process.env.STRIPE_CONNECT_WEBHOOK_SECRET ?? '',
   stripePlatformFeeBps: process.env.STRIPE_PLATFORM_FEE_BPS ?? '',
   apiUrl: process.env.KEEBMEET_API_URL ?? 'http://localhost:3000',
   socketUrl: process.env.KEEBMEET_SOCKET_URL ?? 'http://localhost:3002',

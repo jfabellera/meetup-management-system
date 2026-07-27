@@ -5,7 +5,11 @@ import { type Request, type Response } from 'express';
 
 jest.mock('../config', () => ({
   __esModule: true,
-  default: { stripeWebhookSecret: 'whsec_test', webUrl: 'http://localhost' },
+  default: {
+    stripeWebhookSecret: 'whsec_test',
+    stripeConnectWebhookSecret: 'whsec_connect_test',
+    webUrl: 'http://localhost',
+  },
 }));
 jest.mock('../entity/User', () => ({ User: { findOne: jest.fn() } }));
 jest.mock('../util/stripe', () => ({ getStripe: jest.fn() }));
@@ -15,8 +19,13 @@ jest.mock('./ticketPayments', () => ({
   releasePaidTicketHold: jest.fn(),
 }));
 
+import { User } from '../entity/User';
 import { getStripe } from '../util/stripe';
-import { createAccountLink, handleStripeWebhook } from './stripe';
+import {
+  createAccountLink,
+  handleStripeConnectWebhook,
+  handleStripeWebhook,
+} from './stripe';
 import {
   finalizePaidTicket,
   markTicketRefunded,
@@ -46,8 +55,11 @@ const mockResponse = (): MockResponse => {
   return res as MockResponse;
 };
 
-// Drives the webhook with a given (already-verified) Stripe event.
-const invokeWebhook = async (event: unknown): Promise<MockResponse> => {
+// Drives a webhook handler with a given (already-verified) Stripe event.
+const invokeWebhook = async (
+  event: unknown,
+  handler = handleStripeWebhook
+): Promise<MockResponse> => {
   mockedGetStripe.mockReturnValue({
     webhooks: { constructEvent: jest.fn().mockReturnValue(event) },
   } as any);
@@ -56,7 +68,7 @@ const invokeWebhook = async (event: unknown): Promise<MockResponse> => {
     body: Buffer.from('{}'),
   } as unknown as Request;
   const res = mockResponse();
-  await handleStripeWebhook(req, res);
+  await handler(req, res);
   return res;
 };
 
@@ -184,5 +196,56 @@ describe('handleStripeWebhook', () => {
 
     expect(res.statusCode).toBe(400);
     expect(mockedFinalize).not.toHaveBeenCalled();
+  });
+
+  it('ignores account.updated (handled by the connect endpoint)', async () => {
+    const res = await invokeWebhook({
+      type: 'account.updated',
+      data: { object: { id: 'acct_1' } },
+    });
+
+    expect(jest.mocked(User.findOne)).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+  });
+});
+
+describe('handleStripeConnectWebhook', () => {
+  it('syncs the organizer status mirror on account.updated', async () => {
+    const user = { save: jest.fn().mockResolvedValue(undefined) } as any;
+    jest.mocked(User.findOne).mockResolvedValue(user);
+
+    const res = await invokeWebhook(
+      {
+        type: 'account.updated',
+        data: {
+          object: {
+            id: 'acct_1',
+            charges_enabled: true,
+            payouts_enabled: true,
+            details_submitted: true,
+          },
+        },
+      },
+      handleStripeConnectWebhook
+    );
+
+    expect(jest.mocked(User.findOne)).toHaveBeenCalledWith({
+      where: { stripe_account_id: 'acct_1' },
+    });
+    expect(user.stripe_charges_enabled).toBe(true);
+    expect(user.stripe_payouts_enabled).toBe(true);
+    expect(user.stripe_details_submitted).toBe(true);
+    expect(user.save).toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('ignores payment events (handled by the platform endpoint)', async () => {
+    const res = await invokeWebhook(
+      { type: 'payment_intent.succeeded', data: { object: { id: 'pi_1' } } },
+      handleStripeConnectWebhook
+    );
+
+    expect(mockedFinalize).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
   });
 });
