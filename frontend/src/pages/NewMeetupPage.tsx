@@ -16,7 +16,7 @@ import { useAppSelector } from '@/store/hooks';
 import { SLUG_REGEX, slugify } from '@keebmeet/shared';
 import { useFormik } from 'formik';
 import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import GroupCombobox from '../components/Meetups/GroupCombobox';
 import MeetupImageField from '../components/Meetups/MeetupImageField';
@@ -278,21 +278,34 @@ const NewMeetupPage = (): ReactNode => {
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="isPaid" className="pr-4">
-                    Will this meetup charge for tickets?
-                  </Label>
-                  <Checkbox
-                    id="isPaid"
-                    name="isPaid"
-                    checked={formik.values.isPaid}
-                    onCheckedChange={(checked) => {
-                      const isPaid = checked === true;
-                      void formik.setFieldValue('isPaid', isPaid);
-                      if (!isPaid) void formik.setFieldValue('price', 0);
-                    }}
-                  />
-                  <span>Yes</span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="isPaid" className="pr-4">
+                      Will this meetup charge for tickets?
+                    </Label>
+                    <Checkbox
+                      id="isPaid"
+                      name="isPaid"
+                      checked={formik.values.isPaid}
+                      onCheckedChange={(checked) => {
+                        const isPaid = checked === true;
+                        void formik.setFieldValue('isPaid', isPaid);
+                        if (!isPaid) void formik.setFieldValue('price', 0);
+                      }}
+                    />
+                    <span>Yes</span>
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    Paid tickets are subject to the{' '}
+                    <Link
+                      to="/legal/organizer-payment-terms"
+                      target="_blank"
+                      className="underline underline-offset-2"
+                    >
+                      Organizer Payment Terms
+                    </Link>
+                    .
+                  </p>
                 </div>
 
                 <FormField

@@ -74,6 +74,9 @@ export class User extends BaseEntity {
   @Column({ type: 'boolean', default: false })
   stripe_details_submitted: boolean;
 
+  @Column({ type: 'timestamptz', nullable: true })
+  payment_terms_accepted_at?: Date | null;
+
   @Column({ type: 'boolean', default: false })
   is_verified: boolean;
 

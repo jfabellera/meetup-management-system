@@ -7,6 +7,7 @@ export interface StripeConnectStatus {
   is_stripe_connected: boolean;
   stripe_charges_enabled: boolean;
   stripe_details_submitted: boolean;
+  payment_terms_accepted: boolean;
 }
 
 export const stripeSlice = createApi({
@@ -34,11 +35,16 @@ export const stripeSlice = createApi({
     }),
     // Creates the connected account if needed and returns a hosted-onboarding
     // URL to redirect the organizer to.
-    createStripeAccountLink: builder.mutation<{ url: string }, void>({
-      query: () => ({
+    createStripeAccountLink: builder.mutation<
+      { url: string },
+      { acceptPaymentTerms: boolean }
+    >({
+      query: ({ acceptPaymentTerms }) => ({
         url: 'stripe/connect/account-link',
         method: 'POST',
+        body: { accept_payment_terms: acceptPaymentTerms },
       }),
+      invalidatesTags: ['StripeStatus'],
     }),
     // Returns a single-use link into the organizer's Express Dashboard.
     createStripeLoginLink: builder.mutation<{ url: string }, void>({

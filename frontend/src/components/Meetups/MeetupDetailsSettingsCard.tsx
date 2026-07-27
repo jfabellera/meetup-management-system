@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useFormik } from 'formik';
 import { useEffect, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   useCheckSlugAvailableQuery,
@@ -465,18 +466,20 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               errorMessage={formik.errors.capacity}
             />
             {isEditable ? (
-              <div className="flex items-center gap-2 py-2">
-                <Checkbox
-                  id="isPaid"
-                  name="isPaid"
-                  checked={formik.values.isPaid}
-                  onCheckedChange={(checked) => {
-                    const isPaid = checked === true;
-                    void formik.setFieldValue('isPaid', isPaid);
-                    if (!isPaid) void formik.setFieldValue('price', 0);
-                  }}
-                />
-                <Label htmlFor="isPaid">Charge for tickets</Label>
+              <div className="flex flex-col gap-1 py-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="isPaid"
+                    name="isPaid"
+                    checked={formik.values.isPaid}
+                    onCheckedChange={(checked) => {
+                      const isPaid = checked === true;
+                      void formik.setFieldValue('isPaid', isPaid);
+                      if (!isPaid) void formik.setFieldValue('price', 0);
+                    }}
+                  />
+                  <Label htmlFor="isPaid">Charge for tickets</Label>
+                </div>
               </div>
             ) : null}
             <EditableFormField
@@ -492,6 +495,17 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               onBlur={formik.handleBlur}
               errorMessage={formik.errors.price}
             />
+            <p className="text-muted-foreground text-xs">
+              Paid tickets are subject to the{' '}
+              <Link
+                to="/legal/organizer-payment-terms"
+                target="_blank"
+                className="underline underline-offset-2"
+              >
+                Organizer Payment Terms
+              </Link>
+              .
+            </p>
           </>
         ) : null}
         <MeetupImageField

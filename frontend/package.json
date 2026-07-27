@@ -31,6 +31,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-icons": "^5.6.0",
+    "react-markdown": "^10.1.0",
     "react-qr-barcode-scanner": "^2.1.25",
     "react-redux": "^9.3.0",
     "react-router-dom": "^7.18.0",

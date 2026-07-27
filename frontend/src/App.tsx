@@ -42,6 +42,7 @@ import { ManageMeetupDisplayPage } from './pages/ManageMeetupDisplayPage';
 import MeetupDisplayPage from './pages/MeetupDisplayPage';
 import NewArchiveMeetupPage from './pages/NewArchiveMeetupPage';
 import NewMeetupFromEventbritePage from './pages/NewMeetupFromEventbritePage';
+import OrganizerPaymentTermsPage from './pages/OrganizerPaymentTermsPage';
 import StripeRefreshPage from './pages/StripeRefreshPage';
 import RsvpReturnPage from './pages/RsvpReturnPage';
 import StripeReturnPage from './pages/StripeReturnPage';
@@ -163,6 +164,10 @@ const App = (): ReactNode => {
                   <StripeRefreshPage />
                 </RequireOrganizer>
               }
+            />
+            <Route
+              path="/legal/organizer-payment-terms"
+              element={<OrganizerPaymentTermsPage />}
             />
             <Route
               path="/account"

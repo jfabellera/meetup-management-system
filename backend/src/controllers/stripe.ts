@@ -65,11 +65,33 @@ const resetStripeAccount = async (user: User): Promise<void> => {
   await user.save();
 };
 
+/**
+ * Organizers must agree to the Organizer Payment Terms before connecting Stripe
+ */
+const acceptedPaymentTerms = async (
+  user: User,
+  req: Request
+): Promise<boolean> => {
+  if (user.payment_terms_accepted_at != null) return true;
+  if (req.body?.accept_payment_terms !== true) return false;
+
+  user.payment_terms_accepted_at = new Date();
+  await user.save();
+  return true;
+};
+
+const PAYMENT_TERMS_REQUIRED_MESSAGE =
+  'You must agree to the Organizer Payment Terms before connecting Stripe.';
+
 export const createConnectAccount = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
   const user = res.locals.requestor as User;
+
+  if (!(await acceptedPaymentTerms(user, req))) {
+    return res.status(403).json({ message: PAYMENT_TERMS_REQUIRED_MESSAGE });
+  }
 
   try {
     const accountId = await ensureConnectedAccount(user);
@@ -86,6 +108,10 @@ export const createAccountLink = async (
   res: Response
 ): Promise<Response> => {
   const user = res.locals.requestor as User;
+
+  if (!(await acceptedPaymentTerms(user, req))) {
+    return res.status(403).json({ message: PAYMENT_TERMS_REQUIRED_MESSAGE });
+  }
 
   try {
     const accountId = await ensureConnectedAccount(user);
@@ -138,11 +164,14 @@ export const getConnectStatus = async (
 ): Promise<Response> => {
   const user = res.locals.requestor as User;
 
+  const paymentTermsAccepted = user.payment_terms_accepted_at != null;
+
   if (user.stripe_account_id == null) {
     return res.status(200).json({
       is_stripe_connected: false,
       stripe_charges_enabled: false,
       stripe_details_submitted: false,
+      payment_terms_accepted: paymentTermsAccepted,
     });
   }
 
@@ -154,6 +183,7 @@ export const getConnectStatus = async (
       is_stripe_connected: true,
       stripe_charges_enabled: account.charges_enabled,
       stripe_details_submitted: account.details_submitted,
+      payment_terms_accepted: paymentTermsAccepted,
     });
   } catch (error) {
     // Unlink stripe on closed accounts
@@ -163,6 +193,7 @@ export const getConnectStatus = async (
         is_stripe_connected: false,
         stripe_charges_enabled: false,
         stripe_details_submitted: false,
+        payment_terms_accepted: paymentTermsAccepted,
       });
     }
 

@@ -16,7 +16,9 @@ const StripeRefreshPage = (): ReactNode => {
 
     void (async () => {
       try {
-        const { url } = await createStripeAccountLink().unwrap();
+        const { url } = await createStripeAccountLink({
+          acceptPaymentTerms: false,
+        }).unwrap();
         window.location.href = url;
       } catch {
         toast.error('Could not resume Stripe onboarding. Please try again.');

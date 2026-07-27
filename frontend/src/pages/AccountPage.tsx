@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FormField } from '@/components/ui/form-field';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -21,9 +23,11 @@ import { useFormik } from 'formik';
 import { Loader2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { FaDiscord } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import * as Yup from 'yup';
 import GroupsCard from '../components/Account/GroupsCard';
+import OrganizerPaymentTerms from '../components/Account/OrganizerPaymentTerms';
 import Page from '../components/Page/Page';
 import BackButton from '../components/shared/BackButton';
 import ImageUploadField from '../components/shared/ImageUploadField';
@@ -93,18 +97,31 @@ const AccountPage = (): ReactNode => {
   const [createStripeLoginLink, { isLoading: isOpeningDashboard }] =
     useCreateStripeLoginLinkMutation();
   const [isStartingStripe, setIsStartingStripe] = useState(false);
+  const [showPaymentTerms, setShowPaymentTerms] = useState(false);
+  const [agreedToPaymentTerms, setAgreedToPaymentTerms] = useState(false);
 
-  const onSetupPayments = (): void => {
+  const startStripeOnboarding = (acceptPaymentTerms: boolean): void => {
     setIsStartingStripe(true);
     void (async () => {
       try {
-        const { url } = await createStripeAccountLink().unwrap();
+        const { url } = await createStripeAccountLink({
+          acceptPaymentTerms,
+        }).unwrap();
         window.location.href = url;
       } catch {
         setIsStartingStripe(false);
         toast.error('Could not start Stripe onboarding. Please try again.');
       }
     })();
+  };
+
+  const onSetupPayments = (): void => {
+    if (stripeStatus?.payment_terms_accepted ?? false) {
+      startStripeOnboarding(false);
+    } else {
+      setAgreedToPaymentTerms(false);
+      setShowPaymentTerms(true);
+    }
   };
 
   const onOpenDashboard = (): void => {
@@ -379,30 +396,46 @@ const AccountPage = (): ReactNode => {
             <div className="flex flex-col gap-4">
               <span className="t text-green-600">You're an organizer.</span>
 
-              <div className="flex items-center justify-between gap-4">
-                <span>Payments</span>
-                {(stripeStatus?.stripe_charges_enabled ?? false) ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-green-600">
-                      Payments enabled
-                    </span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-4">
+                  <span>Payments</span>
+                  {(stripeStatus?.stripe_charges_enabled ?? false) ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-green-600">
+                        Payments enabled
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onOpenDashboard}
+                        disabled={isOpeningDashboard}
+                      >
+                        Stripe dashboard
+                        {isOpeningDashboard ? <Spinner /> : null}
+                      </Button>
+                    </div>
+                  ) : (
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onOpenDashboard}
-                      disabled={isOpeningDashboard}
+                      onClick={onSetupPayments}
+                      disabled={isStartingStripe}
                     >
-                      Stripe dashboard
-                      {isOpeningDashboard ? <Spinner /> : null}
+                      {(stripeStatus?.is_stripe_connected ?? false)
+                        ? 'Continue setup'
+                        : 'Set up payments'}
                     </Button>
-                  </div>
-                ) : (
-                  <Button onClick={onSetupPayments} disabled={isStartingStripe}>
-                    {(stripeStatus?.is_stripe_connected ?? false)
-                      ? 'Continue setup'
-                      : 'Set up payments'}
-                  </Button>
-                )}
+                  )}
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Selling tickets is subject to the{' '}
+                  <Link
+                    to="/legal/organizer-payment-terms"
+                    target="_blank"
+                    className="underline underline-offset-2"
+                  >
+                    Organizer Payment Terms
+                  </Link>
+                  .
+                </p>
               </div>
 
               <div className="flex items-center justify-between gap-4">
@@ -477,6 +510,55 @@ const AccountPage = (): ReactNode => {
             >
               Unlink
               {isUnlinking ? <Spinner /> : null}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={showPaymentTerms}
+        onOpenChange={(open) => {
+          if (!open) setShowPaymentTerms(false);
+        }}
+      >
+        <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Organizer Payment Terms</DialogTitle>
+            <DialogDescription>
+              Review and agree to these terms before connecting your Stripe
+              account. You can revisit them anytime from this page.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto rounded-md border p-4">
+            <OrganizerPaymentTerms />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="agreePaymentTerms"
+              checked={agreedToPaymentTerms}
+              onCheckedChange={(checked) =>
+                setAgreedToPaymentTerms(checked === true)
+              }
+            />
+            <Label htmlFor="agreePaymentTerms" className="font-normal">
+              I have read and agree to the Organizer Payment Terms
+            </Label>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => setShowPaymentTerms(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={!agreedToPaymentTerms || isStartingStripe}
+              onClick={() => {
+                setShowPaymentTerms(false);
+                startStripeOnboarding(true);
+              }}
+            >
+              Agree and continue
             </Button>
           </DialogFooter>
         </DialogContent>
