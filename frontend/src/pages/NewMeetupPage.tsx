@@ -289,8 +289,11 @@ const NewMeetupPage = (): ReactNode => {
                       checked={formik.values.isPaid}
                       onCheckedChange={(checked) => {
                         const isPaid = checked === true;
-                        void formik.setFieldValue('isPaid', isPaid);
-                        if (!isPaid) void formik.setFieldValue('price', 0);
+                        void formik.setValues({
+                          ...formik.values,
+                          isPaid,
+                          price: isPaid ? formik.values.price : 0,
+                        });
                       }}
                     />
                     <span>Yes</span>
