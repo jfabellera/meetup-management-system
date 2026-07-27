@@ -1,7 +1,10 @@
 import express from 'express';
 import { io } from 'socket.io-client';
 import config from './config';
-import { handleStripeWebhook } from './controllers/stripe';
+import {
+  handleStripeConnectWebhook,
+  handleStripeWebhook,
+} from './controllers/stripe';
 import {
   scheduleExistingHolds,
   sweepExpiredHolds,
@@ -43,6 +46,12 @@ class Server {
       '/stripe/webhook',
       express.raw({ type: 'application/json' }),
       handleStripeWebhook as express.RequestHandler
+    );
+
+    this.express.post(
+      '/stripe/webhook/connect',
+      express.raw({ type: 'application/json' }),
+      handleStripeConnectWebhook as express.RequestHandler
     );
 
     this.express.use(express.json());
