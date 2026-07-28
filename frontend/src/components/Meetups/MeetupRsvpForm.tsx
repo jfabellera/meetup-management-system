@@ -16,6 +16,7 @@ import type { Appearance } from '@stripe/stripe-js';
 import { useFormik } from 'formik';
 import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { FaStripe } from 'react-icons/fa';
 import { FiArrowLeft, FiLock, FiUserCheck, FiUserX } from 'react-icons/fi';
 import { toast } from 'sonner';
 import * as Yup from 'yup';
@@ -352,7 +353,7 @@ export const MeetupRsvpForm = ({
         ) : null}
       </div>
 
-      <div className="flex shrink-0 flex-col gap-3 p-4">
+      <div className="flex shrink-0 flex-col gap-2 p-4">
         {isPaymentStep && priceLabel != null ? (
           <PayButton
             amountLabel={priceLabel}
@@ -385,6 +386,11 @@ export const MeetupRsvpForm = ({
             <FiUserX />
             {isPendingHold ? 'Cancel reservation' : 'Cancel RSVP'}
           </Button>
+        ) : null}
+        {isPaymentStep ? (
+          <p className="text-muted-foreground -mb-2 flex h-4 items-center justify-center gap-1 text-xs">
+            Powered by <FaStripe title="Stripe" className="size-7" />
+          </p>
         ) : null}
       </div>
 
