@@ -48,8 +48,14 @@ export const ExpandableCard = ({
         }`}
       />
     </button>
-    {expanded ? (
-      <div className="flex flex-col gap-3 border-t p-3">{children}</div>
-    ) : null}
+    <div
+      className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+        expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+      }`}
+    >
+      <div className="overflow-hidden">
+        <div className="flex flex-col gap-3 border-t p-3">{children}</div>
+      </div>
+    </div>
   </div>
 );
