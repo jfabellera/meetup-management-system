@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/tooltip';
 import { type DiscordServer, type GroupInfo } from '@keebmeet/shared';
 import { useState, type FormEvent, type ReactNode } from 'react';
+import { FaDiscord } from 'react-icons/fa';
 import {
   FiAlertTriangle,
   FiEdit2,
@@ -41,6 +42,7 @@ import {
 } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { CopyButton } from '../components/CopyButton';
+import { ExpandableCard } from '../components/ExpandableCard';
 import {
   useCreateGroupMutation,
   useDeleteGroupMutation,
@@ -124,6 +126,8 @@ const AdminGroupsPage = (): ReactNode => {
   const [editing, setEditing] = useState<GroupInfo | null>(null);
   const [form, setForm] = useState<GroupForm | null>(null);
   const [pendingDelete, setPendingDelete] = useState<GroupInfo | null>(null);
+  // Which mobile card is expanded to reveal its details (one at a time).
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
 
   const isSaving = isCreating || isEditing;
 
@@ -191,6 +195,13 @@ const AdminGroupsPage = (): ReactNode => {
     })();
   };
 
+  const isEmpty = groups == null || groups.length === 0;
+  const emptyState = (
+    <p className="text-muted-foreground p-4 text-center text-sm">
+      No groups yet. Create one to get started.
+    </p>
+  );
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -209,7 +220,8 @@ const AdminGroupsPage = (): ReactNode => {
         </Button>
       </div>
 
-      <div className="bg-card text-card-foreground rounded-lg p-2 shadow-sm">
+      {/* Desktop: full table. */}
+      <div className="bg-card text-card-foreground hidden rounded-lg p-2 shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -265,11 +277,76 @@ const AdminGroupsPage = (): ReactNode => {
             ))}
           </TableBody>
         </Table>
-        {groups == null || groups.length === 0 ? (
-          <p className="text-muted-foreground p-4 text-center text-sm">
-            No groups yet. Create one to get started.
-          </p>
-        ) : null}
+        {isEmpty ? emptyState : null}
+      </div>
+
+      {/* Mobile: a compact card per group; tap to reveal details and actions. */}
+      <div className="flex flex-col gap-2 md:hidden">
+        {(groups ?? []).map((group) => (
+          <ExpandableCard
+            key={group.id}
+            title={group.name}
+            subtitle={<span className="font-mono">{group.code}</span>}
+            trailing={
+              group.discord_server_id != null ? (
+                <FaDiscord
+                  className="size-4 shrink-0 text-[#5865F2]"
+                  aria-label={`${group.name} has a Discord server`}
+                />
+              ) : null
+            }
+            expanded={expandedGroupId === group.id}
+            onToggle={() =>
+              setExpandedGroupId(
+                expandedGroupId === group.id ? null : group.id
+              )
+            }
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground text-sm">Code</span>
+              <span className="inline-flex items-center gap-1 font-mono">
+                {group.code}
+                <CopyButton
+                  value={group.code}
+                  label={`Copy code ${group.code}`}
+                  toastMessage="Code copied to clipboard"
+                  className="size-6"
+                />
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground text-sm">
+                Discord server
+              </span>
+              <DiscordServerCell
+                serverId={group.discord_server_id}
+                servers={discordServers}
+                isLoadingServers={isLoadingServers}
+              />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => openEdit(group)}
+              >
+                <FiEdit2 />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setPendingDelete(group)}
+              >
+                <FiTrash2 />
+                Delete
+              </Button>
+            </div>
+          </ExpandableCard>
+        ))}
+        {isEmpty ? emptyState : null}
       </div>
 
       {/* Create / edit dialog */}

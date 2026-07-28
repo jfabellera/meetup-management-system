@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/table';
 import { type User } from '@keebmeet/shared';
 import dayjs from 'dayjs';
+import { ExpandableCard } from '../components/ExpandableCard';
 import { useMemo, useState, type ReactNode } from 'react';
 import { FaDiscord } from 'react-icons/fa';
 import { FiCheck, FiChevronDown, FiChevronUp } from 'react-icons/fi';
@@ -474,18 +475,10 @@ const AdminUsersPage = (): ReactNode => {
       <div className="flex flex-col gap-2 md:hidden">
         {filteredUsers.map((user) => {
           const { isSaving, isSelf, canEditAdmin } = accessFlags(user);
-          const expanded = expandedUserId === user.id;
           return (
-            <div
+            <ExpandableCard
               key={user.id}
-              className="bg-card text-card-foreground rounded-lg shadow-sm"
-            >
-              <button
-                type="button"
-                onClick={() => setExpandedUserId(expanded ? null : user.id)}
-                aria-expanded={expanded}
-                className="flex w-full items-center gap-3 p-3 text-left"
-              >
+              leading={
                 <Avatar className="shrink-0">
                   <AvatarImage
                     src={user.photo_url}
@@ -495,53 +488,47 @@ const AdminUsersPage = (): ReactNode => {
                     {user.display_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{user.display_name}</p>
-                  <p className="text-muted-foreground truncate text-sm">
-                    {user.email}
-                  </p>
-                  <div className="mt-1 flex flex-wrap gap-1 empty:hidden">
-                    {roleBadges(user)}
-                  </div>
-                </div>
-                {user.is_discord_linked ? (
+              }
+              title={user.display_name}
+              subtitle={user.email}
+              badges={roleBadges(user)}
+              trailing={
+                user.is_discord_linked ? (
                   <FaDiscord
                     className="size-4 shrink-0 text-[#5865F2]"
                     aria-label={`${user.display_name} has Discord linked`}
                   />
-                ) : null}
-                <FiChevronDown
-                  className={`text-muted-foreground size-4 shrink-0 transition-transform ${
-                    expanded ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              {expanded ? (
-                <div className="flex flex-col gap-3 border-t p-3">
-                  <p className="text-muted-foreground text-xs">
-                    Joined {dayjs(user.created_at).format('MMM D, YYYY')}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Organizer</span>
-                    {organizerSwitch(user, isSaving)}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Admin</span>
-                    {adminSwitch(user, isSaving, isSelf, canEditAdmin)}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Owner</span>
-                    {ownerIndicator(user)}
-                  </div>
-                  <Link
-                    to={`/user/${user.username}`}
-                    className="text-primary text-sm hover:underline"
-                  >
-                    View profile
-                  </Link>
-                </div>
-              ) : null}
-            </div>
+                ) : null
+              }
+              expanded={expandedUserId === user.id}
+              onToggle={() =>
+                setExpandedUserId(
+                  expandedUserId === user.id ? null : user.id
+                )
+              }
+            >
+              <p className="text-muted-foreground text-xs">
+                Joined {dayjs(user.created_at).format('MMM D, YYYY')}
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Organizer</span>
+                {organizerSwitch(user, isSaving)}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Admin</span>
+                {adminSwitch(user, isSaving, isSelf, canEditAdmin)}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Owner</span>
+                {ownerIndicator(user)}
+              </div>
+              <Link
+                to={`/user/${user.username}`}
+                className="text-primary text-sm hover:underline"
+              >
+                View profile
+              </Link>
+            </ExpandableCard>
           );
         })}
         {isEmpty ? emptyState : null}
