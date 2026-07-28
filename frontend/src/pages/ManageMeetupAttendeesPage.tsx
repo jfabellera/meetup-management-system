@@ -10,21 +10,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { useDisclosure } from '@/hooks/useDisclosure';
 import { type TicketInfo } from '@keebmeet/shared';
 import dayjs from 'dayjs';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { FiEdit2 } from 'react-icons/fi';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { ExpandableCard } from '../components/ExpandableCard';
 import { useGetMeetupQuery } from '../store/meetupSlice';
 import {
@@ -82,23 +75,12 @@ const ManageMeetupAttendeesPage = (): ReactNode => {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const [viewing, setViewing] = useState<TicketInfo | null>(null);
-  const [expandedAttendeeId, setExpandedAttendeeId] = useState<string | null>(
-    null
-  );
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [raffleEntries, setRaffleEntries] = useState<string>('');
   const [refundConfirmOpen, setRefundConfirmOpen] = useState(false);
 
   const isPaidMeetup =
     meetup?.ticket_types?.some((type) => type.price_cents > 0) ?? false;
-
-  const sortedAttendees = useMemo(
-    () =>
-      attendees
-        ?.slice()
-        .sort((a, b) => (dayjs(a.created_at).isBefore(b.created_at) ? 1 : -1)),
-    [attendees]
-  );
 
   const openDialog = (attendee: TicketInfo): void => {
     setViewing(attendee);
@@ -183,92 +165,94 @@ const ManageMeetupAttendeesPage = (): ReactNode => {
     })();
   };
 
-  const isEmpty = sortedAttendees == null || sortedAttendees.length === 0;
-  const emptyState = (
-    <p className="text-muted-foreground p-4 text-center text-sm">
-      No attendees yet.
-    </p>
-  );
+  const columns: Array<DataTableColumn<TicketInfo>> = [
+    {
+      id: 'name',
+      header: 'Display Name',
+      sortLabel: 'Name',
+      sortValue: (attendee) => attendee.ticket_holder_display_name,
+      cell: (attendee) => attendee.ticket_holder_display_name,
+    },
+    ...(isPaidMeetup
+      ? [
+          {
+            id: 'status',
+            header: 'Status',
+            cell: (attendee: TicketInfo) =>
+              paymentStatusBadge(attendee.payment_status),
+          } satisfies DataTableColumn<TicketInfo>,
+        ]
+      : []),
+    {
+      id: 'firstName',
+      header: 'First Name',
+      sortLabel: 'First name',
+      sortValue: (attendee) => attendee.ticket_holder_first_name,
+      cell: (attendee) => orDash(attendee.ticket_holder_first_name),
+    },
+    {
+      id: 'lastName',
+      header: 'Last Name',
+      sortLabel: 'Last name',
+      sortValue: (attendee) => attendee.ticket_holder_last_name,
+      cell: (attendee) => orDash(attendee.ticket_holder_last_name),
+    },
+    {
+      id: 'entries',
+      header: 'Raffle Entries',
+      align: 'center',
+      sortLabel: 'Raffle entries',
+      sortValue: (attendee) => attendee.raffle_entries,
+      cell: (attendee) => attendee.raffle_entries,
+    },
+    {
+      id: 'wins',
+      header: 'Raffle Wins',
+      align: 'center',
+      sortLabel: 'Raffle wins',
+      sortValue: (attendee) => attendee.raffle_wins,
+      cell: (attendee) => attendee.raffle_wins,
+    },
+    {
+      id: 'signedUp',
+      header: 'Signed Up',
+      sortLabel: 'Signed up',
+      sortValue: (attendee) => dayjs(attendee.created_at).valueOf(),
+      cell: (attendee) => dayjs(attendee.created_at).format('M/D/YY hh:mm A'),
+    },
+    {
+      id: 'rsvp',
+      header: 'RSVP Method',
+      cell: (attendee) => attendee.rsvp_method,
+    },
+  ];
 
   return (
     <div className="m-2 flex flex-col gap-4 md:m-4">
-      <h2 className="text-2xl font-semibold">Attendees</h2>
-
-      {/* Desktop: full table. */}
-      <div className="bg-card text-card-foreground hidden rounded-md p-2 shadow-sm md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Display Name</TableHead>
-              {isPaidMeetup ? <TableHead>Status</TableHead> : null}
-              <TableHead className="hidden md:table-cell">First Name</TableHead>
-              <TableHead className="hidden md:table-cell">Last Name</TableHead>
-              <TableHead className="hidden text-center md:table-cell">
-                Raffle Entries
-              </TableHead>
-              <TableHead className="hidden text-center md:table-cell">
-                Raffle Wins
-              </TableHead>
-              <TableHead>Signed Up</TableHead>
-              <TableHead>RSVP Method</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedAttendees != null
-              ? sortedAttendees.map((attendee: TicketInfo) => (
-                  <TableRow
-                    key={attendee.id}
-                    className="hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
-                    onClick={() => {
-                      openDialog(attendee);
-                    }}
-                  >
-                    <TableCell>{attendee.ticket_holder_display_name}</TableCell>
-                    {isPaidMeetup ? (
-                      <TableCell>
-                        {paymentStatusBadge(attendee.payment_status)}
-                      </TableCell>
-                    ) : null}
-                    <TableCell className="hidden md:table-cell">
-                      {orDash(attendee.ticket_holder_first_name)}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {orDash(attendee.ticket_holder_last_name)}
-                    </TableCell>
-                    <TableCell className="hidden text-center md:table-cell">
-                      {attendee.raffle_entries}
-                    </TableCell>
-                    <TableCell className="hidden text-center md:table-cell">
-                      {attendee.raffle_wins}
-                    </TableCell>
-                    <TableCell>
-                      {dayjs(attendee.created_at).format('M/D/YY hh:mm A')}
-                    </TableCell>
-                    <TableCell>{attendee.rsvp_method}</TableCell>
-                  </TableRow>
-                ))
-              : null}
-          </TableBody>
-        </Table>
-        {isEmpty ? emptyState : null}
-      </div>
-
-      {/* Mobile: a compact card per attendee; tap to reveal the details. */}
-      <div className="flex flex-col gap-2 md:hidden">
-        {sortedAttendees?.map((attendee: TicketInfo) => (
+      <DataTable
+        title="Attendees"
+        data={attendees}
+        columns={columns}
+        getRowId={(attendee) => attendee.id}
+        initialSort={{ columnId: 'signedUp', direction: 'desc' }}
+        onRowClick={openDialog}
+        search={{
+          placeholder: 'Search by name…',
+          getText: (attendee) =>
+            `${attendee.ticket_holder_display_name} ${attendee.ticket_holder_first_name} ${attendee.ticket_holder_last_name}`,
+        }}
+        emptyMessage={({ hasRows }) =>
+          hasRows ? 'No attendees match your search.' : 'No attendees yet.'
+        }
+        renderCard={(attendee, { expanded, toggle }) => (
           <ExpandableCard
-            key={attendee.id}
             title={attendee.ticket_holder_display_name}
             subtitle={dayjs(attendee.created_at).format('M/D/YY hh:mm A')}
             trailing={
               isPaidMeetup ? paymentStatusBadge(attendee.payment_status) : null
             }
-            expanded={expandedAttendeeId === attendee.id}
-            onToggle={() =>
-              setExpandedAttendeeId(
-                expandedAttendeeId === attendee.id ? null : attendee.id
-              )
-            }
+            expanded={expanded}
+            onToggle={toggle}
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground text-sm">First name</span>
@@ -306,9 +290,8 @@ const ManageMeetupAttendeesPage = (): ReactNode => {
               Edit details
             </Button>
           </ExpandableCard>
-        ))}
-        {isEmpty ? emptyState : null}
-      </div>
+        )}
+      />
 
       <Dialog
         open={isOpen}

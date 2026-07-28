@@ -18,14 +18,6 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -42,6 +34,7 @@ import {
 } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { CopyButton } from '../components/CopyButton';
+import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { ExpandableCard } from '../components/ExpandableCard';
 import {
   useCreateGroupMutation,
@@ -126,8 +119,6 @@ const AdminGroupsPage = (): ReactNode => {
   const [editing, setEditing] = useState<GroupInfo | null>(null);
   const [form, setForm] = useState<GroupForm | null>(null);
   const [pendingDelete, setPendingDelete] = useState<GroupInfo | null>(null);
-  // Which mobile card is expanded to reveal its details (one at a time).
-  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
 
   const isSaving = isCreating || isEditing;
 
@@ -195,12 +186,71 @@ const AdminGroupsPage = (): ReactNode => {
     })();
   };
 
-  const isEmpty = groups == null || groups.length === 0;
-  const emptyState = (
-    <p className="text-muted-foreground p-4 text-center text-sm">
-      No groups yet. Create one to get started.
-    </p>
-  );
+  const columns: Array<DataTableColumn<GroupInfo>> = [
+    {
+      id: 'name',
+      header: 'Name',
+      sortLabel: 'Name',
+      sortValue: (group) => group.name,
+      cellClassName: 'font-medium',
+      cell: (group) => group.name,
+    },
+    {
+      id: 'code',
+      header: 'Code',
+      sortLabel: 'Code',
+      sortValue: (group) => group.code,
+      cellClassName: 'text-muted-foreground font-mono',
+      cell: (group) => (
+        <span className="inline-flex items-center gap-1">
+          {group.code}
+          <CopyButton
+            value={group.code}
+            label={`Copy code ${group.code}`}
+            toastMessage="Code copied to clipboard"
+            className="size-6"
+          />
+        </span>
+      ),
+    },
+    {
+      id: 'discord',
+      header: 'Discord server',
+      cellClassName: 'text-muted-foreground',
+      cell: (group) => (
+        <DiscordServerCell
+          serverId={group.discord_server_id}
+          servers={discordServers}
+          isLoadingServers={isLoadingServers}
+        />
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      align: 'right',
+      cell: (group) => (
+        <div className="flex justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openEdit(group)}
+            aria-label={`Edit ${group.name}`}
+          >
+            <FiEdit2 />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setPendingDelete(group)}
+            aria-label={`Delete ${group.name}`}
+          >
+            <FiTrash2 />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   if (isLoading) {
     return (
@@ -212,79 +262,33 @@ const AdminGroupsPage = (): ReactNode => {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Manage groups</h1>
-        <Button onClick={openCreate}>
-          <FiPlus />
-          New group
-        </Button>
-      </div>
-
-      {/* Desktop: full table. */}
-      <div className="bg-card text-card-foreground hidden rounded-lg p-2 shadow-sm md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Discord server</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(groups ?? []).map((group) => (
-              <TableRow key={group.id}>
-                <TableCell className="font-medium">{group.name}</TableCell>
-                <TableCell className="text-muted-foreground font-mono">
-                  <span className="inline-flex items-center gap-1">
-                    {group.code}
-                    <CopyButton
-                      value={group.code}
-                      label={`Copy code ${group.code}`}
-                      toastMessage="Code copied to clipboard"
-                      className="size-6"
-                    />
-                  </span>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  <DiscordServerCell
-                    serverId={group.discord_server_id}
-                    servers={discordServers}
-                    isLoadingServers={isLoadingServers}
-                  />
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEdit(group)}
-                      aria-label={`Edit ${group.name}`}
-                    >
-                      <FiEdit2 />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setPendingDelete(group)}
-                      aria-label={`Delete ${group.name}`}
-                    >
-                      <FiTrash2 />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {isEmpty ? emptyState : null}
-      </div>
-
-      {/* Mobile: a compact card per group; tap to reveal details and actions. */}
-      <div className="flex flex-col gap-2 md:hidden">
-        {(groups ?? []).map((group) => (
+      <DataTable
+        title="Manage groups"
+        headerActions={
+          <Button
+            onClick={openCreate}
+            size="icon"
+            aria-label="Create new group"
+            variant="ghost"
+          >
+            <FiPlus />
+          </Button>
+        }
+        data={groups}
+        columns={columns}
+        getRowId={(group) => group.id}
+        initialSort={{ columnId: 'name', direction: 'asc' }}
+        search={{
+          placeholder: 'Search by name or code…',
+          getText: (group) => `${group.name} ${group.code}`,
+        }}
+        emptyMessage={({ hasRows }) =>
+          hasRows
+            ? 'No groups match your search.'
+            : 'No groups yet. Create one to get started.'
+        }
+        renderCard={(group, { expanded, toggle }) => (
           <ExpandableCard
-            key={group.id}
             title={group.name}
             subtitle={<span className="font-mono">{group.code}</span>}
             trailing={
@@ -295,12 +299,8 @@ const AdminGroupsPage = (): ReactNode => {
                 />
               ) : null
             }
-            expanded={expandedGroupId === group.id}
-            onToggle={() =>
-              setExpandedGroupId(
-                expandedGroupId === group.id ? null : group.id
-              )
-            }
+            expanded={expanded}
+            onToggle={toggle}
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-muted-foreground text-sm">Code</span>
@@ -345,9 +345,8 @@ const AdminGroupsPage = (): ReactNode => {
               </Button>
             </div>
           </ExpandableCard>
-        ))}
-        {isEmpty ? emptyState : null}
-      </div>
+        )}
+      />
 
       {/* Create / edit dialog */}
       <Dialog

@@ -10,108 +10,26 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { type User } from '@keebmeet/shared';
 import dayjs from 'dayjs';
-import { ExpandableCard } from '../components/ExpandableCard';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { FaDiscord } from 'react-icons/fa';
-import { FiCheck, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiCheck } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { DataTable, type DataTableColumn } from '../components/DataTable';
+import { ExpandableCard } from '../components/ExpandableCard';
 import { setUserAccess } from '../store/authSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { useGetAllUsersQuery } from '../store/userSlice';
-
-type SortKey = 'name' | 'email' | 'created_at';
-type SortDirection = 'asc' | 'desc';
-
-const SORT_OPTIONS: Array<{
-  value: string;
-  label: string;
-  key: SortKey;
-  direction: SortDirection;
-}> = [
-  {
-    value: 'created_at:desc',
-    label: 'Newest first',
-    key: 'created_at',
-    direction: 'desc',
-  },
-  {
-    value: 'created_at:asc',
-    label: 'Oldest first',
-    key: 'created_at',
-    direction: 'asc',
-  },
-  { value: 'name:asc', label: 'Name (A–Z)', key: 'name', direction: 'asc' },
-  { value: 'name:desc', label: 'Name (Z–A)', key: 'name', direction: 'desc' },
-  { value: 'email:asc', label: 'Email (A–Z)', key: 'email', direction: 'asc' },
-];
-
-const SortableHead = ({
-  label,
-  sortKey,
-  sort,
-  onSort,
-  center = false,
-}: {
-  label: string;
-  sortKey: SortKey;
-  sort: { key: SortKey; direction: SortDirection };
-  onSort: (key: SortKey) => void;
-  center?: boolean;
-}): ReactNode => {
-  const active = sort.key === sortKey;
-  return (
-    <TableHead className={center ? 'text-center' : undefined}>
-      <button
-        type="button"
-        onClick={() => onSort(sortKey)}
-        aria-label={`Sort by ${label}`}
-        className={`hover:text-foreground inline-flex items-center gap-1 transition-colors ${
-          center ? 'mx-auto' : ''
-        } ${active ? 'text-foreground' : ''}`}
-      >
-        {label}
-        {active ? (
-          sort.direction === 'asc' ? (
-            <FiChevronUp className="size-3.5" />
-          ) : (
-            <FiChevronDown className="size-3.5" />
-          )
-        ) : (
-          <FiChevronDown className="size-3.5 opacity-30" />
-        )}
-      </button>
-    </TableHead>
-  );
-};
 
 const AdminUsersPage = (): ReactNode => {
   const dispatch = useAppDispatch();
   const { user: currentUser } = useAppSelector((state) => state.user);
   const { data: users, isLoading, refetch } = useGetAllUsersQuery();
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<
-    'all' | 'organizers' | 'admins' | 'owners'
-  >('all');
+  const [roleFilter, setRoleFilter] = useState<string[]>([]);
   // The user id currently being saved, so we can disable its row while in flight.
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
   // An in-progress admin-status change awaiting password confirmation.
@@ -120,70 +38,6 @@ const AdminUsersPage = (): ReactNode => {
     nextValue: boolean;
   } | null>(null);
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
-  const [sort, setSort] = useState<{ key: SortKey; direction: SortDirection }>({
-    key: 'created_at',
-    direction: 'desc',
-  });
-
-  const toggleSort = (key: SortKey): void => {
-    setSort((prev) =>
-      prev.key === key
-        ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
-        : { key, direction: 'asc' }
-    );
-  };
-
-  const filteredUsers = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const matched = (users ?? []).filter((user) => {
-      const matchesSearch =
-        query === '' ||
-        user.display_name.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query);
-      const matchesRole =
-        roleFilter === 'all' ||
-        (roleFilter === 'organizers' && user.is_organizer) ||
-        (roleFilter === 'admins' && user.is_admin) ||
-        (roleFilter === 'owners' && user.is_owner);
-      return matchesSearch && matchesRole;
-    });
-
-    const compare = (a: User, b: User): number => {
-      switch (sort.key) {
-        case 'email':
-          return a.email.localeCompare(b.email, undefined, {
-            sensitivity: 'base',
-          });
-        case 'created_at':
-          return dayjs(a.created_at).valueOf() - dayjs(b.created_at).valueOf();
-        case 'name':
-        default:
-          return a.display_name.localeCompare(b.display_name, undefined, {
-            sensitivity: 'base',
-          });
-      }
-    };
-
-    const direction = sort.direction === 'asc' ? 1 : -1;
-    return [...matched].sort((a, b) => {
-      const primary = compare(a, b) * direction;
-      if (primary !== 0) return primary;
-      return a.display_name.localeCompare(b.display_name, undefined, {
-        sensitivity: 'base',
-      });
-    });
-  }, [users, search, roleFilter, sort]);
-
-  const roleFilters: Array<{
-    value: 'all' | 'organizers' | 'admins' | 'owners';
-    label: string;
-  }> = [
-    { value: 'all', label: 'All' },
-    { value: 'organizers', label: 'Organizers' },
-    { value: 'admins', label: 'Admins' },
-    { value: 'owners', label: 'Owners' },
-  ];
 
   const updateAccess = async (
     user: User,
@@ -316,14 +170,87 @@ const AdminUsersPage = (): ReactNode => {
     />
   );
 
-  const isEmpty = filteredUsers.length === 0;
-  const emptyState = (
-    <p className="text-muted-foreground p-4 text-center text-sm">
-      {users != null && users.length > 0
-        ? 'No users match your search.'
-        : 'No users found.'}
-    </p>
-  );
+  const columns: Array<DataTableColumn<User>> = [
+    {
+      id: 'avatar',
+      header: '',
+      cell: (user) => (
+        <Link
+          to={`/user/${user.username}`}
+          aria-label={`View ${user.display_name}'s profile`}
+        >
+          <Avatar>
+            <AvatarImage
+              src={user.photo_url}
+              alt={`${user.display_name}'s avatar`}
+            />
+            <AvatarFallback>
+              {user.display_name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
+      ),
+    },
+    {
+      id: 'name',
+      header: 'Name',
+      sortLabel: 'Name',
+      sortValue: (user) => user.display_name,
+      cellClassName: 'font-medium',
+      cell: (user) => (
+        <Link to={`/user/${user.username}`} className="hover:underline">
+          {user.display_name}
+        </Link>
+      ),
+    },
+    {
+      id: 'email',
+      header: 'Email',
+      sortLabel: 'Email',
+      sortValue: (user) => user.email,
+      cellClassName: 'text-muted-foreground',
+      cell: (user) => user.email,
+    },
+    {
+      id: 'joined',
+      header: 'Joined',
+      sortLabel: 'Joined',
+      sortValue: (user) => dayjs(user.created_at).valueOf(),
+      cellClassName: 'text-muted-foreground whitespace-nowrap',
+      cell: (user) => dayjs(user.created_at).format('MMM D, YYYY h:mm A'),
+    },
+    {
+      id: 'discord',
+      header: 'Discord',
+      align: 'center',
+      cell: (user) => (
+        <div className="flex justify-center">{discordIndicator(user)}</div>
+      ),
+    },
+    {
+      id: 'organizer',
+      header: 'Organizer',
+      align: 'center',
+      cell: (user) => organizerSwitch(user, accessFlags(user).isSaving),
+    },
+    {
+      id: 'admin',
+      header: 'Admin',
+      align: 'center',
+      cell: (user) => {
+        const { isSaving, isSelf, canEditAdmin } = accessFlags(user);
+        return adminSwitch(user, isSaving, isSelf, canEditAdmin);
+      },
+    },
+    {
+      id: 'owner',
+      header: 'Owner',
+      align: 'center',
+      cell: (user) => (
+        <div className="flex justify-center">{ownerIndicator(user)}</div>
+      ),
+    },
+  ];
 
   if (isLoading) {
     return (
@@ -335,149 +262,45 @@ const AdminUsersPage = (): ReactNode => {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-4">
-      <h1 className="text-2xl font-semibold">Manage users</h1>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Input
-          placeholder="Search by name or email…"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          className="bg-card max-w-sm"
-        />
-        <div className="flex gap-1">
-          {roleFilters.map((filter) => (
-            <Button
-              key={filter.value}
-              size="sm"
-              variant={roleFilter === filter.value ? 'default' : 'outline'}
-              onClick={() => setRoleFilter(filter.value)}
-            >
-              {filter.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-      <div className="flex items-center gap-2 md:hidden">
-        <span className="text-muted-foreground shrink-0 text-sm">Sort by</span>
-        <Select
-          value={`${sort.key}:${sort.direction}`}
-          onValueChange={(value) => {
-            const option = SORT_OPTIONS.find((item) => item.value === value);
-            if (option != null) {
-              setSort({ key: option.key, direction: option.direction });
-            }
-          }}
-        >
-          <SelectTrigger size="sm" className="bg-card flex-1">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Desktop: dense, sortable table. */}
-      <div className="bg-card text-card-foreground hidden rounded-lg p-2 shadow-sm md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead />
-              <SortableHead
-                label="Name"
-                sortKey="name"
-                sort={sort}
-                onSort={toggleSort}
-              />
-              <SortableHead
-                label="Email"
-                sortKey="email"
-                sort={sort}
-                onSort={toggleSort}
-              />
-              <SortableHead
-                label="Joined"
-                sortKey="created_at"
-                sort={sort}
-                onSort={toggleSort}
-              />
-              <TableHead className="text-center">Discord</TableHead>
-              <TableHead className="text-center">Organizer</TableHead>
-              <TableHead className="text-center">Admin</TableHead>
-              <TableHead className="text-center">Owner</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredUsers.map((user) => {
-              const { isSaving, isSelf, canEditAdmin } = accessFlags(user);
-              return (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <Link
-                      to={`/user/${user.username}`}
-                      aria-label={`View ${user.display_name}'s profile`}
-                    >
-                      <Avatar>
-                        <AvatarImage
-                          src={user.photo_url}
-                          alt={`${user.display_name}'s avatar`}
-                        />
-                        <AvatarFallback>
-                          {user.display_name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Link>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    <Link
-                      to={`/user/${user.username}`}
-                      className="hover:underline"
-                    >
-                      {user.display_name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {user.email}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground whitespace-nowrap">
-                    {dayjs(user.created_at).format('MMM D, YYYY h:mm A')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-center">
-                      {discordIndicator(user)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {organizerSwitch(user, isSaving)}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {adminSwitch(user, isSaving, isSelf, canEditAdmin)}
-                  </TableCell>
-                  {/* Owner status is managed directly in the database, so it's
-                      read-only here. */}
-                  <TableCell>
-                    <div className="flex justify-center">
-                      {ownerIndicator(user)}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-        {isEmpty ? emptyState : null}
-      </div>
-
-      {/* Mobile: a compact card per user; tap to reveal the access controls. */}
-      <div className="flex flex-col gap-2 md:hidden">
-        {filteredUsers.map((user) => {
+      <DataTable
+        title="Manage users"
+        data={users}
+        columns={columns}
+        getRowId={(user) => user.id}
+        initialSort={{ columnId: 'joined', direction: 'desc' }}
+        search={{
+          placeholder: 'Search by name or email…',
+          getText: (user) => `${user.display_name} ${user.email}`,
+        }}
+        filter={{
+          label: 'Filter by role',
+          options: [
+            {
+              value: 'organizers',
+              label: 'Organizers',
+              predicate: (user) => user.is_organizer,
+            },
+            {
+              value: 'admins',
+              label: 'Admins',
+              predicate: (user) => user.is_admin,
+            },
+            {
+              value: 'owners',
+              label: 'Owners',
+              predicate: (user) => user.is_owner,
+            },
+          ],
+          selected: roleFilter,
+          onChange: setRoleFilter,
+        }}
+        emptyMessage={({ hasRows }) =>
+          hasRows ? 'No users match your search.' : 'No users found.'
+        }
+        renderCard={(user, { expanded, toggle }) => {
           const { isSaving, isSelf, canEditAdmin } = accessFlags(user);
           return (
             <ExpandableCard
-              key={user.id}
               leading={
                 <Avatar className="shrink-0">
                   <AvatarImage
@@ -500,12 +323,8 @@ const AdminUsersPage = (): ReactNode => {
                   />
                 ) : null
               }
-              expanded={expandedUserId === user.id}
-              onToggle={() =>
-                setExpandedUserId(
-                  expandedUserId === user.id ? null : user.id
-                )
-              }
+              expanded={expanded}
+              onToggle={toggle}
             >
               <p className="text-muted-foreground text-xs">
                 Joined {dayjs(user.created_at).format('MMM D, YYYY')}
@@ -530,9 +349,8 @@ const AdminUsersPage = (): ReactNode => {
               </Link>
             </ExpandableCard>
           );
-        })}
-        {isEmpty ? emptyState : null}
-      </div>
+        }}
+      />
 
       <Dialog
         open={pendingAdminChange != null}
