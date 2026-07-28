@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -9,6 +10,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -32,6 +40,29 @@ import { useGetAllUsersQuery } from '../store/userSlice';
 
 type SortKey = 'name' | 'email' | 'created_at';
 type SortDirection = 'asc' | 'desc';
+
+const SORT_OPTIONS: Array<{
+  value: string;
+  label: string;
+  key: SortKey;
+  direction: SortDirection;
+}> = [
+  {
+    value: 'created_at:desc',
+    label: 'Newest first',
+    key: 'created_at',
+    direction: 'desc',
+  },
+  {
+    value: 'created_at:asc',
+    label: 'Oldest first',
+    key: 'created_at',
+    direction: 'asc',
+  },
+  { value: 'name:asc', label: 'Name (A–Z)', key: 'name', direction: 'asc' },
+  { value: 'name:desc', label: 'Name (Z–A)', key: 'name', direction: 'desc' },
+  { value: 'email:asc', label: 'Email (A–Z)', key: 'email', direction: 'asc' },
+];
 
 const SortableHead = ({
   label,
@@ -88,6 +119,7 @@ const AdminUsersPage = (): ReactNode => {
     nextValue: boolean;
   } | null>(null);
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; direction: SortDirection }>({
     key: 'created_at',
     direction: 'desc',
@@ -206,6 +238,92 @@ const AdminUsersPage = (): ReactNode => {
     setConfirmPassword('');
   };
 
+  const accessFlags = (
+    user: User
+  ): { isSaving: boolean; isSelf: boolean; canEditAdmin: boolean } => {
+    const isSaving = savingUserId === user.id;
+    // Guard against removing your own elevated access and locking yourself out
+    // of this page.
+    const isSelf = currentUser?.id === user.id;
+    const isOwner = currentUser?.isOwner ?? false;
+    // Only owners may change owner status or an owner's admin status.
+    const canEditAdmin = isOwner || !user.is_owner;
+    return { isSaving, isSelf, canEditAdmin };
+  };
+
+  const roleBadges = (user: User): ReactNode => {
+    const roles: Array<{
+      label: string;
+      variant: 'default' | 'secondary' | 'outline';
+    }> = [];
+    if (user.is_owner) roles.push({ label: 'Owner', variant: 'default' });
+    if (user.is_admin) roles.push({ label: 'Admin', variant: 'secondary' });
+    if (user.is_organizer)
+      roles.push({ label: 'Organizer', variant: 'outline' });
+    return roles.map((role) => (
+      <Badge key={role.label} variant={role.variant}>
+        {role.label}
+      </Badge>
+    ));
+  };
+
+  const discordIndicator = (user: User): ReactNode =>
+    user.is_discord_linked ? (
+      <FaDiscord
+        className="size-4 text-[#5865F2]"
+        aria-label={`${user.display_name} has Discord linked`}
+      />
+    ) : (
+      <span className="text-muted-foreground">—</span>
+    );
+
+  const ownerIndicator = (user: User): ReactNode =>
+    user.is_owner ? (
+      <FiCheck
+        className="size-4"
+        aria-label={`${user.display_name} is an owner`}
+      />
+    ) : (
+      <span className="text-muted-foreground">—</span>
+    );
+
+  const organizerSwitch = (user: User, isSaving: boolean): ReactNode => (
+    <Switch
+      checked={user.is_organizer}
+      disabled={isSaving}
+      onCheckedChange={(checked) => {
+        void updateAccess(user, { isOrganizer: checked });
+      }}
+      aria-label={`Toggle organizer for ${user.display_name}`}
+    />
+  );
+
+  const adminSwitch = (
+    user: User,
+    isSaving: boolean,
+    isSelf: boolean,
+    canEditAdmin: boolean
+  ): ReactNode => (
+    <Switch
+      checked={user.is_admin}
+      disabled={isSaving || isSelf || !canEditAdmin}
+      onCheckedChange={(checked) => {
+        setConfirmPassword('');
+        setPendingAdminChange({ user, nextValue: checked });
+      }}
+      aria-label={`Toggle admin for ${user.display_name}`}
+    />
+  );
+
+  const isEmpty = filteredUsers.length === 0;
+  const emptyState = (
+    <p className="text-muted-foreground p-4 text-center text-sm">
+      {users != null && users.length > 0
+        ? 'No users match your search.'
+        : 'No users found.'}
+    </p>
+  );
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -237,7 +355,32 @@ const AdminUsersPage = (): ReactNode => {
           ))}
         </div>
       </div>
-      <div className="bg-card text-card-foreground rounded-lg p-2 shadow-sm">
+      <div className="flex items-center gap-2 md:hidden">
+        <span className="text-muted-foreground shrink-0 text-sm">Sort by</span>
+        <Select
+          value={`${sort.key}:${sort.direction}`}
+          onValueChange={(value) => {
+            const option = SORT_OPTIONS.find((item) => item.value === value);
+            if (option != null) {
+              setSort({ key: option.key, direction: option.direction });
+            }
+          }}
+        >
+          <SelectTrigger size="sm" className="bg-card flex-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Desktop: dense, sortable table. */}
+      <div className="bg-card text-card-foreground hidden rounded-lg p-2 shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -268,13 +411,7 @@ const AdminUsersPage = (): ReactNode => {
           </TableHeader>
           <TableBody>
             {filteredUsers.map((user) => {
-              const isSaving = savingUserId === user.id;
-              // Guard against removing your own elevated access and locking
-              // yourself out of this page.
-              const isSelf = currentUser?.id === user.id;
-              const isOwner = currentUser?.isOwner ?? false;
-              // Only owners may change owner status or an owner's admin status.
-              const canEditAdmin = isOwner || !user.is_owner;
+              const { isSaving, isSelf, canEditAdmin } = accessFlags(user);
               return (
                 <TableRow key={user.id}>
                   <TableCell>
@@ -307,61 +444,107 @@ const AdminUsersPage = (): ReactNode => {
                   <TableCell className="text-muted-foreground whitespace-nowrap">
                     {dayjs(user.created_at).format('MMM D, YYYY h:mm A')}
                   </TableCell>
-                  <TableCell className="text-center">
-                    {user.is_discord_linked ? (
-                      <FaDiscord
-                        className="mx-auto size-4 text-[#5865F2]"
-                        aria-label={`${user.display_name} has Discord linked`}
-                      />
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                  <TableCell>
+                    <div className="flex justify-center">
+                      {discordIndicator(user)}
+                    </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Switch
-                      checked={user.is_organizer}
-                      disabled={isSaving}
-                      onCheckedChange={(checked) => {
-                        void updateAccess(user, { isOrganizer: checked });
-                      }}
-                      aria-label={`Toggle organizer for ${user.display_name}`}
-                    />
+                    {organizerSwitch(user, isSaving)}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Switch
-                      checked={user.is_admin}
-                      disabled={isSaving || isSelf || !canEditAdmin}
-                      onCheckedChange={(checked) => {
-                        setConfirmPassword('');
-                        setPendingAdminChange({ user, nextValue: checked });
-                      }}
-                      aria-label={`Toggle admin for ${user.display_name}`}
-                    />
+                    {adminSwitch(user, isSaving, isSelf, canEditAdmin)}
                   </TableCell>
                   {/* Owner status is managed directly in the database, so it's
                       read-only here. */}
-                  <TableCell className="text-center">
-                    {user.is_owner ? (
-                      <FiCheck
-                        className="mx-auto size-4"
-                        aria-label={`${user.display_name} is an owner`}
-                      />
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                  <TableCell>
+                    <div className="flex justify-center">
+                      {ownerIndicator(user)}
+                    </div>
                   </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
-        {!isLoading && filteredUsers.length === 0 ? (
-          <p className="text-muted-foreground p-4 text-center text-sm">
-            {users != null && users.length > 0
-              ? 'No users match your search.'
-              : 'No users found.'}
-          </p>
-        ) : null}
+        {isEmpty ? emptyState : null}
+      </div>
+
+      {/* Mobile: a compact card per user; tap to reveal the access controls. */}
+      <div className="flex flex-col gap-2 md:hidden">
+        {filteredUsers.map((user) => {
+          const { isSaving, isSelf, canEditAdmin } = accessFlags(user);
+          const expanded = expandedUserId === user.id;
+          return (
+            <div
+              key={user.id}
+              className="bg-card text-card-foreground rounded-lg shadow-sm"
+            >
+              <button
+                type="button"
+                onClick={() => setExpandedUserId(expanded ? null : user.id)}
+                aria-expanded={expanded}
+                className="flex w-full items-center gap-3 p-3 text-left"
+              >
+                <Avatar className="shrink-0">
+                  <AvatarImage
+                    src={user.photo_url}
+                    alt={`${user.display_name}'s avatar`}
+                  />
+                  <AvatarFallback>
+                    {user.display_name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{user.display_name}</p>
+                  <p className="text-muted-foreground truncate text-sm">
+                    {user.email}
+                  </p>
+                  <div className="mt-1 flex flex-wrap gap-1 empty:hidden">
+                    {roleBadges(user)}
+                  </div>
+                </div>
+                {user.is_discord_linked ? (
+                  <FaDiscord
+                    className="size-4 shrink-0 text-[#5865F2]"
+                    aria-label={`${user.display_name} has Discord linked`}
+                  />
+                ) : null}
+                <FiChevronDown
+                  className={`text-muted-foreground size-4 shrink-0 transition-transform ${
+                    expanded ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              {expanded ? (
+                <div className="flex flex-col gap-3 border-t p-3">
+                  <p className="text-muted-foreground text-xs">
+                    Joined {dayjs(user.created_at).format('MMM D, YYYY')}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Organizer</span>
+                    {organizerSwitch(user, isSaving)}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Admin</span>
+                    {adminSwitch(user, isSaving, isSelf, canEditAdmin)}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Owner</span>
+                    {ownerIndicator(user)}
+                  </div>
+                  <Link
+                    to={`/user/${user.username}`}
+                    className="text-primary text-sm hover:underline"
+                  >
+                    View profile
+                  </Link>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+        {isEmpty ? emptyState : null}
       </div>
 
       <Dialog
