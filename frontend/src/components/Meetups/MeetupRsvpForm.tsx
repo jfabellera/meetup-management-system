@@ -12,12 +12,15 @@ import { FormField } from '@/components/ui/form-field';
 import { Spinner } from '@/components/ui/spinner';
 import { type MeetupInfo, type SimpleTicketInfo } from '@keebmeet/shared';
 import { Elements, PaymentElement } from '@stripe/react-stripe-js';
+import type { Appearance } from '@stripe/stripe-js';
 import { useFormik } from 'formik';
+import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FiArrowLeft, FiLock, FiUserCheck, FiUserX } from 'react-icons/fi';
 import { toast } from 'sonner';
 import * as Yup from 'yup';
 import { useHoldCountdown } from '../../hooks/useHoldCountdown';
+import { useWaitForPaidTicket } from '../../hooks/useWaitForPaidTicket';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   ticketSlice,
@@ -26,17 +29,43 @@ import {
   useGetTicketQuery,
   useUpdateTicketMutation,
 } from '../../store/ticketSlice';
-import { useWaitForPaidTicket } from '../../hooks/useWaitForPaidTicket';
 import { useGetUserQuery } from '../../store/userSlice';
 import { formatMoney } from '../../util/money';
-import { hasMeetupEnded } from '../../util/timeUtil';
-import { HoldCountdown } from './HoldCountdown';
 import {
   postRsvpReturnMessage,
   RSVP_RETURN_CHANNEL,
   type RsvpReturnMessage,
 } from '../../util/rsvpReturnChannel';
+import { hasMeetupEnded } from '../../util/timeUtil';
+import { HoldCountdown } from './HoldCountdown';
 import { PayButton, stripePromise } from './PaidRsvpPayment';
+
+// Same stylesheet index.html loads, so the iframe renders the app font.
+const stripeFonts = [
+  {
+    cssSrc:
+      'https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap',
+  },
+];
+
+// Hex equivalents of the oklch tokens in index.css. Stripe's appearance API
+// can't parse oklch, and CSS variables don't cross into its iframe.
+const stripeAppearance = (dark: boolean): Appearance => ({
+  theme: dark ? 'night' : 'stripe',
+  variables: {
+    colorPrimary: dark ? '#d97757' : '#c96442',
+    colorBackground: dark ? '#262624' : '#faf9f5',
+    colorText: dark ? '#f1f1ef' : '#3d3929',
+    colorTextSecondary: dark ? '#b7b5a9' : '#6e6d68',
+    colorTextPlaceholder: dark ? '#b7b5a9' : '#6e6d68',
+    colorDanger: '#ef4444',
+    fontFamily: "'DM Sans', sans-serif",
+    borderRadius: '14px',
+  },
+  rules: {
+    '.Input': { borderColor: dark ? '#52514a' : '#b4b2a7' },
+  },
+});
 
 const TicketHolderSchema = Yup.object().shape({
   displayName: Yup.string().required('Required'),
@@ -61,6 +90,7 @@ export const MeetupRsvpForm = ({
   const { user } = useAppSelector((state) => state.user);
   const dispatch = useAppDispatch();
   const waitForPaidTicket = useWaitForPaidTicket();
+  const { resolvedTheme } = useTheme();
 
   const { data: fullUser } = useGetUserQuery(user?.id ?? '', {
     skip: user == null,
@@ -397,7 +427,14 @@ export const MeetupRsvpForm = ({
     >
       {/* One provider so the footer Pay button shares the card's context. */}
       {isPaymentStep ? (
-        <Elements stripe={stripePromise} options={{ clientSecret }}>
+        <Elements
+          stripe={stripePromise}
+          options={{
+            clientSecret,
+            fonts: stripeFonts,
+            appearance: stripeAppearance(resolvedTheme === 'dark'),
+          }}
+        >
           {content}
         </Elements>
       ) : (
