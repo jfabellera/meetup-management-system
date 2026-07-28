@@ -22,6 +22,7 @@ import {
 import { type User } from '@keebmeet/shared';
 import dayjs from 'dayjs';
 import { useMemo, useState, type ReactNode } from 'react';
+import { FaDiscord } from 'react-icons/fa';
 import { FiCheck, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -88,8 +89,8 @@ const AdminUsersPage = (): ReactNode => {
   } | null>(null);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [sort, setSort] = useState<{ key: SortKey; direction: SortDirection }>({
-    key: 'name',
-    direction: 'asc',
+    key: 'created_at',
+    direction: 'desc',
   });
 
   const toggleSort = (key: SortKey): void => {
@@ -259,6 +260,7 @@ const AdminUsersPage = (): ReactNode => {
                 sort={sort}
                 onSort={toggleSort}
               />
+              <TableHead className="text-center">Discord</TableHead>
               <TableHead className="text-center">Organizer</TableHead>
               <TableHead className="text-center">Admin</TableHead>
               <TableHead className="text-center">Owner</TableHead>
@@ -304,6 +306,16 @@ const AdminUsersPage = (): ReactNode => {
                   </TableCell>
                   <TableCell className="text-muted-foreground whitespace-nowrap">
                     {dayjs(user.created_at).format('MMM D, YYYY h:mm A')}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {user.is_discord_linked ? (
+                      <FaDiscord
+                        className="mx-auto size-4 text-[#5865F2]"
+                        aria-label={`${user.display_name} has Discord linked`}
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     <Switch
