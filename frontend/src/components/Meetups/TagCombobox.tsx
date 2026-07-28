@@ -196,7 +196,6 @@ const TagCombobox = ({
           <div className="flex items-center gap-2">
             <ColorDot color={pendingColor} />
             <Input
-              autoFocus
               value={pendingName ?? ''}
               onChange={(event) => setPendingName(event.target.value)}
               onKeyDown={(event) => {

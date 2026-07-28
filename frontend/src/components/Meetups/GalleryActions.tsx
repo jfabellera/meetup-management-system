@@ -310,7 +310,6 @@ const TransferGalleryDialog = ({
             <FieldLabel htmlFor="transfer-username">Username</FieldLabel>
             <UserSearchInput
               id="transfer-username"
-              autoFocus
               value={username}
               onChange={setUsername}
               disabled={isLoading}

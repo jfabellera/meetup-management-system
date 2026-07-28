@@ -2,7 +2,7 @@ import type * as React from 'react';
 import { XIcon } from 'lucide-react';
 import { Dialog as SheetPrimitive } from 'radix-ui';
 
-import { cn } from '@/lib/utils';
+import { cn, isTouchDevice } from '@/lib/utils';
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -47,6 +47,7 @@ function SheetContent({
   children,
   side = 'right',
   showCloseButton = true,
+  onOpenAutoFocus,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left';
@@ -69,6 +70,13 @@ function SheetContent({
             'data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t',
           className
         )}
+        // Keep desktop auto-focus, but don't pop the on-screen keyboard on touch devices; callers can override.
+        onOpenAutoFocus={
+          onOpenAutoFocus ??
+          ((event) => {
+            if (isTouchDevice()) event.preventDefault();
+          })
+        }
         {...props}
       >
         {children}
