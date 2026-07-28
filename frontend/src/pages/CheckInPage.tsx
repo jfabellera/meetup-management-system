@@ -1,5 +1,4 @@
 import QrScanner from '@/components/shared/QrScanner';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -32,12 +31,20 @@ import { FiCheck } from 'react-icons/fi';
 import { MdQrCodeScanner } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { ExpandableCard } from '../components/ExpandableCard';
 import { useGetMeetupQuery } from '../store/meetupSlice';
 import {
   useCheckInAttendeeMutation,
   useEditAttendeeMutation,
   useGetMeetupAttendeesQuery,
 } from '../store/organizerSlice';
+
+const orDash = (value: string | null | undefined): ReactNode =>
+  value != null && value.trim() !== '' ? (
+    value
+  ) : (
+    <span className="text-muted-foreground">—</span>
+  );
 
 const CheckInPage = (): ReactNode => {
   const { meetupId: slugParam } = useParams();
@@ -69,6 +76,7 @@ const CheckInPage = (): ReactNode => {
     useEditAttendeeMutation();
 
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [useCamera, setUseCamera] = useState<boolean>(false);
 
@@ -309,7 +317,8 @@ const CheckInPage = (): ReactNode => {
           <MdQrCodeScanner />
         </Button>
       </div>
-      <div className="bg-card text-card-foreground rounded-md p-4 shadow-sm">
+      {/* Desktop: table with keyboard-navigable rows. */}
+      <div className="bg-card text-card-foreground hidden rounded-md p-4 shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -339,10 +348,10 @@ const CheckInPage = (): ReactNode => {
                       {attendee.ticket_holder_display_name}
                     </TableCell>
                     <TableCell className="text-left">
-                      {attendee.ticket_holder_first_name}
+                      {orDash(attendee.ticket_holder_first_name)}
                     </TableCell>
                     <TableCell className="text-left">
-                      {attendee.ticket_holder_last_name}
+                      {orDash(attendee.ticket_holder_last_name)}
                     </TableCell>
                     <TableCell className="text-left">
                       {attendee.is_checked_in ? (
@@ -372,69 +381,125 @@ const CheckInPage = (): ReactNode => {
               : null}
           </TableBody>
         </Table>
-
-        <Dialog
-          open={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              setTicket(null);
-              setConfirmText('');
-              onClose();
-            }
-          }}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {action === 'uncheckin'
-                  ? 'Confirm undo check-in'
-                  : 'Confirm check-in'}
-              </DialogTitle>
-            </DialogHeader>
-            <p>
-              {action === 'uncheckin'
-                ? `Do you want to undo check-in for ${ticket?.ticket_holder_display_name ?? 'user'}?`
-                : `Do you want to check ${ticket?.ticket_holder_display_name ?? 'user'} in?`}
-            </p>
-            {action === 'uncheckin' ? (
-              <div className="flex flex-col gap-2 text-left">
-                <p className="text-muted-foreground text-sm">
-                  Type{' '}
-                  <span className="text-foreground font-medium">
-                    {ticket?.ticket_holder_display_name}
-                  </span>{' '}
-                  to confirm.
-                </p>
-                <Input
-                  autoFocus
-                  value={confirmText}
-                  onChange={(e) => {
-                    setConfirmText(e.target.value);
-                  }}
-                  placeholder={ticket?.ticket_holder_display_name}
-                />
-              </div>
-            ) : null}
-            <DialogFooter>
-              <Button
-                variant={action === 'uncheckin' ? 'destructive' : 'default'}
-                autoFocus={action === 'checkin'}
-                disabled={!canConfirm || isCheckingIn || isUncheckingIn}
-                onClick={
-                  action === 'uncheckin'
-                    ? handleUncheckIn
-                    : () => {
-                        handleCheckIn();
-                      }
-                }
-              >
-                Confirm
-                {(isCheckingIn || isUncheckingIn) && <Spinner />}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Mobile: a card per attendee; expand to check in or undo. */}
+      <div className="flex flex-col gap-2 text-left md:hidden">
+        {filteredAttendees.map((attendee) => (
+          <ExpandableCard
+            key={attendee.id}
+            title={attendee.ticket_holder_display_name}
+            trailing={
+              attendee.is_checked_in ? (
+                <FiCheck
+                  className="size-4 shrink-0 text-green-600"
+                  aria-label={`${attendee.ticket_holder_display_name} is checked in`}
+                />
+              ) : null
+            }
+            expanded={expandedId === attendee.id}
+            onToggle={() =>
+              setExpandedId(expandedId === attendee.id ? null : attendee.id)
+            }
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground text-sm">First name</span>
+              <span className="text-sm">
+                {orDash(attendee.ticket_holder_first_name)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground text-sm">Last name</span>
+              <span className="text-sm">
+                {orDash(attendee.ticket_holder_last_name)}
+              </span>
+            </div>
+            {attendee.is_checked_in ? (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setTicket(attendee);
+                  setAction('uncheckin');
+                  setConfirmText('');
+                  onOpen();
+                }}
+              >
+                Undo check-in
+              </Button>
+            ) : (
+              <Button
+                className="w-full"
+                onClick={() => handleSelectAttendee(attendee)}
+              >
+                Check in
+              </Button>
+            )}
+          </ExpandableCard>
+        ))}
+      </div>
+
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTicket(null);
+            setConfirmText('');
+            onClose();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {action === 'uncheckin'
+                ? 'Confirm undo check-in'
+                : 'Confirm check-in'}
+            </DialogTitle>
+          </DialogHeader>
+          <p>
+            {action === 'uncheckin'
+              ? `Do you want to undo check-in for ${ticket?.ticket_holder_display_name ?? 'user'}?`
+              : `Do you want to check ${ticket?.ticket_holder_display_name ?? 'user'} in?`}
+          </p>
+          {action === 'uncheckin' ? (
+            <div className="flex flex-col gap-2 text-left">
+              <p className="text-muted-foreground text-sm">
+                Type{' '}
+                <span className="text-foreground font-medium">
+                  {ticket?.ticket_holder_display_name}
+                </span>{' '}
+                to confirm.
+              </p>
+              <Input
+                autoFocus
+                value={confirmText}
+                onChange={(e) => {
+                  setConfirmText(e.target.value);
+                }}
+                placeholder={ticket?.ticket_holder_display_name}
+              />
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button
+              variant={action === 'uncheckin' ? 'destructive' : 'default'}
+              autoFocus={action === 'checkin'}
+              disabled={!canConfirm || isCheckingIn || isUncheckingIn}
+              onClick={
+                action === 'uncheckin'
+                  ? handleUncheckIn
+                  : () => {
+                      handleCheckIn();
+                    }
+              }
+            >
+              Confirm
+              {(isCheckingIn || isUncheckingIn) && <Spinner />}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
