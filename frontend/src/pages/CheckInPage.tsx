@@ -332,8 +332,21 @@ const CheckInPage = (): ReactNode => {
           <MdQrCodeScanner />
         </Button>
       </div>
+      {filteredAttendees.length === 0 ? (
+        <div className="bg-card text-muted-foreground rounded-md p-8 text-center text-sm shadow-sm">
+          {searchValue !== ''
+            ? 'No attendees match your search.'
+            : 'No attendees to check in yet.'}
+        </div>
+      ) : null}
+
       {/* Desktop: table with keyboard-navigable rows. */}
-      <div className="bg-card text-card-foreground hidden rounded-md p-4 shadow-sm md:block">
+      <div
+        className={cn(
+          'bg-card text-card-foreground rounded-md p-4 shadow-sm',
+          filteredAttendees.length === 0 ? 'hidden' : 'hidden md:block'
+        )}
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -399,7 +412,12 @@ const CheckInPage = (): ReactNode => {
       </div>
 
       {/* Mobile: a card per attendee; expand to check in or undo. */}
-      <div className="flex flex-col gap-2 text-left md:hidden">
+      <div
+        className={cn(
+          'flex-col gap-2 text-left md:hidden',
+          filteredAttendees.length === 0 ? 'hidden' : 'flex'
+        )}
+      >
         {filteredAttendees.map((attendee) => (
           <ExpandableCard
             key={attendee.id}
