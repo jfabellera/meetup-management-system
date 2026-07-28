@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 import { type TicketInfo } from '@keebmeet/shared';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { FiCheck } from 'react-icons/fi';
+import { FiCheck, FiSearch, FiX } from 'react-icons/fi';
 import { MdQrCodeScanner } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -293,7 +293,7 @@ const CheckInPage = (): ReactNode => {
   }
 
   return (
-    <div className="flex h-full flex-col gap-2 p-4 text-center">
+    <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-2 p-4 text-center">
       <h2 className="mb-2 text-center text-2xl font-medium">Check-in</h2>
 
       {useCamera && (
@@ -301,17 +301,32 @@ const CheckInPage = (): ReactNode => {
           <QrScanner onScan={setSearchValue} />
         </div>
       )}
-      <div className="bg-card text-card-foreground flex flex-row items-center gap-2 rounded-md p-2 shadow-sm">
+      <div className="bg-card text-card-foreground focus-within:border-ring focus-within:ring-ring/50 flex flex-row items-center gap-1 rounded-md border p-1.5 shadow-sm transition-[color,box-shadow] focus-within:ring-[3px]">
+        <FiSearch className="text-muted-foreground ml-2 size-4 shrink-0" />
         <Input
           ref={searchRef}
-          className="border-0 shadow-none focus-visible:ring-0"
+          className="h-10 border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent"
           placeholder={'Start typing a username, name, or email...'}
           value={searchValue}
           onChange={handleSearchChange}
         />
+        {searchValue !== '' && (
+          <Button
+            size="icon-lg"
+            variant="ghost"
+            aria-label="Clear search"
+            onClick={() => {
+              setSearchValue('');
+              searchRef.current?.focus();
+            }}
+          >
+            <FiX />
+          </Button>
+        )}
         <Button
           size="icon-lg"
-          variant="outline"
+          variant={useCamera ? 'default' : 'outline'}
+          aria-label="Scan QR code"
           onClick={() => setUseCamera(!useCamera)}
         >
           <MdQrCodeScanner />
