@@ -47,6 +47,7 @@ function SheetContent({
   children,
   side = 'right',
   showCloseButton = true,
+  onOpenAutoFocus,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left';
@@ -69,6 +70,8 @@ function SheetContent({
             'data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t',
           className
         )}
+        // Don't auto-focus a field on open, which would pop the mobile keyboard; callers can override.
+        onOpenAutoFocus={onOpenAutoFocus ?? ((event) => event.preventDefault())}
         {...props}
       >
         {children}

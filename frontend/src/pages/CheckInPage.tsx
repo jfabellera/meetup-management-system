@@ -505,7 +505,6 @@ const CheckInPage = (): ReactNode => {
                 to confirm.
               </p>
               <Input
-                autoFocus
                 value={confirmText}
                 onChange={(e) => {
                   setConfirmText(e.target.value);

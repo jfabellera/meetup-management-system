@@ -279,7 +279,6 @@ const AddGalleryTile = ({
               id="gallery-url"
               type="url"
               inputMode="url"
-              autoFocus={!isOrganizer}
               placeholder="https://photos.example.com/…"
               value={url}
               onChange={(event) => setUrl(event.target.value)}

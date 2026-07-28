@@ -372,7 +372,6 @@ const AdminGroupsPage = (): ReactNode => {
                 <Label htmlFor="group-name">Name</Label>
                 <Input
                   id="group-name"
-                  autoFocus
                   value={form?.name ?? ''}
                   onChange={(event) =>
                     setForm((prev) =>

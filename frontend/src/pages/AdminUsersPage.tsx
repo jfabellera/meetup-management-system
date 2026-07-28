@@ -371,7 +371,6 @@ const AdminUsersPage = (): ReactNode => {
           </DialogHeader>
           <Input
             type="password"
-            autoFocus
             placeholder="Your password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
