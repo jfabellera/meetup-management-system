@@ -64,7 +64,9 @@ const stripeAppearance = (dark: boolean): Appearance => ({
     borderRadius: '14px',
   },
   rules: {
-    '.Input': { borderColor: dark ? '#52514a' : '#b4b2a7' },
+    '.Input': { borderColor: dark ? '#52514a' : '#b4b2a7', boxShadow: 'none' },
+    '.Tab': { boxShadow: 'none' },
+    '.Block': { boxShadow: 'none' },
   },
 });
 
