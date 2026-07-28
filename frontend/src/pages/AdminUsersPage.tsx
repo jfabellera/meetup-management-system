@@ -269,7 +269,7 @@ const AdminUsersPage = (): ReactNode => {
         getRowId={(user) => user.id}
         initialSort={{ columnId: 'joined', direction: 'desc' }}
         search={{
-          placeholder: 'Search by name or email…',
+          placeholder: 'Search users…',
           getText: (user) => `${user.display_name} ${user.email}`,
         }}
         filter={{

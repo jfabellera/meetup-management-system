@@ -237,7 +237,7 @@ const ManageMeetupAttendeesPage = (): ReactNode => {
         initialSort={{ columnId: 'signedUp', direction: 'desc' }}
         onRowClick={openDialog}
         search={{
-          placeholder: 'Search by name…',
+          placeholder: 'Search attendees…',
           getText: (attendee) =>
             `${attendee.ticket_holder_display_name} ${attendee.ticket_holder_first_name} ${attendee.ticket_holder_last_name}`,
         }}

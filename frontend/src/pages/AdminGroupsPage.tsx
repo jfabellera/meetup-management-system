@@ -279,7 +279,7 @@ const AdminGroupsPage = (): ReactNode => {
         getRowId={(group) => group.id}
         initialSort={{ columnId: 'name', direction: 'asc' }}
         search={{
-          placeholder: 'Search by name or code…',
+          placeholder: 'Search groups…',
           getText: (group) => `${group.name} ${group.code}`,
         }}
         emptyMessage={({ hasRows }) =>
