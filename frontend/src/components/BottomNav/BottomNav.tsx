@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import {
+  useEffect,
   useState,
   type Dispatch,
   type ReactNode,
@@ -52,7 +53,19 @@ const BottomNav = ({
     void navigate(item.url, { replace: true });
   };
 
-  if (items.length < 2) return <></>;
+  const visible = items.length >= 2;
+
+  // Flag the nav's presence so bottom toasts (a body-level portal) can lift
+  // above it; without the nav they keep their default position.
+  useEffect(() => {
+    if (!visible) return;
+    document.body.dataset.bottomNav = '';
+    return () => {
+      delete document.body.dataset.bottomNav;
+    };
+  }, [visible]);
+
+  if (!visible) return <></>;
 
   return (
     <nav

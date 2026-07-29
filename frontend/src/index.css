@@ -204,3 +204,10 @@
     cursor: pointer;
   }
 }
+
+/* Lift bottom toasts above the mobile BottomNav, but only while it's mounted */
+@media (max-width: 767px) {
+  body[data-bottom-nav] [data-sonner-toaster][data-y-position='bottom'] {
+    bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
+  }
+}

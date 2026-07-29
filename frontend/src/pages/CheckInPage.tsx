@@ -31,6 +31,7 @@ import { FiCheck, FiSearch, FiX } from 'react-icons/fi';
 import { MdQrCodeScanner } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { AttendeeDetailsDialog } from '../components/AttendeeDetailsDialog';
 import { ExpandableCard } from '../components/ExpandableCard';
 import { useGetMeetupQuery } from '../store/meetupSlice';
 import {
@@ -61,6 +62,22 @@ const CheckInPage = (): ReactNode => {
   const searchRef = useRef<HTMLInputElement>(null);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isEditOpen,
+    onOpen: onEditOpen,
+    onClose: onEditClose,
+  } = useDisclosure();
+  const [editingAttendee, setEditingAttendee] = useState<TicketInfo | null>(
+    null
+  );
+
+  const isPaidMeetup =
+    meetup?.ticket_types?.some((type) => type.price_cents > 0) ?? false;
+
+  const openEditDialog = (attendee: TicketInfo): void => {
+    setEditingAttendee(attendee);
+    onEditOpen();
+  };
 
   const [ticket, setTicket] = useState<TicketInfo | null>(null);
   // Tracks the user's intent rather than the ticket's current state: selecting
@@ -135,6 +152,10 @@ const CheckInPage = (): ReactNode => {
         } else {
           toast.success('Success', {
             description: `${attendee.ticket_holder_display_name} checked in`,
+            action: {
+              label: 'Edit details',
+              onClick: () => openEditDialog(attendee),
+            },
           });
         }
       }
@@ -185,6 +206,10 @@ const CheckInPage = (): ReactNode => {
     if (attendee.is_checked_in) {
       toast.warning('Already checked in', {
         description: `${attendee.ticket_holder_display_name} is already checked in`,
+        action: {
+          label: 'Edit details',
+          onClick: () => openEditDialog(attendee),
+        },
       });
       if (bypassConfirm) {
         setSearchValue('');
@@ -532,6 +557,18 @@ const CheckInPage = (): ReactNode => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AttendeeDetailsDialog
+        key={editingAttendee?.id}
+        attendee={editingAttendee}
+        open={isEditOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onEditClose();
+          }
+        }}
+        isPaidMeetup={isPaidMeetup}
+      />
     </div>
   );
 };
