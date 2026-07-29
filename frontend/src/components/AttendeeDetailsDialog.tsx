@@ -13,7 +13,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { type TicketInfo } from '@keebmeet/shared';
 import dayjs from 'dayjs';
 import { useState, type ReactNode } from 'react';
-import { FiEdit2 } from 'react-icons/fi';
 import { toast } from 'sonner';
 import {
   useEditAttendeeMutation,
@@ -67,38 +66,27 @@ export const AttendeeDetailsDialog = ({
   const [refundAttendee, { isLoading: isRefunding }] =
     useRefundAttendeeMutation();
 
-  // Local editable copy so saved changes show immediately without waiting for
-  // the attendees list to refetch. Callers key this component on the attendee
-  // id, so a fresh copy is seeded whenever a different attendee is opened.
+  // Local copy so saved changes show immediately without waiting for the
+  // attendees list to refetch. Callers key this component on the attendee id,
+  // so a fresh copy is seeded whenever a different attendee is opened.
   const [viewing, setViewing] = useState<TicketInfo | null>(attendee);
-  const [isEditing, setIsEditing] = useState<boolean>(false);
   const [raffleEntries, setRaffleEntries] = useState<string>(
     attendee != null ? String(attendee.raffle_entries) : ''
   );
   const [refundConfirmOpen, setRefundConfirmOpen] = useState(false);
 
+  const entries = parseInt(raffleEntries, 10);
+  const isValid = Number.isInteger(entries) && entries >= 0;
+  const isDirty = viewing != null && entries !== viewing.raffle_entries;
+  const canSave = isValid && isDirty;
+
   const handleOpenChange = (next: boolean): void => {
-    if (!next) {
-      setIsEditing(false);
+    // Discard unsaved edits when the dialog closes.
+    if (!next && viewing != null) {
+      setRaffleEntries(String(viewing.raffle_entries));
     }
     onOpenChange(next);
   };
-
-  const startEditing = (): void => {
-    if (viewing == null) return;
-    setRaffleEntries(String(viewing.raffle_entries));
-    setIsEditing(true);
-  };
-
-  const cancelEditing = (): void => {
-    if (viewing != null) {
-      setRaffleEntries(String(viewing.raffle_entries));
-    }
-    setIsEditing(false);
-  };
-
-  const entries = parseInt(raffleEntries, 10);
-  const canSave = Number.isInteger(entries) && entries >= 0;
 
   const handleSave = (): void => {
     if (viewing == null || !canSave) return;
@@ -120,7 +108,7 @@ export const AttendeeDetailsDialog = ({
           description: `${viewing.ticket_holder_display_name} updated`,
         });
         setViewing({ ...viewing, raffle_entries: entries });
-        setIsEditing(false);
+        onOpenChange(false);
       }
     })();
   };
@@ -150,19 +138,7 @@ export const AttendeeDetailsDialog = ({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
-            <div className="flex items-center justify-between gap-2">
-              <DialogTitle>Attendee details</DialogTitle>
-              {!isEditing ? (
-                <Button
-                  variant="ghost"
-                  aria-label="Edit attendee"
-                  onClick={startEditing}
-                >
-                  <FiEdit2 />
-                  Edit
-                </Button>
-              ) : null}
-            </div>
+            <DialogTitle>Attendee details</DialogTitle>
           </DialogHeader>
           {viewing != null ? (
             <dl className="grid grid-cols-2 items-center gap-x-4 gap-y-3 text-sm">
@@ -192,19 +168,15 @@ export const AttendeeDetailsDialog = ({
 
               <dt className="text-muted-foreground">Raffle Entries</dt>
               <dd className="text-right">
-                {isEditing ? (
-                  <Input
-                    type="number"
-                    min={0}
-                    className="ml-auto w-24 text-right"
-                    value={raffleEntries}
-                    onChange={(e) => {
-                      setRaffleEntries(e.target.value);
-                    }}
-                  />
-                ) : (
-                  viewing.raffle_entries
-                )}
+                <Input
+                  type="number"
+                  min={0}
+                  className="ml-auto w-24 text-right"
+                  value={raffleEntries}
+                  onChange={(e) => {
+                    setRaffleEntries(e.target.value);
+                  }}
+                />
               </dd>
 
               <dt className="text-muted-foreground">Raffle Wins</dt>
@@ -217,35 +189,22 @@ export const AttendeeDetailsDialog = ({
             </dl>
           ) : null}
           <DialogFooter>
-            {isEditing ? (
-              <>
-                <Button variant="outline" onClick={cancelEditing}>
-                  Cancel
-                </Button>
-                <Button disabled={!canSave || isSaving} onClick={handleSave}>
-                  Save
-                  {isSaving && <Spinner />}
-                </Button>
-              </>
-            ) : (
-              <>
-                {isPaidMeetup && viewing?.payment_status === 'paid' ? (
-                  <Button
-                    variant="destructive"
-                    className="mr-auto"
-                    onClick={() => setRefundConfirmOpen(true)}
-                  >
-                    Refund ticket
-                  </Button>
-                ) : null}
-                <Button
-                  variant="outline"
-                  onClick={() => handleOpenChange(false)}
-                >
-                  Close
-                </Button>
-              </>
-            )}
+            {isPaidMeetup && viewing?.payment_status === 'paid' ? (
+              <Button
+                variant="destructive"
+                className="mr-auto"
+                onClick={() => setRefundConfirmOpen(true)}
+              >
+                Refund ticket
+              </Button>
+            ) : null}
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
+              Close
+            </Button>
+            <Button disabled={!canSave || isSaving} onClick={handleSave}>
+              Save
+              {isSaving && <Spinner />}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
