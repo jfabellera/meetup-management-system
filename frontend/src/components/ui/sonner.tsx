@@ -32,6 +32,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
           '--border-radius': 'var(--radius)',
         } as React.CSSProperties
       }
+      toastOptions={{
+        classNames: {
+          actionButton:
+            'bg-transparent! text-current! border! border-current/25! hover:bg-current/10!',
+        },
+      }}
       {...props}
     />
   );
