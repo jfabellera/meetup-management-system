@@ -2,7 +2,7 @@ import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { type MeetupInfo, type SimpleTicketInfo } from '@keebmeet/shared';
 import dayjs from 'dayjs';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { MeetupCard } from '../components/Meetups/MeetupCard';
 import { MeetupModal } from '../components/Meetups/MeetupModal';
@@ -19,6 +19,7 @@ import {
   useMeetupInViewPrefetch,
   useMeetupPrefetch,
 } from '../store/useMeetupPrefetch';
+import { pruneExpiredGuestHolds, readGuestHold } from '../util/guestHold';
 import {
   hasMeetupEnded,
   hasMeetupStarted,
@@ -96,6 +97,9 @@ const Homepage = (): ReactNode => {
     skip: user == null,
   });
   useHoldExpiryRefetch(tickets);
+  useEffect(() => {
+    pruneExpiredGuestHolds();
+  }, []);
   // The modal is open whenever a meetup is selected via the URL. The modal
   // itself renders nothing until its data has loaded, so there is no empty flash.
   const isOpen = slug !== '';
@@ -142,13 +146,24 @@ const Homepage = (): ReactNode => {
    * @returns User's ticket for a meetup or null.
    */
   const getTicketForMeetup = (meetupId: string): SimpleTicketInfo | null => {
-    if (user != null && tickets != null) {
+    if (user != null) {
+      if (tickets == null) return null;
       const ticket = tickets.filter(
         (ticket) => ticket.meetup_id === meetupId
       )[0];
       return ticket ?? null;
     }
-    return null;
+    // Guests aren't in the tickets query, so their pending hold comes from the
+    // browser and is surfaced through the same attending/pending UI.
+    const hold = readGuestHold(meetupId);
+    return hold != null
+      ? {
+          id: hold.ticketId,
+          meetup_id: meetupId,
+          payment_status: 'pending',
+          hold_expires_at: hold.holdExpiresAt,
+        }
+      : null;
   };
 
   const meetupCardOnClick = (slug: string): void => {

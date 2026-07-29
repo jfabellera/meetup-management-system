@@ -1,4 +1,5 @@
 import {
+  GuestRsvpVerificationEmail,
   MeetupTransferredEmail,
   OrganizerAddedEmail,
   OrganizerApprovedEmail,
@@ -33,6 +34,23 @@ export const sendVerificationEmail = async (
     to: [email],
     subject: 'Verify your email',
     react: VerifyEmail({ verificationLink }),
+  });
+
+  if (error) {
+    console.error('Error sending email:', error);
+  }
+};
+
+export const sendGuestRsvpVerificationEmail = async (
+  email: string,
+  meetupName: string,
+  confirmLink: string
+) => {
+  const { error } = await getResendClient().emails.send({
+    from: 'KeebMeet <noreply@keebmeet.com>',
+    to: [email],
+    subject: `Confirm your RSVP for ${meetupName}`,
+    react: GuestRsvpVerificationEmail({ meetupName, confirmLink }),
   });
 
   if (error) {
@@ -147,7 +165,8 @@ export const sendRsvpConfirmationEmail = async (
   meetupDate: string,
   meetupLocation: string,
   ticketId: string,
-  receipt?: { amountPaid: string; receiptUrl?: string }
+  receipt?: { amountPaid: string; receiptUrl?: string },
+  cancelLink?: string
 ) => {
   const qrCode = await generateQrCodeBuffer(ticketId);
 
@@ -161,6 +180,7 @@ export const sendRsvpConfirmationEmail = async (
       meetupLocation,
       amountPaid: receipt?.amountPaid,
       receiptUrl: receipt?.receiptUrl,
+      cancelLink,
     }),
     attachments: [
       {

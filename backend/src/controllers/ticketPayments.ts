@@ -1,7 +1,8 @@
+import { releaseGuestHoldSchema } from '@keebmeet/shared';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { type Request, type Response } from 'express';
-import { LessThan } from 'typeorm';
+import { IsNull, LessThan } from 'typeorm';
 import { socket } from '../Server';
 import config from '../config';
 import { AppDataSource } from '../datasource';
@@ -11,8 +12,12 @@ import { type TicketType } from '../entity/TicketType';
 import { type User } from '../entity/User';
 import { checkMeetupOrganizer } from '../middleware/authChecker';
 import { sendRefundEmail, sendRsvpConfirmationEmail } from '../util/email';
+import {
+  buildGuestCancelLink,
+  generateGuestCancelToken,
+} from '../util/guestRsvp';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
-import { countActiveTickets } from '../util/rsvp';
+import { countActiveTickets, getMeetupEnd } from '../util/rsvp';
 import { getStripe } from '../util/stripe';
 
 dayjs.extend(utc);
@@ -156,6 +161,12 @@ export const finalizeTicketSideEffects = async (
 ): Promise<void> => {
   socket.emit('meetup:update', { meetupId: meetup.id });
   await refreshMeetupDiscordMessage(meetup.id);
+  const cancelLink =
+    ticket.payment_status !== 'paid' && ticket.payment_status !== 'refunded'
+      ? buildGuestCancelLink(
+          generateGuestCancelToken(ticket.id, getMeetupEnd(meetup))
+        )
+      : undefined;
   await sendRsvpConfirmationEmail(
     ticket.ticket_holder_email,
     meetup.name,
@@ -164,7 +175,8 @@ export const finalizeTicketSideEffects = async (
       .format('dddd, MMMM D, YYYY [at] h:mm A'),
     meetup.address,
     ticket.id,
-    await buildTicketReceipt(ticket)
+    await buildTicketReceipt(ticket),
+    cancelLink
   );
 };
 
@@ -174,7 +186,7 @@ export const finalizeTicketSideEffects = async (
 export const createPaidTicket = async (
   res: Response,
   meetup: Meetup,
-  user: User,
+  user: User | null,
   holder: NonNullable<ReturnType<typeof ticketHolderFields>>,
   ticketType: TicketType
 ): Promise<Response> => {
@@ -351,6 +363,43 @@ export const releasePaidTicketHold = async (
   await ticket.remove();
   socket.emit('meetup:update', { meetupId });
   await refreshMeetupDiscordMessage(meetupId);
+};
+
+export const releaseGuestHold = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const result = releaseGuestHoldSchema.safeParse(req.body ?? {});
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
+
+  const ticket = await Ticket.findOne({
+    relations: { meetup: true },
+    where: {
+      id: result.data.ticket_id,
+      user: IsNull(),
+      payment_status: 'pending',
+      stripe_payment_intent_id: result.data.payment_intent_id,
+    },
+  });
+  if (ticket == null) {
+    return res.status(200).json({ released: false });
+  }
+
+  // Cancel the intent so an autofilled payment can't charge a released seat.
+  try {
+    await getStripe().paymentIntents.cancel(result.data.payment_intent_id);
+  } catch {
+    // Uncancelable (e.g. already succeeded); the webhook path will reconcile.
+  }
+
+  cancelHoldRelease(ticket.id);
+  const meetupId = ticket.meetup.id;
+  await ticket.remove();
+  socket.emit('meetup:update', { meetupId });
+  await refreshMeetupDiscordMessage(meetupId);
+  return res.status(200).json({ released: true });
 };
 
 /**

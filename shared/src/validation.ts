@@ -187,9 +187,29 @@ const ticketHolderSchema = z.object({
 
 export const createTicketSchema = z.object({
   ticket_holder: ticketHolderSchema.optional(),
+  turnstile_token: z.string().optional(),
 });
 
 export type CreateTicketPayload = z.infer<typeof createTicketSchema>;
+
+export const confirmGuestRsvpSchema = z.object({
+  token: z.string().min(1, 'A confirmation token is required'),
+});
+
+export type ConfirmGuestRsvpPayload = z.infer<typeof confirmGuestRsvpSchema>;
+
+export const cancelGuestRsvpSchema = z.object({
+  token: z.string().min(1, 'A cancellation token is required'),
+});
+
+export type CancelGuestRsvpPayload = z.infer<typeof cancelGuestRsvpSchema>;
+
+export const releaseGuestHoldSchema = z.object({
+  ticket_id: z.string().min(1),
+  payment_intent_id: z.string().min(1),
+});
+
+export type ReleaseGuestHoldPayload = z.infer<typeof releaseGuestHoldSchema>;
 
 export const editTicketSchema = z.object({
   is_checked_in: z.boolean().optional(),

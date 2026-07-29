@@ -1,4 +1,4 @@
-import { type EntityManager, IsNull } from 'typeorm';
+import { type EntityManager, ILike, IsNull } from 'typeorm';
 import { type Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { type User } from '../entity/User';
@@ -44,11 +44,8 @@ export const isMeetupAtCapacity = async (
 
 /**
  * Ties account-less Discord RSVP tickets (discord_id set, no user) to a user who
- * has just had that discord_id linked. Reassigns each orphan to the user, unless
- * the user already has a ticket for that meetup — in which case the orphan is
- * removed to avoid two tickets for the same meetup+user, and the embed is
- * refreshed since the attendee count drops. No-op when the user has no linked
- * Discord id.
+ * has just had that discord_id linked. No-op when the user has no linked Discord
+ * id.
  */
 export const claimDiscordTickets = async (user: User): Promise<void> => {
   if (user.discord_id == null) return;
@@ -58,6 +55,31 @@ export const claimDiscordTickets = async (user: User): Promise<void> => {
     where: { discord_id: user.discord_id, user: IsNull() },
   });
 
+  await reassignOrphanTickets(orphans, user);
+};
+
+/**
+ * Ties account-less guest RSVP tickets (no user, holder email matching the
+ * account's) to a user whose email has just been verified. Mirrors
+ * {@link claimDiscordTickets} so a guest who later signs up finds their RSVPs
+ * already under their account.
+ */
+export const claimGuestTickets = async (user: User): Promise<void> => {
+  const orphans = await Ticket.find({
+    relations: { meetup: true },
+    where: { ticket_holder_email: ILike(user.email), user: IsNull() },
+  });
+
+  await reassignOrphanTickets(orphans, user);
+};
+
+// Reassigns each orphan to the user, unless the user already has a ticket for
+// that meetup — in which case the orphan is removed to avoid two tickets for the
+// same meetup+user, and the embed is refreshed since the attendee count drops.
+const reassignOrphanTickets = async (
+  orphans: Ticket[],
+  user: User
+): Promise<void> => {
   for (const orphan of orphans) {
     const existing = await Ticket.findOne({
       where: { meetup: { id: orphan.meetup.id }, user: { id: user.id } },

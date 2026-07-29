@@ -11,6 +11,7 @@ import {
 import { FormField } from '@/components/ui/form-field';
 import { Spinner } from '@/components/ui/spinner';
 import { type MeetupInfo, type SimpleTicketInfo } from '@keebmeet/shared';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { Elements, PaymentElement } from '@stripe/react-stripe-js';
 import type { Appearance } from '@stripe/stripe-js';
 import { useFormik } from 'formik';
@@ -28,9 +29,16 @@ import {
   useCreateTicketMutation,
   useDeleteTicketMutation,
   useGetTicketQuery,
+  useLazyGetTicketStatusQuery,
+  useReleaseGuestHoldMutation,
   useUpdateTicketMutation,
 } from '../../store/ticketSlice';
 import { useGetUserQuery } from '../../store/userSlice';
+import {
+  clearGuestHold,
+  readGuestHold,
+  saveGuestHold,
+} from '../../util/guestHold';
 import { formatMoney } from '../../util/money';
 import {
   postRsvpReturnMessage,
@@ -102,18 +110,26 @@ export const MeetupRsvpForm = ({
   const isPendingHold = ticket?.payment_status === 'pending';
   const isManaging = ticket != null && !isPendingHold;
   const { data: ticketDetails } = useGetTicketQuery(ticket?.id ?? '', {
-    skip: ticket == null,
+    skip: ticket == null || !isLoggedIn,
   });
 
   const [rsvp, { isLoading: isRsvping }] = useCreateTicketMutation();
   const [updateTicket, { isLoading: isUpdating }] = useUpdateTicketMutation();
   const [deleteTicket, { isLoading: isCancelling }] = useDeleteTicketMutation();
+  const [releaseGuestHold] = useReleaseGuestHoldMutation();
   const isBusy = isRsvping || isUpdating || isCancelling;
 
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
   const [paidTicketId, setPaidTicketId] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileInstance>(null);
+
+  const [fetchTicketStatus] = useLazyGetTicketStatusQuery();
+  const [storedHold, setStoredHold] = useState(() =>
+    isLoggedIn ? null : readGuestHold(meetup.id)
+  );
 
   // confirmPayment and the return tab's broadcast can both report the same
   // payment.
@@ -127,6 +143,7 @@ export const MeetupRsvpForm = ({
     finalizedTicketRef.current = paidTicketId;
     const paid =
       paidTicketId != null ? await waitForPaidTicket(paidTicketId) : false;
+    clearGuestHold(meetup.id);
     dispatch(ticketSlice.util.invalidateTags(['Tickets']));
     toast.success(
       paid
@@ -143,15 +160,22 @@ export const MeetupRsvpForm = ({
   const priceLabel = isPaid
     ? formatMoney(ticketType.price_cents, ticketType.currency)
     : null;
+  const guestHoldActive =
+    !isLoggedIn && (isPendingHold || clientSecret != null);
   const canCancel =
-    ticket != null &&
-    ticket.payment_status !== 'paid' &&
-    ticket.payment_status !== 'refunded';
+    guestHoldActive ||
+    (ticket != null &&
+      ticket.payment_status !== 'paid' &&
+      ticket.payment_status !== 'refunded');
 
   const holdExpired = useHoldCountdown(holdExpiresAt)?.expired === true;
   // Once the hold lapses the PaymentIntent is dead, so drop back to the fields.
   const isPaymentStep =
     clientSecret != null && priceLabel != null && !holdExpired;
+
+  // Guest reopened onto their hold; we're fetching a fresh client secret.
+  const guestResuming =
+    !isLoggedIn && isPendingHold && clientSecret == null && !hasEnded;
 
   const formik = useFormik({
     // When managing, prefill from the existing ticket; otherwise from the
@@ -161,12 +185,23 @@ export const MeetupRsvpForm = ({
       displayName:
         ticketDetails?.ticket_holder_display_name ??
         fullUser?.display_name ??
+        storedHold?.holder.display_name ??
         '',
       firstName:
-        ticketDetails?.ticket_holder_first_name ?? fullUser?.first_name ?? '',
+        ticketDetails?.ticket_holder_first_name ??
+        fullUser?.first_name ??
+        storedHold?.holder.first_name ??
+        '',
       lastName:
-        ticketDetails?.ticket_holder_last_name ?? fullUser?.last_name ?? '',
-      email: ticketDetails?.ticket_holder_email ?? fullUser?.email ?? '',
+        ticketDetails?.ticket_holder_last_name ??
+        fullUser?.last_name ??
+        storedHold?.holder.last_name ??
+        '',
+      email:
+        ticketDetails?.ticket_holder_email ??
+        fullUser?.email ??
+        storedHold?.holder.email ??
+        '',
     },
     enableReinitialize: true,
     validationSchema: TicketHolderSchema,
@@ -189,18 +224,35 @@ export const MeetupRsvpForm = ({
             const result = await rsvp({
               meetupId: meetup.id,
               ticketHolder,
+              turnstileToken: isLoggedIn ? undefined : turnstileToken,
             }).unwrap();
             if (result.clientSecret != null) {
               setClientSecret(result.clientSecret);
               setHoldExpiresAt(result.holdExpiresAt ?? null);
               setPaidTicketId(result.ticketId ?? null);
+              if (!isLoggedIn && result.ticketId != null) {
+                saveGuestHold(meetup.id, {
+                  ticketId: result.ticketId,
+                  holdExpiresAt: result.holdExpiresAt ?? '',
+                  holder: ticketHolder,
+                });
+              }
+              return;
+            }
+            if (result.requiresEmailConfirmation === true) {
+              toast.success('Almost there! Check your email to confirm.');
+              onCollapse();
               return;
             }
             toast.success(`You're going to ${meetup.name}!`);
           }
           onCollapse();
-        } catch {
-          toast.error('Something went wrong. Please try again.');
+        } catch (error) {
+          turnstileRef.current?.reset();
+          setTurnstileToken('');
+          const message = (error as { data?: { message?: string } }).data
+            ?.message;
+          toast.error(message ?? 'Something went wrong. Please try again.');
         }
       })();
     },
@@ -237,27 +289,116 @@ export const MeetupRsvpForm = ({
   }, [paidTicketId]);
 
   // A reopened pending hold already holds a seat, so resume its payment.
+  // Logged-in resumes are keyed by their ticket; guests supply the stored
+  // holder (and a captcha token) so the backend can find the hold by email.
   const resumeStartedRef = useRef(false);
   useEffect(() => {
     if (!isPendingHold || clientSecret != null || resumeStartedRef.current) {
       return;
     }
+
+    if (isLoggedIn) {
+      resumeStartedRef.current = true;
+      void (async () => {
+        try {
+          const result = await rsvp({ meetupId: meetup.id }).unwrap();
+          if (result.clientSecret != null) {
+            setClientSecret(result.clientSecret);
+            setHoldExpiresAt(result.holdExpiresAt ?? null);
+            setPaidTicketId(result.ticketId ?? null);
+          }
+        } catch {
+          // Fall back to the manual button.
+        }
+      })();
+      return;
+    }
+
+    if (storedHold == null || turnstileToken === '') return;
     resumeStartedRef.current = true;
     void (async () => {
+      const abandon = (message?: string): void => {
+        clearGuestHold(meetup.id);
+        setStoredHold(null);
+        if (message != null) toast.error(message);
+        onCollapse();
+      };
       try {
-        const result = await rsvp({ meetupId: meetup.id }).unwrap();
+        const { payment_status } = await fetchTicketStatus(
+          storedHold.ticketId
+        ).unwrap();
+        if (payment_status === 'paid') {
+          clearGuestHold(meetup.id);
+          setStoredHold(null);
+          toast.success(`You're going to ${meetup.name}!`);
+          onCollapse();
+          return;
+        }
+        if (payment_status !== 'pending') {
+          abandon('That reservation is no longer available.');
+          return;
+        }
+        const result = await rsvp({
+          meetupId: meetup.id,
+          ticketHolder: storedHold.holder,
+          turnstileToken,
+        }).unwrap();
         if (result.clientSecret != null) {
           setClientSecret(result.clientSecret);
           setHoldExpiresAt(result.holdExpiresAt ?? null);
           setPaidTicketId(result.ticketId ?? null);
+          saveGuestHold(meetup.id, {
+            ticketId: result.ticketId ?? storedHold.ticketId,
+            holdExpiresAt: result.holdExpiresAt ?? storedHold.holdExpiresAt,
+            holder: storedHold.holder,
+          });
+        } else {
+          abandon();
         }
       } catch {
-        // Fall back to the manual button.
+        abandon('That reservation is no longer available.');
       }
     })();
-  }, [isPendingHold, clientSecret, meetup.id, rsvp]);
+  }, [
+    isPendingHold,
+    clientSecret,
+    isLoggedIn,
+    storedHold,
+    turnstileToken,
+    meetup.id,
+    meetup.name,
+    rsvp,
+    fetchTicketStatus,
+    onCollapse,
+  ]);
+
+  useEffect(() => {
+    if (holdExpired && !isLoggedIn) {
+      clearGuestHold(meetup.id);
+      setStoredHold(null);
+    }
+  }, [holdExpired, isLoggedIn, meetup.id]);
 
   const onCancelRsvp = (): void => {
+    if (!isLoggedIn) {
+      void (async () => {
+        const paymentIntentId = clientSecret?.split('_secret_')[0];
+        const ticketId = paidTicketId ?? storedHold?.ticketId;
+        if (paymentIntentId != null && ticketId != null) {
+          try {
+            await releaseGuestHold({ ticketId, paymentIntentId }).unwrap();
+          } catch {
+            // Best-effort; the sweeper still releases the seat at expiry.
+          }
+        }
+        clearGuestHold(meetup.id);
+        setStoredHold(null);
+        setCancelConfirmOpen(false);
+        toast.success('Your reservation was released.');
+        onCollapse();
+      })();
+      return;
+    }
     void (async () => {
       if (ticket == null) return;
       try {
@@ -305,12 +446,14 @@ export const MeetupRsvpForm = ({
             name="displayName"
             label="Display Name"
             // Locked once payment starts — the hold already captured it.
-            disabled={!isLoggedIn || isPaymentStep}
+            disabled={isPaymentStep}
           />
           <div className="border-border flex flex-col gap-4 rounded-md border border-dashed p-3">
             <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
               <FiLock className="size-3 shrink-0" />
-              From your account · only visible to organizers
+              {isLoggedIn
+                ? 'From your account · only visible to organizers'
+                : 'Only visible to organizers'}
             </p>
             <div className="flex flex-row gap-2">
               <FormField
@@ -318,14 +461,14 @@ export const MeetupRsvpForm = ({
                 name="firstName"
                 label="First Name"
                 className="flex-1"
-                disabled
+                disabled={isLoggedIn || isPaymentStep}
               />
               <FormField
                 formik={formik}
                 name="lastName"
                 label="Last Name"
                 className="flex-1"
-                disabled
+                disabled={isLoggedIn || isPaymentStep}
               />
             </div>
             <FormField
@@ -333,7 +476,7 @@ export const MeetupRsvpForm = ({
               name="email"
               label="Email"
               type="email"
-              disabled
+              disabled={isLoggedIn || isPaymentStep}
             />
           </div>
         </div>
@@ -344,14 +487,34 @@ export const MeetupRsvpForm = ({
 
         {isPaymentStep ? <PaymentElement /> : null}
 
+        {guestResuming ? (
+          <p className="text-muted-foreground flex items-center gap-2 text-sm">
+            <Spinner />
+            Restoring your reservation…
+          </p>
+        ) : null}
+
         {hasEnded ? (
           <p className="text-sm font-semibold text-red-500">
             This meetup has already ended.
           </p>
         ) : !isLoggedIn ? (
-          <p className="text-sm font-semibold text-yellow-600">
-            You must be logged in to RSVP.
+          <p className="text-muted-foreground text-sm">
+            RSVPing as a guest. You can create an account with this email later
+            and your ticket will be automatically linked.
           </p>
+        ) : null}
+
+        {!isLoggedIn && !isPaymentStep && !hasEnded ? (
+          <div className="flex justify-center">
+            <Turnstile
+              ref={turnstileRef}
+              siteKey="0x4AAAAAADvKnjEaFlmjd5Yq"
+              onSuccess={setTurnstileToken}
+              onExpire={() => setTurnstileToken('')}
+              onError={() => setTurnstileToken('')}
+            />
+          </div>
         ) : null}
       </div>
 
@@ -359,7 +522,7 @@ export const MeetupRsvpForm = ({
         {isPaymentStep && priceLabel != null ? (
           <PayButton
             amountLabel={priceLabel}
-            disabled={!isLoggedIn || hasEnded}
+            disabled={hasEnded}
             returnUrl={`${window.location.origin}/rsvp/return?ticket=${paidTicketId ?? ''}&meetup=${meetup.slug}`}
             onSuccess={onPaymentSuccess}
           />
@@ -367,7 +530,13 @@ export const MeetupRsvpForm = ({
           <Button
             type="submit"
             size="lg"
-            disabled={!isLoggedIn || hasEnded || isBusy || !formik.isValid}
+            disabled={
+              hasEnded ||
+              isBusy ||
+              guestResuming ||
+              !formik.isValid ||
+              (!isLoggedIn && !isManaging && turnstileToken === '')
+            }
           >
             <FiUserCheck />
             {isManaging
@@ -383,10 +552,12 @@ export const MeetupRsvpForm = ({
             type="button"
             variant="destructive"
             onClick={() => setCancelConfirmOpen(true)}
-            disabled={!isLoggedIn || hasEnded || isBusy}
+            disabled={hasEnded || isBusy}
           >
             <FiUserX />
-            {isPendingHold ? 'Cancel reservation' : 'Cancel RSVP'}
+            {isPendingHold || guestHoldActive
+              ? 'Cancel reservation'
+              : 'Cancel RSVP'}
           </Button>
         ) : null}
         {isPaymentStep ? (

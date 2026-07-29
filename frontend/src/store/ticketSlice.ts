@@ -13,6 +13,7 @@ export interface CreateTicketOptions {
   meetupId: string;
   /** Optional override; when omitted the requestor's own details are used. */
   ticketHolder?: TicketHolder;
+  turnstileToken?: string;
 }
 
 export interface UpdateTicketOptions {
@@ -34,6 +35,16 @@ export interface RsvpResult {
   ticketId?: string;
   clientSecret?: string;
   holdExpiresAt?: string;
+  requiresEmailConfirmation?: boolean;
+}
+
+export interface ConfirmGuestRsvpResult {
+  meetup?: { name: string; slug: string };
+}
+
+export interface CancelGuestRsvpResult {
+  meetup?: { name: string };
+  alreadyCancelled?: boolean;
 }
 
 export const ticketSlice = createApi({
@@ -67,13 +78,57 @@ export const ticketSlice = createApi({
         { type: 'Tickets', id: ticketId },
       ],
     }),
+    getTicketStatus: builder.query<
+      { payment_status: TicketDetails['payment_status'] },
+      string
+    >({
+      query: (ticketId) => ({
+        url: `tickets/${ticketId}/status`,
+      }),
+    }),
     createTicket: builder.mutation<RsvpResult, CreateTicketOptions>({
-      query: ({ meetupId, ticketHolder }) => ({
+      query: ({ meetupId, ticketHolder, turnstileToken }) => ({
         url: `meetups/${meetupId}/rsvp`,
         method: 'POST',
         // Omit the body entirely to fall back to the requestor's details.
         body:
-          ticketHolder != null ? { ticket_holder: ticketHolder } : undefined,
+          ticketHolder != null || turnstileToken != null
+            ? {
+                ...(ticketHolder != null
+                  ? { ticket_holder: ticketHolder }
+                  : {}),
+                ...(turnstileToken != null
+                  ? { turnstile_token: turnstileToken }
+                  : {}),
+              }
+            : undefined,
+      }),
+      invalidatesTags: ['Tickets'],
+    }),
+    confirmGuestRsvp: builder.mutation<ConfirmGuestRsvpResult, string>({
+      query: (token) => ({
+        url: 'meetups/rsvp/confirm',
+        method: 'POST',
+        body: { token },
+      }),
+      invalidatesTags: ['Tickets'],
+    }),
+    cancelGuestRsvp: builder.mutation<CancelGuestRsvpResult, string>({
+      query: (token) => ({
+        url: 'meetups/rsvp/cancel',
+        method: 'POST',
+        body: { token },
+      }),
+      invalidatesTags: ['Tickets'],
+    }),
+    releaseGuestHold: builder.mutation<
+      { released: boolean },
+      { ticketId: string; paymentIntentId: string }
+    >({
+      query: ({ ticketId, paymentIntentId }) => ({
+        url: 'meetups/rsvp/release',
+        method: 'POST',
+        body: { ticket_id: ticketId, payment_intent_id: paymentIntentId },
       }),
       invalidatesTags: ['Tickets'],
     }),
@@ -102,7 +157,11 @@ export const {
   useGetTicketsQuery,
   useGetTicketQuery,
   useLazyGetTicketQuery,
+  useLazyGetTicketStatusQuery,
   useCreateTicketMutation,
+  useConfirmGuestRsvpMutation,
+  useCancelGuestRsvpMutation,
+  useReleaseGuestHoldMutation,
   useUpdateTicketMutation,
   useDeleteTicketMutation,
 } = ticketSlice;

@@ -27,3 +27,17 @@ export const loginLimiter = rateLimit({
     message: 'Too many requests. Please try again later.',
   },
 });
+
+/**
+ * Caps guest RSVP attempts per IP so a bot can't spam confirmation emails or
+ * churn RSVPs.
+ */
+export const rsvpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 10, // per IP per window
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    message: 'Too many requests. Please try again later.',
+  },
+});

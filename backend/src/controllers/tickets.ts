@@ -1,19 +1,29 @@
 import {
   type EventbriteAttendee,
   type SimpleTicketInfo,
+  cancelGuestRsvpSchema,
+  confirmGuestRsvpSchema,
   createTicketSchema,
   editTicketSchema,
 } from '@keebmeet/shared';
 import { type Request, type Response } from 'express';
-import { In } from 'typeorm';
+import { ILike, In, IsNull } from 'typeorm';
 import { socket } from '../Server';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { TicketType } from '../entity/TicketType';
-import { type User } from '../entity/User';
+import { User } from '../entity/User';
+import { sendGuestRsvpVerificationEmail } from '../util/email';
 import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
+import {
+  buildGuestRsvpConfirmLink,
+  generateGuestRsvpToken,
+  verifyGuestCancelToken,
+  verifyGuestRsvpToken,
+} from '../util/guestRsvp';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
 import { getMeetupEnd, isMeetupAtCapacity } from '../util/rsvp';
+import { verifyTurnstileToken } from '../util/turnstile';
 import {
   createPaidTicket,
   finalizeTicketSideEffects,
@@ -47,23 +57,87 @@ export const getTicket = async (
   return res.json(ticket);
 };
 
+// Public (no auth) so guests can poll after checkout; keep it status-only.
+export const getTicketStatus = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { ticket_id } = req.params as Record<string, string>;
+
+  const ticket = await Ticket.findOne({
+    where: { id: ticket_id },
+    select: { id: true, payment_status: true },
+  });
+
+  if (ticket == null) {
+    return res.status(404).json({ message: 'Invalid ticket ID.' });
+  }
+
+  return res.json({ payment_status: ticket.payment_status });
+};
+
 export const createTicket = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const meetup = res.locals.meetup as Meetup;
-  const user = res.locals.requestor as User;
+  const { meetup_id } = req.params as Record<string, string>;
+  const user = (res.locals.requestor as User | undefined) ?? null;
   const result = createTicketSchema.safeParse(req.body ?? {});
-
-  if (meetup == null || user == null) {
-    return res.status(400).end();
-  }
 
   if (!result.success) {
     return res.status(400).json(result.error);
   }
 
-  // Check if an active ticket already exists
+  // Guests have no account to fall back to, so they must supply their details.
+  if (user == null && result.data.ticket_holder == null) {
+    return res
+      .status(400)
+      .json({ message: 'Ticket holder details are required.' });
+  }
+
+  if (user == null) {
+    const humanVerified = await verifyTurnstileToken(
+      result.data.turnstile_token ?? '',
+      req.ip
+    );
+    if (!humanVerified) {
+      return res.status(403).json({ message: 'Captcha verification failed.' });
+    }
+  }
+
+  const meetup = await Meetup.findOne({
+    relations: { lead_organizer: true },
+    where: { id: meetup_id },
+  });
+
+  if (meetup == null) {
+    return res.status(404).json({ message: 'Invalid meetup ID.' });
+  }
+
+  const holder =
+    user != null
+      ? ticketHolderFields(result.data.ticket_holder ?? {}, user)
+      : {
+          ticket_holder_display_name: result.data.ticket_holder!.display_name,
+          ticket_holder_first_name: result.data.ticket_holder!.first_name,
+          ticket_holder_last_name: result.data.ticket_holder!.last_name,
+          ticket_holder_email: result.data.ticket_holder!.email,
+        };
+
+  // A guest can't claim an email that already belongs to an account
+  if (user == null) {
+    const emailOwner = await User.findOne({
+      where: { email: ILike(holder.ticket_holder_email) },
+    });
+    if (emailOwner != null) {
+      return res.status(409).json({
+        message:
+          'This email belongs to an account. Log in to RSVP, or use a different email.',
+      });
+    }
+  }
+
+  // A logged-in user is matched by account; a guest by their holder email.
   const existingTicket = await Ticket.findOne({
     relations: {
       meetup: true,
@@ -71,8 +145,13 @@ export const createTicket = async (
     },
     where: {
       meetup: { id: meetup.id },
-      user: { id: user.id },
       payment_status: In(['confirmed', 'pending', 'paid']),
+      ...(user != null
+        ? { user: { id: user.id } }
+        : {
+            user: IsNull(),
+            ticket_holder_email: ILike(holder.ticket_holder_email),
+          }),
     },
   });
 
@@ -90,8 +169,6 @@ export const createTicket = async (
     return res.status(400).json({ message: 'Meetup has already occurred.' });
   }
 
-  const holder = ticketHolderFields(result.data.ticket_holder ?? {}, user);
-
   const ticketType = await TicketType.findOne({
     where: { meetup: { id: meetup.id } },
   });
@@ -101,6 +178,27 @@ export const createTicket = async (
 
   if (await isMeetupAtCapacity(meetup.id, meetup.capacity)) {
     return res.status(400).json({ message: 'Meetup is full.' });
+  }
+
+  // A guest's free RSVP holds no seat until they confirm ownership of the email,
+  // so a bot can't burn capacity with addresses it doesn't control.
+  if (user == null) {
+    const token = generateGuestRsvpToken({
+      meetup_id: meetup.id,
+      display_name: holder.ticket_holder_display_name,
+      first_name: holder.ticket_holder_first_name,
+      last_name: holder.ticket_holder_last_name,
+      email: holder.ticket_holder_email,
+    });
+    await sendGuestRsvpVerificationEmail(
+      holder.ticket_holder_email,
+      meetup.name,
+      buildGuestRsvpConfirmLink(token)
+    );
+    return res.status(202).json({
+      requiresEmailConfirmation: true,
+      message: 'Almost there! Check your email to confirm your RSVP.',
+    });
   }
 
   const newTicket = Ticket.create({
@@ -117,6 +215,128 @@ export const createTicket = async (
   await finalizeTicketSideEffects(newTicket, meetup);
 
   return res.status(201).json(newTicket);
+};
+
+export const confirmGuestRsvp = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const result = confirmGuestRsvpSchema.safeParse(req.body ?? {});
+
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
+
+  const data = verifyGuestRsvpToken(result.data.token);
+  if (data == null) {
+    return res
+      .status(400)
+      .json({ message: 'This confirmation link is invalid or has expired.' });
+  }
+
+  const meetup = await Meetup.findOneBy({ id: data.meetup_id });
+  if (meetup == null) {
+    return res.status(404).json({ message: 'Invalid meetup ID.' });
+  }
+
+  if (getMeetupEnd(meetup) < new Date()) {
+    return res.status(400).json({ message: 'Meetup has already occurred.' });
+  }
+
+  const emailOwner = await User.findOne({
+    where: { email: ILike(data.email) },
+  });
+  if (emailOwner != null) {
+    return res.status(409).json({
+      message: 'This email now belongs to an account. Log in to RSVP.',
+    });
+  }
+
+  const existingTicket = await Ticket.findOne({
+    where: {
+      meetup: { id: meetup.id },
+      user: IsNull(),
+      ticket_holder_email: ILike(data.email),
+      payment_status: In(['confirmed', 'paid']),
+    },
+  });
+  if (existingTicket != null) {
+    return res
+      .status(200)
+      .json({ meetup: { name: meetup.name, slug: meetup.slug } });
+  }
+
+  if (await isMeetupAtCapacity(meetup.id, meetup.capacity)) {
+    return res
+      .status(400)
+      .json({ message: 'This meetup filled up before you confirmed.' });
+  }
+
+  const ticket = Ticket.create({
+    meetup,
+    user: null,
+    discord_id: null,
+    rsvp_method: 'keebmeet',
+    raffle_entries: meetup.default_raffle_entries,
+    ticket_holder_display_name: data.display_name,
+    ticket_holder_first_name: data.first_name,
+    ticket_holder_last_name: data.last_name,
+    ticket_holder_email: data.email,
+  });
+  await ticket.save();
+
+  await finalizeTicketSideEffects(ticket, meetup);
+
+  return res
+    .status(201)
+    .json({ meetup: { name: meetup.name, slug: meetup.slug } });
+};
+
+export const cancelGuestRsvp = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const result = cancelGuestRsvpSchema.safeParse(req.body ?? {});
+
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
+
+  const data = verifyGuestCancelToken(result.data.token);
+  if (data == null) {
+    return res
+      .status(400)
+      .json({ message: 'This cancellation link is invalid or has expired.' });
+  }
+
+  const ticket = await Ticket.findOne({
+    relations: { meetup: true },
+    where: { id: data.ticket_id },
+  });
+  // A link clicked after the ticket is already gone still reads as success.
+  if (ticket == null) {
+    return res.status(200).json({ alreadyCancelled: true });
+  }
+
+  if (ticket.payment_status !== 'confirmed') {
+    return res.status(400).json({
+      message:
+        "Paid tickets can't be cancelled here — contact the organizer for a refund.",
+    });
+  }
+
+  if (getMeetupEnd(ticket.meetup) < new Date()) {
+    return res.status(400).json({ message: 'Meetup has already occurred.' });
+  }
+
+  const meetupId = ticket.meetup.id;
+  const meetupName = ticket.meetup.name;
+  await ticket.remove();
+
+  socket.emit('meetup:update', { meetupId });
+  await refreshMeetupDiscordMessage(meetupId);
+
+  return res.status(200).json({ meetup: { name: meetupName } });
 };
 
 export const updateTicket = async (

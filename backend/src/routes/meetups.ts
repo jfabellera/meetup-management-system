@@ -32,9 +32,16 @@ import {
   uploadMeetupImage,
 } from '../controllers/meetups';
 import { getRaffleRecords, rollRaffleWinner } from '../controllers/raffles';
-import { createTicket, updateTicketViaWebhook } from '../controllers/tickets';
+import { releaseGuestHold } from '../controllers/ticketPayments';
+import {
+  cancelGuestRsvp,
+  confirmGuestRsvp,
+  createTicket,
+  updateTicketViaWebhook,
+} from '../controllers/tickets';
 import { Rule, authChecker, optionalAuth } from '../middleware/authChecker';
 import { uploadImageFile } from '../middleware/imageUpload';
+import { rsvpLimiter } from '../middleware/rateLimiter';
 
 const router = express.Router();
 
@@ -99,9 +106,16 @@ router.post(
   transferMeetup as RequestHandler
 );
 
+router.post('/rsvp/confirm', confirmGuestRsvp as RequestHandler);
+
+router.post('/rsvp/cancel', cancelGuestRsvp as RequestHandler);
+
+router.post('/rsvp/release', releaseGuestHold as RequestHandler);
+
 router.post(
   '/:meetup_id/rsvp',
-  authChecker([Rule.ignoreMeetupOrganizer]) as RequestHandler,
+  rsvpLimiter,
+  optionalAuth() as RequestHandler,
   createTicket as RequestHandler
 );
 

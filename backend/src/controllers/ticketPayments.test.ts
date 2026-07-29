@@ -30,7 +30,7 @@ import { checkMeetupOrganizer } from '../middleware/authChecker';
 import { sendRefundEmail } from '../util/email';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
 import { getStripe } from '../util/stripe';
-import { refundTicket } from './ticketPayments';
+import { refundTicket, releaseGuestHold } from './ticketPayments';
 
 const mockedTicket = jest.mocked(Ticket);
 const mockedCheckOrganizer = jest.mocked(checkMeetupOrganizer);
@@ -59,6 +59,9 @@ const mockResponse = (): MockResponse => {
 };
 
 const mockRequest = (): Request => ({}) as unknown as Request;
+
+const mockRequestBody = (body: unknown): Request =>
+  ({ body }) as unknown as Request;
 
 // A Stripe stub covering the refund + receipt lookup.
 const stubStripe = (refundId = 're_1', receiptUrl = 'https://receipt'): void => {
@@ -177,5 +180,77 @@ describe('refundTicket', () => {
 
     expect(res.statusCode).toBe(502);
     expect(mockedSendRefundEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe('releaseGuestHold', () => {
+  const validBody = { ticket_id: '77', payment_intent_id: 'pi_1' };
+
+  const stubCancel = (): jest.Mock => {
+    const cancel = jest.fn().mockResolvedValue({});
+    mockedGetStripe.mockReturnValue({ paymentIntents: { cancel } } as any);
+    return cancel;
+  };
+
+  it('returns 400 for an invalid body', async () => {
+    const res = mockResponse();
+
+    await releaseGuestHold(mockRequestBody({ ticket_id: '77' }), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(mockedTicket.findOne).not.toHaveBeenCalled();
+  });
+
+  it('reports released:false without freeing anything for an unknown hold', async () => {
+    stubCancel();
+    mockedTicket.findOne.mockResolvedValue(null);
+    const res = mockResponse();
+
+    await releaseGuestHold(mockRequestBody(validBody), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ released: false });
+    expect(mockedSocket.emit).not.toHaveBeenCalled();
+  });
+
+  it('cancels the intent, removes the hold, and emits on a valid release', async () => {
+    const cancel = stubCancel();
+    const ticket = {
+      id: '77',
+      meetup: { id: '10' },
+      remove: jest.fn().mockResolvedValue(undefined),
+    };
+    mockedTicket.findOne.mockResolvedValue(ticket as any);
+    const res = mockResponse();
+
+    await releaseGuestHold(mockRequestBody(validBody), res);
+
+    expect(cancel).toHaveBeenCalledWith('pi_1');
+    expect(ticket.remove).toHaveBeenCalled();
+    expect(mockedSocket.emit).toHaveBeenCalledWith('meetup:update', {
+      meetupId: '10',
+    });
+    expect(mockedRefresh).toHaveBeenCalledWith('10');
+    expect(res.body).toEqual({ released: true });
+  });
+
+  it('still releases the seat when the intent can no longer be cancelled', async () => {
+    mockedGetStripe.mockReturnValue({
+      paymentIntents: {
+        cancel: jest.fn().mockRejectedValue(new Error('already captured')),
+      },
+    } as any);
+    const ticket = {
+      id: '77',
+      meetup: { id: '10' },
+      remove: jest.fn().mockResolvedValue(undefined),
+    };
+    mockedTicket.findOne.mockResolvedValue(ticket as any);
+    const res = mockResponse();
+
+    await releaseGuestHold(mockRequestBody(validBody), res);
+
+    expect(ticket.remove).toHaveBeenCalled();
+    expect(res.body).toEqual({ released: true });
   });
 });
