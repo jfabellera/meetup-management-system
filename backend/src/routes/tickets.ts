@@ -5,6 +5,7 @@ import {
   deleteTicket,
   getAllTickets,
   getTicket,
+  getTicketStatus,
   updateTicket,
 } from '../controllers/tickets';
 import { refundTicket } from '../controllers/ticketPayments';
@@ -17,6 +18,8 @@ router.get(
   authChecker([Rule.requireAdmin]) as RequestHandler,
   getAllTickets as RequestHandler
 );
+
+router.get('/:ticket_id/status', getTicketStatus as RequestHandler);
 
 router.get(
   '/:ticket_id',

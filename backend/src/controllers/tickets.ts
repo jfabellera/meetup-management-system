@@ -55,6 +55,25 @@ export const getTicket = async (
   return res.json(ticket);
 };
 
+// Public (no auth) so guests can poll after checkout; keep it status-only.
+export const getTicketStatus = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { ticket_id } = req.params as Record<string, string>;
+
+  const ticket = await Ticket.findOne({
+    where: { id: ticket_id },
+    select: { id: true, payment_status: true },
+  });
+
+  if (ticket == null) {
+    return res.status(404).json({ message: 'Invalid ticket ID.' });
+  }
+
+  return res.json({ payment_status: ticket.payment_status });
+};
+
 export const createTicket = async (
   req: Request,
   res: Response

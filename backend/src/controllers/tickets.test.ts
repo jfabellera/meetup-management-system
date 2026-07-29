@@ -64,6 +64,7 @@ import {
   deleteTicket,
   getAllTickets,
   getTicket,
+  getTicketStatus,
   getUserTickets,
   syncEventbriteAttendee,
   updateTicket,
@@ -212,6 +213,29 @@ describe('getTicket', () => {
     await getTicket(mockRequest({}, { ticket_id: '5' }), res);
 
     expect(res.body).toEqual({ id: '5' });
+  });
+});
+
+describe('getTicketStatus', () => {
+  it('returns 404 when the ticket does not exist', async () => {
+    mockedTicket.findOne.mockResolvedValue(null);
+    const res = mockResponse();
+
+    await getTicketStatus(mockRequest({}, { ticket_id: '5' }), res);
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns only the payment status, never holder details', async () => {
+    mockedTicket.findOne.mockResolvedValue({
+      id: '5',
+      payment_status: 'paid',
+    } as any);
+    const res = mockResponse();
+
+    await getTicketStatus(mockRequest({}, { ticket_id: '5' }), res);
+
+    expect(res.body).toEqual({ payment_status: 'paid' });
   });
 });
 

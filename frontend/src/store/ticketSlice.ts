@@ -73,6 +73,14 @@ export const ticketSlice = createApi({
         { type: 'Tickets', id: ticketId },
       ],
     }),
+    getTicketStatus: builder.query<
+      { payment_status: TicketDetails['payment_status'] },
+      string
+    >({
+      query: (ticketId) => ({
+        url: `tickets/${ticketId}/status`,
+      }),
+    }),
     createTicket: builder.mutation<RsvpResult, CreateTicketOptions>({
       query: ({ meetupId, ticketHolder, turnstileToken }) => ({
         url: `meetups/${meetupId}/rsvp`,
@@ -125,6 +133,7 @@ export const {
   useGetTicketsQuery,
   useGetTicketQuery,
   useLazyGetTicketQuery,
+  useLazyGetTicketStatusQuery,
   useCreateTicketMutation,
   useConfirmGuestRsvpMutation,
   useUpdateTicketMutation,
