@@ -479,7 +479,7 @@ export const MeetupModal = ({
                   ) : effectiveTicket != null ? (
                     <Button
                       variant={hasPendingHold ? 'default' : 'outline'}
-                      disabled={!isLoggedIn}
+                      disabled={!isLoggedIn && !hasPendingHold}
                       onClick={goToRsvp}
                     >
                       <FiUserCheck />
