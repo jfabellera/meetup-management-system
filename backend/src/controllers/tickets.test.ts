@@ -19,6 +19,9 @@ jest.mock('../entity/Ticket', () => ({
 jest.mock('../entity/Meetup', () => ({
   Meetup: { findOne: jest.fn() },
 }));
+jest.mock('../entity/User', () => ({
+  User: { findOne: jest.fn() },
+}));
 jest.mock('../entity/TicketType', () => ({
   TicketType: { findOne: jest.fn() },
 }));
@@ -36,6 +39,7 @@ import { socket } from '../Server';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { TicketType } from '../entity/TicketType';
+import { User } from '../entity/User';
 import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
 import { sendRsvpConfirmationEmail } from '../util/email';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
@@ -54,6 +58,7 @@ import {
 const mockedTicket = jest.mocked(Ticket);
 const mockedMeetup = jest.mocked(Meetup);
 const mockedTicketType = jest.mocked(TicketType);
+const mockedUser = jest.mocked(User);
 
 // isMeetupAtCapacity now counts via a query builder; stub its getCount.
 const setActiveTicketCount = (count: number): void => {
@@ -153,6 +158,8 @@ beforeEach(() => {
   // Default: free meetup (no ticket type) and below capacity.
   mockedTicketType.findOne.mockResolvedValue(null);
   setActiveTicketCount(0);
+  // Default: the guest's email isn't tied to an existing account.
+  mockedUser.findOne.mockResolvedValue(null);
 });
 
 // ---- getAllTickets / getTicket ---------------------------------------------
@@ -330,6 +337,32 @@ describe('createTicket', () => {
         ticket_holder_email: 'sam.holder@example.com',
       })
     );
+    expect(res.statusCode).toBe(201);
+  });
+
+  it('rejects (409) a guest whose email already belongs to an account', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup());
+    mockedUser.findOne.mockResolvedValue({ id: '42' } as any);
+    const res = mockResponse();
+    // No requestor -> guest.
+
+    await createTicket(rsvpRequest({ ticket_holder: fakeTicketHolder() }), res);
+
+    expect(res.statusCode).toBe(409);
+    expect(mockedTicket.create).not.toHaveBeenCalled();
+  });
+
+  it('does not treat a logged-in user as a guest email conflict', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup());
+    mockedTicket.findOne.mockResolvedValue(null);
+    const res = mockResponse();
+    res.locals.requestor = fakeRequestor();
+
+    await createTicket(rsvpRequest(), res);
+
+    // The account-email guard is guest-only, so the requestor's own email is
+    // never checked against the User table.
+    expect(mockedUser.findOne).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(201);
   });
 

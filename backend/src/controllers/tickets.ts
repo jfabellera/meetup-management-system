@@ -10,7 +10,7 @@ import { socket } from '../Server';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { TicketType } from '../entity/TicketType';
-import { type User } from '../entity/User';
+import { User } from '../entity/User';
 import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
 import { getMeetupEnd, isMeetupAtCapacity } from '../util/rsvp';
@@ -84,6 +84,19 @@ export const createTicket = async (
           ticket_holder_last_name: result.data.ticket_holder!.last_name,
           ticket_holder_email: result.data.ticket_holder!.email,
         };
+
+  // A guest can't claim an email that already belongs to an account
+  if (user == null) {
+    const emailOwner = await User.findOne({
+      where: { email: ILike(holder.ticket_holder_email) },
+    });
+    if (emailOwner != null) {
+      return res.status(409).json({
+        message:
+          'This email belongs to an account. Log in to RSVP, or use a different email.',
+      });
+    }
+  }
 
   // A logged-in user is matched by account; a guest by their holder email.
   const existingTicket = await Ticket.findOne({
