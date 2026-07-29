@@ -187,6 +187,7 @@ const ticketHolderSchema = z.object({
 
 export const createTicketSchema = z.object({
   ticket_holder: ticketHolderSchema.optional(),
+  turnstile_token: z.string().optional(),
 });
 
 export type CreateTicketPayload = z.infer<typeof createTicketSchema>;

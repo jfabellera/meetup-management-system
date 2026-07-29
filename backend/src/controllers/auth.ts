@@ -16,6 +16,7 @@ import { notifyAdminsOfOrganizerRequest } from '../util/organizerRequestNotifica
 import { deleteManagedObjects } from '../util/imageCleanup';
 import { promoteImage } from '../util/objectStorage';
 import { claimDiscordTickets, claimGuestTickets } from '../util/rsvp';
+import { verifyTurnstileToken } from '../util/turnstile';
 import { toUserResponse } from '../util/userResponse';
 import {
   type TokenData,
@@ -28,45 +29,6 @@ const hashPassword = async (password: string): Promise<string> => {
   const saltRounds = 10;
   const passwordHash = await bcrypt.hash(password, saltRounds);
   return passwordHash;
-};
-
-/**
- * Verifies a Cloudflare Turnstile token against the siteverify API.
- *
- * The secret key is read from config (never sent to the client). When no secret
- * is configured — e.g. local dev — verification is skipped so registration
- * still works; a real secret must be set in every deployed environment.
- */
-const verifyTurnstileToken = async (
-  token: string,
-  remoteIp?: string
-): Promise<boolean> => {
-  if (config.turnstileSecretKey === '') {
-    console.warn(
-      'TURNSTILE_SECRET_KEY is not set; skipping captcha verification.'
-    );
-    return true;
-  }
-
-  try {
-    const params = new URLSearchParams({
-      secret: config.turnstileSecretKey,
-      response: token,
-    });
-    if (remoteIp != null) {
-      params.append('remoteip', remoteIp);
-    }
-
-    const { data } = await axios.post<{ success: boolean }>(
-      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-      params,
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-    );
-
-    return data.success === true;
-  } catch {
-    return false;
-  }
 };
 
 const signToken = (user: User): string => {

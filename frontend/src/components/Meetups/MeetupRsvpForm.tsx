@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { FormField } from '@/components/ui/form-field';
 import { Spinner } from '@/components/ui/spinner';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { type MeetupInfo, type SimpleTicketInfo } from '@keebmeet/shared';
 import { Elements, PaymentElement } from '@stripe/react-stripe-js';
 import type { Appearance } from '@stripe/stripe-js';
@@ -114,6 +115,8 @@ export const MeetupRsvpForm = ({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
   const [paidTicketId, setPaidTicketId] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   // confirmPayment and the return tab's broadcast can both report the same
   // payment.
@@ -189,6 +192,7 @@ export const MeetupRsvpForm = ({
             const result = await rsvp({
               meetupId: meetup.id,
               ticketHolder,
+              turnstileToken: isLoggedIn ? undefined : turnstileToken,
             }).unwrap();
             if (result.clientSecret != null) {
               setClientSecret(result.clientSecret);
@@ -200,6 +204,8 @@ export const MeetupRsvpForm = ({
           }
           onCollapse();
         } catch (error) {
+          turnstileRef.current?.reset();
+          setTurnstileToken('');
           const message = (error as { data?: { message?: string } }).data
             ?.message;
           toast.error(message ?? 'Something went wrong. Please try again.');
@@ -358,6 +364,18 @@ export const MeetupRsvpForm = ({
             and your ticket will be automatically linked.
           </p>
         ) : null}
+
+        {!isLoggedIn && !isPaymentStep && !hasEnded ? (
+          <div className="flex justify-center">
+            <Turnstile
+              ref={turnstileRef}
+              siteKey="0x4AAAAAADvKnjEaFlmjd5Yq"
+              onSuccess={setTurnstileToken}
+              onExpire={() => setTurnstileToken('')}
+              onError={() => setTurnstileToken('')}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className="flex shrink-0 flex-col gap-2 p-4">
@@ -372,7 +390,12 @@ export const MeetupRsvpForm = ({
           <Button
             type="submit"
             size="lg"
-            disabled={hasEnded || isBusy || !formik.isValid}
+            disabled={
+              hasEnded ||
+              isBusy ||
+              !formik.isValid ||
+              (!isLoggedIn && !isManaging && turnstileToken === '')
+            }
           >
             <FiUserCheck />
             {isManaging

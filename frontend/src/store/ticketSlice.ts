@@ -13,6 +13,7 @@ export interface CreateTicketOptions {
   meetupId: string;
   /** Optional override; when omitted the requestor's own details are used. */
   ticketHolder?: TicketHolder;
+  turnstileToken?: string;
 }
 
 export interface UpdateTicketOptions {
@@ -68,12 +69,21 @@ export const ticketSlice = createApi({
       ],
     }),
     createTicket: builder.mutation<RsvpResult, CreateTicketOptions>({
-      query: ({ meetupId, ticketHolder }) => ({
+      query: ({ meetupId, ticketHolder, turnstileToken }) => ({
         url: `meetups/${meetupId}/rsvp`,
         method: 'POST',
         // Omit the body entirely to fall back to the requestor's details.
         body:
-          ticketHolder != null ? { ticket_holder: ticketHolder } : undefined,
+          ticketHolder != null || turnstileToken != null
+            ? {
+                ...(ticketHolder != null
+                  ? { ticket_holder: ticketHolder }
+                  : {}),
+                ...(turnstileToken != null
+                  ? { turnstile_token: turnstileToken }
+                  : {}),
+              }
+            : undefined,
       }),
       invalidatesTags: ['Tickets'],
     }),

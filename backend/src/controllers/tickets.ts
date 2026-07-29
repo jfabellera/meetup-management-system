@@ -14,6 +14,7 @@ import { User } from '../entity/User';
 import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
 import { getMeetupEnd, isMeetupAtCapacity } from '../util/rsvp';
+import { verifyTurnstileToken } from '../util/turnstile';
 import {
   createPaidTicket,
   finalizeTicketSideEffects,
@@ -64,6 +65,16 @@ export const createTicket = async (
     return res
       .status(400)
       .json({ message: 'Ticket holder details are required.' });
+  }
+
+  if (user == null) {
+    const humanVerified = await verifyTurnstileToken(
+      result.data.turnstile_token ?? '',
+      req.ip
+    );
+    if (!humanVerified) {
+      return res.status(403).json({ message: 'Captcha verification failed.' });
+    }
   }
 
   const meetup = await Meetup.findOne({

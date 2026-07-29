@@ -34,6 +34,9 @@ jest.mock('../util/email', () => ({
 jest.mock('../util/meetupDiscordMessage', () => ({
   refreshMeetupDiscordMessage: jest.fn(),
 }));
+jest.mock('../util/turnstile', () => ({
+  verifyTurnstileToken: jest.fn(),
+}));
 
 import { socket } from '../Server';
 import { Meetup } from '../entity/Meetup';
@@ -43,6 +46,7 @@ import { User } from '../entity/User';
 import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
 import { sendRsvpConfirmationEmail } from '../util/email';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
+import { verifyTurnstileToken } from '../util/turnstile';
 import {
   checkInTicket,
   createTicket,
@@ -59,6 +63,7 @@ const mockedTicket = jest.mocked(Ticket);
 const mockedMeetup = jest.mocked(Meetup);
 const mockedTicketType = jest.mocked(TicketType);
 const mockedUser = jest.mocked(User);
+const mockedVerifyTurnstile = jest.mocked(verifyTurnstileToken);
 
 // isMeetupAtCapacity now counts via a query builder; stub its getCount.
 const setActiveTicketCount = (count: number): void => {
@@ -160,6 +165,8 @@ beforeEach(() => {
   setActiveTicketCount(0);
   // Default: the guest's email isn't tied to an existing account.
   mockedUser.findOne.mockResolvedValue(null);
+  // Default: captcha passes.
+  mockedVerifyTurnstile.mockResolvedValue(true);
 });
 
 // ---- getAllTickets / getTicket ---------------------------------------------
@@ -338,6 +345,17 @@ describe('createTicket', () => {
       })
     );
     expect(res.statusCode).toBe(201);
+  });
+
+  it('rejects (403) a guest whose captcha fails', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup());
+    mockedVerifyTurnstile.mockResolvedValue(false);
+    const res = mockResponse();
+
+    await createTicket(rsvpRequest({ ticket_holder: fakeTicketHolder() }), res);
+
+    expect(res.statusCode).toBe(403);
+    expect(mockedTicket.create).not.toHaveBeenCalled();
   });
 
   it('rejects (409) a guest whose email already belongs to an account', async () => {
