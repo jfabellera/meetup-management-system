@@ -66,6 +66,12 @@ jest.mock('../util/email', () => ({
   sendVerificationEmail: jest.fn(),
 }));
 
+jest.mock('../util/rsvp', () => ({
+  __esModule: true,
+  claimDiscordTickets: jest.fn(),
+  claimGuestTickets: jest.fn(),
+}));
+
 // Control token issuing/verification directly; the JWT logic itself is covered
 // by emailVerification.test.ts.
 jest.mock('../util/emailVerification', () => ({

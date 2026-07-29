@@ -15,7 +15,7 @@ import {
 import { notifyAdminsOfOrganizerRequest } from '../util/organizerRequestNotification';
 import { deleteManagedObjects } from '../util/imageCleanup';
 import { promoteImage } from '../util/objectStorage';
-import { claimDiscordTickets } from '../util/rsvp';
+import { claimDiscordTickets, claimGuestTickets } from '../util/rsvp';
 import { toUserResponse } from '../util/userResponse';
 import {
   type TokenData,
@@ -186,6 +186,7 @@ export const verifyUser = async (
 
   user.is_verified = true;
   await user.save();
+  await claimGuestTickets(user);
 
   return res.status(200).json({ message: 'User verified successfully.' });
 };
@@ -549,6 +550,7 @@ export const discordLogin = async (
     });
     await user.save();
     await claimDiscordTickets(user);
+    await claimGuestTickets(user);
   }
 
   return res.status(201).json({ token: signToken(user) });
@@ -626,6 +628,7 @@ export const discordLink = async (
   existingUser.is_verified = true;
   await existingUser.save();
   await claimDiscordTickets(existingUser);
+  await claimGuestTickets(existingUser);
 
   return res.status(201).json({ token: signToken(existingUser) });
 };

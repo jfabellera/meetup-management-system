@@ -191,68 +191,80 @@ describe('getTicket', () => {
 // ---- createTicket ----------------------------------------------------------
 
 describe('createTicket', () => {
-  it('returns 400 when meetup or requestor is missing from locals', async () => {
-    const res = mockResponse();
-    res.locals.meetup = fakeMeetup();
-    // no requestor
+  const rsvpRequest = (body?: unknown): Request =>
+    mockRequest(body ?? {}, { meetup_id: '10' });
 
-    await createTicket(mockRequest(), res);
+  it('returns 404 when the meetup does not exist', async () => {
+    mockedMeetup.findOne.mockResolvedValue(null);
+    const res = mockResponse();
+    res.locals.requestor = fakeRequestor();
+
+    await createTicket(rsvpRequest(), res);
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 400 when a guest supplies no ticket holder details', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup());
+    const res = mockResponse();
+    // No requestor -> guest.
+
+    await createTicket(rsvpRequest(), res);
 
     expect(res.statusCode).toBe(400);
+    expect(mockedTicket.create).not.toHaveBeenCalled();
   });
 
   it('returns 409 when the user already has a ticket for the meetup', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup());
     mockedTicket.findOne.mockResolvedValue({ id: '99' } as any);
     const res = mockResponse();
-    res.locals.meetup = fakeMeetup();
     res.locals.requestor = fakeRequestor();
 
-    await createTicket(mockRequest(), res);
+    await createTicket(rsvpRequest(), res);
 
     expect(res.statusCode).toBe(409);
     expect(res.body).toEqual({ message: 'Ticket already exists.' });
   });
 
   it('returns 400 when the meetup has fully ended (past its date + duration)', async () => {
+    // Started 3h ago, ran for 2h -> ended 1h ago.
+    mockedMeetup.findOne.mockResolvedValue(
+      fakeMeetup({ date: hoursFromNow(-3), duration_hours: 2 })
+    );
     mockedTicket.findOne.mockResolvedValue(null);
     const res = mockResponse();
-    // Started 3h ago, ran for 2h -> ended 1h ago.
-    res.locals.meetup = fakeMeetup({
-      date: hoursFromNow(-3),
-      duration_hours: 2,
-    });
     res.locals.requestor = fakeRequestor();
 
-    await createTicket(mockRequest(), res);
+    await createTicket(rsvpRequest(), res);
 
     expect(res.statusCode).toBe(400);
     expect(res.body).toEqual({ message: 'Meetup has already occurred.' });
   });
 
   it('creates the ticket while the meetup is happening (started but not yet ended)', async () => {
+    // Started 1h ago, runs for 2h -> still has 1h left.
+    mockedMeetup.findOne.mockResolvedValue(
+      fakeMeetup({ date: hoursFromNow(-1), duration_hours: 2 })
+    );
     mockedTicket.findOne.mockResolvedValue(null);
     const res = mockResponse();
-    // Started 1h ago, runs for 2h -> still has 1h left.
-    res.locals.meetup = fakeMeetup({
-      date: hoursFromNow(-1),
-      duration_hours: 2,
-    });
     res.locals.requestor = fakeRequestor();
 
-    await createTicket(mockRequest(), res);
+    await createTicket(rsvpRequest(), res);
 
     expect(mockedTicket.create).toHaveBeenCalled();
     expect(res.statusCode).toBe(201);
   });
 
   it('returns 400 when the meetup is at capacity', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup({ capacity: 5 }));
     mockedTicket.findOne.mockResolvedValue(null);
     setActiveTicketCount(5);
     const res = mockResponse();
-    res.locals.meetup = fakeMeetup({ capacity: 5 });
     res.locals.requestor = fakeRequestor();
 
-    await createTicket(mockRequest(), res);
+    await createTicket(rsvpRequest(), res);
 
     expect(res.statusCode).toBe(400);
     expect(res.body).toEqual({ message: 'Meetup is full.' });
@@ -260,12 +272,12 @@ describe('createTicket', () => {
   });
 
   it("marks web RSVPs as 'keebmeet' without stamping the requestor's discord_id", async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup({ capacity: 100 }));
     mockedTicket.findOne.mockResolvedValue(null);
     const res = mockResponse();
-    res.locals.meetup = fakeMeetup({ capacity: 100 });
     res.locals.requestor = fakeRequestor({ discord_id: 'd-99' });
 
-    await createTicket(mockRequest(), res);
+    await createTicket(rsvpRequest(), res);
 
     // Even when the requestor has a linked Discord account, a web RSVP is not a
     // Discord RSVP: rsvp_method is the source of truth, and discord_id stays
@@ -277,12 +289,14 @@ describe('createTicket', () => {
   });
 
   it("falls back to the requestor's details when no ticket holder is supplied, then emits an update", async () => {
+    mockedMeetup.findOne.mockResolvedValue(
+      fakeMeetup({ default_raffle_entries: 3 })
+    );
     mockedTicket.findOne.mockResolvedValue(null);
     const res = mockResponse();
-    res.locals.meetup = fakeMeetup({ default_raffle_entries: 3 });
     res.locals.requestor = fakeRequestor();
 
-    await createTicket(mockRequest(), res);
+    await createTicket(rsvpRequest(), res);
 
     expect(mockedTicket.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -300,16 +314,34 @@ describe('createTicket', () => {
     expect(res.statusCode).toBe(201);
   });
 
-  it('sends the RSVP confirmation email with the saved ticket id (used for the QR code)', async () => {
+  it('lets a guest RSVP with supplied holder details and no account', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup({ capacity: 100 }));
     mockedTicket.findOne.mockResolvedValue(null);
     const res = mockResponse();
-    res.locals.meetup = fakeMeetup({
-      name: 'Keeb Night',
-      address: '123 Main St',
-    });
+    // No requestor -> guest.
+
+    await createTicket(rsvpRequest({ ticket_holder: fakeTicketHolder() }), res);
+
+    expect(mockedTicket.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: null,
+        rsvp_method: 'keebmeet',
+        ticket_holder_display_name: 'spotter',
+        ticket_holder_email: 'sam.holder@example.com',
+      })
+    );
+    expect(res.statusCode).toBe(201);
+  });
+
+  it('sends the RSVP confirmation email with the saved ticket id (used for the QR code)', async () => {
+    mockedMeetup.findOne.mockResolvedValue(
+      fakeMeetup({ name: 'Keeb Night', address: '123 Main St' })
+    );
+    mockedTicket.findOne.mockResolvedValue(null);
+    const res = mockResponse();
     res.locals.requestor = fakeRequestor();
 
-    await createTicket(mockRequest(), res);
+    await createTicket(rsvpRequest(), res);
 
     expect(mockedSendRsvpEmail).toHaveBeenCalledWith(
       'jane@example.com',
@@ -324,15 +356,15 @@ describe('createTicket', () => {
   });
 
   it('accepts an RSVP with no body and falls back to the requestor (Express 5 leaves req.body undefined)', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup());
     mockedTicket.findOne.mockResolvedValue(null);
     const res = mockResponse();
-    res.locals.meetup = fakeMeetup();
     res.locals.requestor = fakeRequestor();
 
     // Genuinely undefined body — mockRequest()'s default would coerce to {}.
     const req = {
       body: undefined,
-      params: {},
+      params: { meetup_id: '10' },
       query: {},
     } as unknown as Request;
     await createTicket(req, res);
@@ -347,12 +379,12 @@ describe('createTicket', () => {
   });
 
   it('uses the supplied ticket holder details instead of the requestor when provided', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup());
     mockedTicket.findOne.mockResolvedValue(null);
     const res = mockResponse();
-    res.locals.meetup = fakeMeetup();
     res.locals.requestor = fakeRequestor();
 
-    await createTicket(mockRequest({ ticket_holder: fakeTicketHolder() }), res);
+    await createTicket(rsvpRequest({ ticket_holder: fakeTicketHolder() }), res);
 
     expect(mockedTicket.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -367,12 +399,11 @@ describe('createTicket', () => {
 
   it('rejects (400) a partial ticket holder that omits some details', async () => {
     const res = mockResponse();
-    res.locals.meetup = fakeMeetup();
     res.locals.requestor = fakeRequestor();
 
     // first_name / last_name / email omitted.
     await createTicket(
-      mockRequest({ ticket_holder: { display_name: 'spotter' } }),
+      rsvpRequest({ ticket_holder: { display_name: 'spotter' } }),
       res
     );
 
@@ -383,13 +414,10 @@ describe('createTicket', () => {
 
   it('rejects (400) a ticket holder with an invalid email', async () => {
     const res = mockResponse();
-    res.locals.meetup = fakeMeetup();
     res.locals.requestor = fakeRequestor();
 
     await createTicket(
-      mockRequest({
-        ticket_holder: fakeTicketHolder({ email: 'not-an-email' }),
-      }),
+      rsvpRequest({ ticket_holder: fakeTicketHolder({ email: 'not-an-email' }) }),
       res
     );
 
@@ -398,12 +426,12 @@ describe('createTicket', () => {
   });
 
   it('excludes refunded tickets from the duplicate check so a refunded attendee can RSVP again', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup());
     mockedTicket.findOne.mockResolvedValue(null);
     const res = mockResponse();
-    res.locals.meetup = fakeMeetup();
     res.locals.requestor = fakeRequestor();
 
-    await createTicket(mockRequest(), res);
+    await createTicket(rsvpRequest(), res);
 
     expect(mockedTicket.findOne).toHaveBeenCalledWith(
       expect.objectContaining({

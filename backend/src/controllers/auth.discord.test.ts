@@ -37,6 +37,7 @@ jest.mock('../util/email', () => ({
 
 jest.mock('../util/rsvp', () => ({
   claimDiscordTickets: jest.fn(),
+  claimGuestTickets: jest.fn(),
 }));
 
 import axios from 'axios';

@@ -5,7 +5,7 @@ import {
   editTicketSchema,
 } from '@keebmeet/shared';
 import { type Request, type Response } from 'express';
-import { In } from 'typeorm';
+import { ILike, In, IsNull } from 'typeorm';
 import { socket } from '../Server';
 import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
@@ -51,19 +51,41 @@ export const createTicket = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const meetup = res.locals.meetup as Meetup;
-  const user = res.locals.requestor as User;
+  const { meetup_id } = req.params as Record<string, string>;
+  const user = (res.locals.requestor as User | undefined) ?? null;
   const result = createTicketSchema.safeParse(req.body ?? {});
-
-  if (meetup == null || user == null) {
-    return res.status(400).end();
-  }
 
   if (!result.success) {
     return res.status(400).json(result.error);
   }
 
-  // Check if an active ticket already exists
+  // Guests have no account to fall back to, so they must supply their details.
+  if (user == null && result.data.ticket_holder == null) {
+    return res
+      .status(400)
+      .json({ message: 'Ticket holder details are required.' });
+  }
+
+  const meetup = await Meetup.findOne({
+    relations: { lead_organizer: true },
+    where: { id: meetup_id },
+  });
+
+  if (meetup == null) {
+    return res.status(404).json({ message: 'Invalid meetup ID.' });
+  }
+
+  const holder =
+    user != null
+      ? ticketHolderFields(result.data.ticket_holder ?? {}, user)
+      : {
+          ticket_holder_display_name: result.data.ticket_holder!.display_name,
+          ticket_holder_first_name: result.data.ticket_holder!.first_name,
+          ticket_holder_last_name: result.data.ticket_holder!.last_name,
+          ticket_holder_email: result.data.ticket_holder!.email,
+        };
+
+  // A logged-in user is matched by account; a guest by their holder email.
   const existingTicket = await Ticket.findOne({
     relations: {
       meetup: true,
@@ -71,8 +93,13 @@ export const createTicket = async (
     },
     where: {
       meetup: { id: meetup.id },
-      user: { id: user.id },
       payment_status: In(['confirmed', 'pending', 'paid']),
+      ...(user != null
+        ? { user: { id: user.id } }
+        : {
+            user: IsNull(),
+            ticket_holder_email: ILike(holder.ticket_holder_email),
+          }),
     },
   });
 
@@ -89,8 +116,6 @@ export const createTicket = async (
   if (getMeetupEnd(meetup) < new Date()) {
     return res.status(400).json({ message: 'Meetup has already occurred.' });
   }
-
-  const holder = ticketHolderFields(result.data.ticket_holder ?? {}, user);
 
   const ticketType = await TicketType.findOne({
     where: { meetup: { id: meetup.id } },

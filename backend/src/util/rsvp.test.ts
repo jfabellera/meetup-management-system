@@ -12,11 +12,12 @@ jest.mock('./meetupDiscordMessage', () => ({
   refreshMeetupDiscordMessage: jest.fn(),
 }));
 
-import { IsNull } from 'typeorm';
+import { ILike, IsNull } from 'typeorm';
 import { Ticket } from '../entity/Ticket';
 import { refreshMeetupDiscordMessage } from './meetupDiscordMessage';
 import {
   claimDiscordTickets,
+  claimGuestTickets,
   getMeetupEnd,
   isMeetupAtCapacity,
 } from './rsvp';
@@ -112,6 +113,58 @@ describe('claimDiscordTickets', () => {
     mockedTicket.findOne.mockResolvedValue({ id: '99' } as any);
 
     await claimDiscordTickets(user);
+
+    expect(orphan.remove).toHaveBeenCalled();
+    expect(orphan.save).not.toHaveBeenCalled();
+    expect(mockedRefresh).toHaveBeenCalledWith('10');
+  });
+});
+
+describe('claimGuestTickets', () => {
+  it('queries account-less tickets matching the user email', async () => {
+    mockedTicket.find.mockResolvedValue([]);
+
+    await claimGuestTickets({ id: '1', email: 'guest@example.com' } as any);
+
+    expect(mockedTicket.find).toHaveBeenCalledWith({
+      relations: { meetup: true },
+      where: {
+        ticket_holder_email: ILike('guest@example.com'),
+        user: IsNull(),
+      },
+    });
+  });
+
+  it('reassigns a guest orphan to the user when they have no ticket for that meetup', async () => {
+    const user = { id: '7', email: 'guest@example.com' } as any;
+    const orphan: any = {
+      meetup: { id: '10' },
+      user: null,
+      save: jest.fn().mockResolvedValue(undefined),
+      remove: jest.fn().mockResolvedValue(undefined),
+    };
+    mockedTicket.find.mockResolvedValue([orphan as any]);
+    mockedTicket.findOne.mockResolvedValue(null);
+
+    await claimGuestTickets(user);
+
+    expect(orphan.user).toBe(user);
+    expect(orphan.save).toHaveBeenCalled();
+    expect(orphan.remove).not.toHaveBeenCalled();
+  });
+
+  it('removes the guest orphan when the user already has a ticket for the meetup', async () => {
+    const user = { id: '7', email: 'guest@example.com' } as any;
+    const orphan: any = {
+      meetup: { id: '10' },
+      user: null,
+      save: jest.fn().mockResolvedValue(undefined),
+      remove: jest.fn().mockResolvedValue(undefined),
+    };
+    mockedTicket.find.mockResolvedValue([orphan as any]);
+    mockedTicket.findOne.mockResolvedValue({ id: '99' } as any);
+
+    await claimGuestTickets(user);
 
     expect(orphan.remove).toHaveBeenCalled();
     expect(orphan.save).not.toHaveBeenCalled();

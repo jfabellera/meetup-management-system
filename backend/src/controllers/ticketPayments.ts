@@ -174,7 +174,7 @@ export const finalizeTicketSideEffects = async (
 export const createPaidTicket = async (
   res: Response,
   meetup: Meetup,
-  user: User,
+  user: User | null,
   holder: NonNullable<ReturnType<typeof ticketHolderFields>>,
   ticketType: TicketType
 ): Promise<Response> => {

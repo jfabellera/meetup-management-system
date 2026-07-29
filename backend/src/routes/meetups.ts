@@ -101,7 +101,7 @@ router.post(
 
 router.post(
   '/:meetup_id/rsvp',
-  authChecker([Rule.ignoreMeetupOrganizer]) as RequestHandler,
+  optionalAuth() as RequestHandler,
   createTicket as RequestHandler
 );
 
