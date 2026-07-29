@@ -70,19 +70,28 @@ export const AttendeeDetailsDialog = ({
   // attendees list to refetch. Callers key this component on the attendee id,
   // so a fresh copy is seeded whenever a different attendee is opened.
   const [viewing, setViewing] = useState<TicketInfo | null>(attendee);
+  const [displayName, setDisplayName] = useState<string>(
+    attendee?.ticket_holder_display_name ?? ''
+  );
   const [raffleEntries, setRaffleEntries] = useState<string>(
     attendee != null ? String(attendee.raffle_entries) : ''
   );
   const [refundConfirmOpen, setRefundConfirmOpen] = useState(false);
 
+  const trimmedName = displayName.trim();
   const entries = parseInt(raffleEntries, 10);
-  const isValid = Number.isInteger(entries) && entries >= 0;
-  const isDirty = viewing != null && entries !== viewing.raffle_entries;
-  const canSave = isValid && isDirty;
+  const isValid =
+    trimmedName !== '' && Number.isInteger(entries) && entries >= 0;
+
+  const nameChanged =
+    viewing != null && trimmedName !== viewing.ticket_holder_display_name;
+  const entriesChanged = viewing != null && entries !== viewing.raffle_entries;
+  const canSave = isValid && (nameChanged || entriesChanged);
 
   const handleOpenChange = (next: boolean): void => {
     // Discard unsaved edits when the dialog closes.
     if (!next && viewing != null) {
+      setDisplayName(viewing.ticket_holder_display_name);
       setRaffleEntries(String(viewing.raffle_entries));
     }
     onOpenChange(next);
@@ -95,7 +104,17 @@ export const AttendeeDetailsDialog = ({
       const result = await editAttendee({
         ticketId: viewing.id,
         payload: {
-          raffle_entries: entries,
+          ...(entriesChanged ? { raffle_entries: entries } : {}),
+          ...(nameChanged
+            ? {
+                ticket_holder: {
+                  display_name: trimmedName,
+                  first_name: viewing.ticket_holder_first_name,
+                  last_name: viewing.ticket_holder_last_name,
+                  email: viewing.ticket_holder_email,
+                },
+              }
+            : {}),
         },
       });
 
@@ -105,9 +124,13 @@ export const AttendeeDetailsDialog = ({
         });
       } else {
         toast.success('Success', {
-          description: `${viewing.ticket_holder_display_name} updated`,
+          description: `${trimmedName} updated`,
         });
-        setViewing({ ...viewing, raffle_entries: entries });
+        setViewing({
+          ...viewing,
+          raffle_entries: entries,
+          ticket_holder_display_name: trimmedName,
+        });
         onOpenChange(false);
       }
     })();
@@ -144,7 +167,13 @@ export const AttendeeDetailsDialog = ({
             <dl className="grid grid-cols-2 items-center gap-x-4 gap-y-3 text-sm">
               <dt className="text-muted-foreground">Display Name</dt>
               <dd className="text-right">
-                {viewing.ticket_holder_display_name}
+                <Input
+                  className="ml-auto w-48"
+                  value={displayName}
+                  onChange={(e) => {
+                    setDisplayName(e.target.value);
+                  }}
+                />
               </dd>
 
               {isPaidMeetup ? (
