@@ -35,6 +35,7 @@ import { getRaffleRecords, rollRaffleWinner } from '../controllers/raffles';
 import { createTicket, updateTicketViaWebhook } from '../controllers/tickets';
 import { Rule, authChecker, optionalAuth } from '../middleware/authChecker';
 import { uploadImageFile } from '../middleware/imageUpload';
+import { rsvpLimiter } from '../middleware/rateLimiter';
 
 const router = express.Router();
 
@@ -101,6 +102,7 @@ router.post(
 
 router.post(
   '/:meetup_id/rsvp',
+  rsvpLimiter,
   optionalAuth() as RequestHandler,
   createTicket as RequestHandler
 );
