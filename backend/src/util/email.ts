@@ -165,7 +165,8 @@ export const sendRsvpConfirmationEmail = async (
   meetupDate: string,
   meetupLocation: string,
   ticketId: string,
-  receipt?: { amountPaid: string; receiptUrl?: string }
+  receipt?: { amountPaid: string; receiptUrl?: string },
+  cancelLink?: string
 ) => {
   const qrCode = await generateQrCodeBuffer(ticketId);
 
@@ -179,6 +180,7 @@ export const sendRsvpConfirmationEmail = async (
       meetupLocation,
       amountPaid: receipt?.amountPaid,
       receiptUrl: receipt?.receiptUrl,
+      cancelLink,
     }),
     attachments: [
       {

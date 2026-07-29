@@ -30,6 +30,7 @@ import {
   useDeleteTicketMutation,
   useGetTicketQuery,
   useLazyGetTicketStatusQuery,
+  useReleaseGuestHoldMutation,
   useUpdateTicketMutation,
 } from '../../store/ticketSlice';
 import { useGetUserQuery } from '../../store/userSlice';
@@ -115,6 +116,7 @@ export const MeetupRsvpForm = ({
   const [rsvp, { isLoading: isRsvping }] = useCreateTicketMutation();
   const [updateTicket, { isLoading: isUpdating }] = useUpdateTicketMutation();
   const [deleteTicket, { isLoading: isCancelling }] = useDeleteTicketMutation();
+  const [releaseGuestHold] = useReleaseGuestHoldMutation();
   const isBusy = isRsvping || isUpdating || isCancelling;
 
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
@@ -158,10 +160,13 @@ export const MeetupRsvpForm = ({
   const priceLabel = isPaid
     ? formatMoney(ticketType.price_cents, ticketType.currency)
     : null;
+  const guestHoldActive =
+    !isLoggedIn && (isPendingHold || clientSecret != null);
   const canCancel =
-    ticket != null &&
-    ticket.payment_status !== 'paid' &&
-    ticket.payment_status !== 'refunded';
+    guestHoldActive ||
+    (ticket != null &&
+      ticket.payment_status !== 'paid' &&
+      ticket.payment_status !== 'refunded');
 
   const holdExpired = useHoldCountdown(holdExpiresAt)?.expired === true;
   // Once the hold lapses the PaymentIntent is dead, so drop back to the fields.
@@ -375,6 +380,25 @@ export const MeetupRsvpForm = ({
   }, [holdExpired, isLoggedIn, meetup.id]);
 
   const onCancelRsvp = (): void => {
+    if (!isLoggedIn) {
+      void (async () => {
+        const paymentIntentId = clientSecret?.split('_secret_')[0];
+        const ticketId = paidTicketId ?? storedHold?.ticketId;
+        if (paymentIntentId != null && ticketId != null) {
+          try {
+            await releaseGuestHold({ ticketId, paymentIntentId }).unwrap();
+          } catch {
+            // Best-effort; the sweeper still releases the seat at expiry.
+          }
+        }
+        clearGuestHold(meetup.id);
+        setStoredHold(null);
+        setCancelConfirmOpen(false);
+        toast.success('Your reservation was released.');
+        onCollapse();
+      })();
+      return;
+    }
     void (async () => {
       if (ticket == null) return;
       try {
@@ -531,7 +555,9 @@ export const MeetupRsvpForm = ({
             disabled={hasEnded || isBusy}
           >
             <FiUserX />
-            {isPendingHold ? 'Cancel reservation' : 'Cancel RSVP'}
+            {isPendingHold || guestHoldActive
+              ? 'Cancel reservation'
+              : 'Cancel RSVP'}
           </Button>
         ) : null}
         {isPaymentStep ? (

@@ -1,6 +1,7 @@
 import {
   type EventbriteAttendee,
   type SimpleTicketInfo,
+  cancelGuestRsvpSchema,
   confirmGuestRsvpSchema,
   createTicketSchema,
   editTicketSchema,
@@ -17,6 +18,7 @@ import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
 import {
   buildGuestRsvpConfirmLink,
   generateGuestRsvpToken,
+  verifyGuestCancelToken,
   verifyGuestRsvpToken,
 } from '../util/guestRsvp';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
@@ -288,6 +290,53 @@ export const confirmGuestRsvp = async (
   return res
     .status(201)
     .json({ meetup: { name: meetup.name, slug: meetup.slug } });
+};
+
+export const cancelGuestRsvp = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const result = cancelGuestRsvpSchema.safeParse(req.body ?? {});
+
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
+
+  const data = verifyGuestCancelToken(result.data.token);
+  if (data == null) {
+    return res
+      .status(400)
+      .json({ message: 'This cancellation link is invalid or has expired.' });
+  }
+
+  const ticket = await Ticket.findOne({
+    relations: { meetup: true },
+    where: { id: data.ticket_id },
+  });
+  // A link clicked after the ticket is already gone still reads as success.
+  if (ticket == null) {
+    return res.status(200).json({ alreadyCancelled: true });
+  }
+
+  if (ticket.payment_status !== 'confirmed') {
+    return res.status(400).json({
+      message:
+        "Paid tickets can't be cancelled here — contact the organizer for a refund.",
+    });
+  }
+
+  if (getMeetupEnd(ticket.meetup) < new Date()) {
+    return res.status(400).json({ message: 'Meetup has already occurred.' });
+  }
+
+  const meetupId = ticket.meetup.id;
+  const meetupName = ticket.meetup.name;
+  await ticket.remove();
+
+  socket.emit('meetup:update', { meetupId });
+  await refreshMeetupDiscordMessage(meetupId);
+
+  return res.status(200).json({ meetup: { name: meetupName } });
 };
 
 export const updateTicket = async (

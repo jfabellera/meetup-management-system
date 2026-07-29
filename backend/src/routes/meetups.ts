@@ -32,7 +32,9 @@ import {
   uploadMeetupImage,
 } from '../controllers/meetups';
 import { getRaffleRecords, rollRaffleWinner } from '../controllers/raffles';
+import { releaseGuestHold } from '../controllers/ticketPayments';
 import {
+  cancelGuestRsvp,
   confirmGuestRsvp,
   createTicket,
   updateTicketViaWebhook,
@@ -105,6 +107,10 @@ router.post(
 );
 
 router.post('/rsvp/confirm', confirmGuestRsvp as RequestHandler);
+
+router.post('/rsvp/cancel', cancelGuestRsvp as RequestHandler);
+
+router.post('/rsvp/release', releaseGuestHold as RequestHandler);
 
 router.post(
   '/:meetup_id/rsvp',

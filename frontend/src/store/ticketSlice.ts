@@ -42,6 +42,11 @@ export interface ConfirmGuestRsvpResult {
   meetup?: { name: string; slug: string };
 }
 
+export interface CancelGuestRsvpResult {
+  meetup?: { name: string };
+  alreadyCancelled?: boolean;
+}
+
 export const ticketSlice = createApi({
   reducerPath: 'ticketSlice',
   ...apiCacheDefaults,
@@ -108,6 +113,25 @@ export const ticketSlice = createApi({
       }),
       invalidatesTags: ['Tickets'],
     }),
+    cancelGuestRsvp: builder.mutation<CancelGuestRsvpResult, string>({
+      query: (token) => ({
+        url: 'meetups/rsvp/cancel',
+        method: 'POST',
+        body: { token },
+      }),
+      invalidatesTags: ['Tickets'],
+    }),
+    releaseGuestHold: builder.mutation<
+      { released: boolean },
+      { ticketId: string; paymentIntentId: string }
+    >({
+      query: ({ ticketId, paymentIntentId }) => ({
+        url: 'meetups/rsvp/release',
+        method: 'POST',
+        body: { ticket_id: ticketId, payment_intent_id: paymentIntentId },
+      }),
+      invalidatesTags: ['Tickets'],
+    }),
     updateTicket: builder.mutation<void, UpdateTicketOptions>({
       query: ({ ticketId, ticketHolder }) => ({
         url: `tickets/${ticketId}`,
@@ -136,6 +160,8 @@ export const {
   useLazyGetTicketStatusQuery,
   useCreateTicketMutation,
   useConfirmGuestRsvpMutation,
+  useCancelGuestRsvpMutation,
+  useReleaseGuestHoldMutation,
   useUpdateTicketMutation,
   useDeleteTicketMutation,
 } = ticketSlice;

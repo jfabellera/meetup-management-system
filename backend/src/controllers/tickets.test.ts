@@ -42,6 +42,9 @@ jest.mock('../util/guestRsvp', () => ({
   generateGuestRsvpToken: jest.fn(() => 'guest-token'),
   buildGuestRsvpConfirmLink: jest.fn(() => 'https://app.test/rsvp/confirm'),
   verifyGuestRsvpToken: jest.fn(),
+  generateGuestCancelToken: jest.fn(() => 'cancel-token'),
+  buildGuestCancelLink: jest.fn(() => 'https://app.test/rsvp/cancel'),
+  verifyGuestCancelToken: jest.fn(),
 }));
 
 import { socket } from '../Server';
@@ -54,10 +57,14 @@ import {
   sendGuestRsvpVerificationEmail,
   sendRsvpConfirmationEmail,
 } from '../util/email';
-import { verifyGuestRsvpToken } from '../util/guestRsvp';
+import {
+  verifyGuestCancelToken,
+  verifyGuestRsvpToken,
+} from '../util/guestRsvp';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
 import { verifyTurnstileToken } from '../util/turnstile';
 import {
+  cancelGuestRsvp,
   checkInTicket,
   confirmGuestRsvp,
   createTicket,
@@ -77,6 +84,7 @@ const mockedTicketType = jest.mocked(TicketType);
 const mockedUser = jest.mocked(User);
 const mockedVerifyTurnstile = jest.mocked(verifyTurnstileToken);
 const mockedVerifyGuestToken = jest.mocked(verifyGuestRsvpToken);
+const mockedVerifyCancelToken = jest.mocked(verifyGuestCancelToken);
 const mockedSendGuestEmail = jest.mocked(sendGuestRsvpVerificationEmail);
 
 // isMeetupAtCapacity now counts via a query builder; stub its getCount.
@@ -442,7 +450,9 @@ describe('createTicket', () => {
       '123 Main St',
       'new-ticket-id',
       // Free RSVP: no receipt.
-      undefined
+      undefined,
+      // Every free RSVP carries a self-serve cancel link.
+      'https://app.test/rsvp/cancel'
     );
     expect(res.statusCode).toBe(201);
   });
@@ -615,6 +625,94 @@ describe('confirmGuestRsvp', () => {
 
     expect(res.statusCode).toBe(400);
     expect(mockedTicket.create).not.toHaveBeenCalled();
+  });
+});
+
+// ---- cancelGuestRsvp -------------------------------------------------------
+
+describe('cancelGuestRsvp', () => {
+  const guestTicket = (overrides = {}): any => ({
+    id: '77',
+    payment_status: 'confirmed',
+    meetup: fakeMeetup({ name: 'Keeb Night' }),
+    remove: jest.fn().mockResolvedValue(undefined),
+    ...overrides,
+  });
+
+  it('returns 400 for an invalid or expired token', async () => {
+    mockedVerifyCancelToken.mockReturnValue(null);
+    const res = mockResponse();
+
+    await cancelGuestRsvp(mockRequest({ token: 'bad' }), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(mockedTicket.findOne).not.toHaveBeenCalled();
+  });
+
+  it('returns 200 idempotently when the ticket is already gone', async () => {
+    mockedVerifyCancelToken.mockReturnValue({
+      ticket_id: '77',
+      purpose: 'guest_cancel',
+    } as any);
+    mockedTicket.findOne.mockResolvedValue(null);
+    const res = mockResponse();
+
+    await cancelGuestRsvp(mockRequest({ token: 'good' }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ alreadyCancelled: true });
+  });
+
+  it('refuses to cancel a paid ticket', async () => {
+    mockedVerifyCancelToken.mockReturnValue({
+      ticket_id: '77',
+      purpose: 'guest_cancel',
+    } as any);
+    const ticket = guestTicket({ payment_status: 'paid' });
+    mockedTicket.findOne.mockResolvedValue(ticket);
+    const res = mockResponse();
+
+    await cancelGuestRsvp(mockRequest({ token: 'good' }), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(ticket.remove).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 once the meetup has occurred', async () => {
+    mockedVerifyCancelToken.mockReturnValue({
+      ticket_id: '77',
+      purpose: 'guest_cancel',
+    } as any);
+    const ticket = guestTicket({
+      meetup: fakeMeetup({ date: hoursFromNow(-5) }),
+    });
+    mockedTicket.findOne.mockResolvedValue(ticket);
+    const res = mockResponse();
+
+    await cancelGuestRsvp(mockRequest({ token: 'good' }), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(ticket.remove).not.toHaveBeenCalled();
+  });
+
+  it('removes the ticket and emits on a valid cancellation', async () => {
+    mockedVerifyCancelToken.mockReturnValue({
+      ticket_id: '77',
+      purpose: 'guest_cancel',
+    } as any);
+    const ticket = guestTicket();
+    mockedTicket.findOne.mockResolvedValue(ticket);
+    const res = mockResponse();
+
+    await cancelGuestRsvp(mockRequest({ token: 'good' }), res);
+
+    expect(ticket.remove).toHaveBeenCalled();
+    expect(mockedSocket.emit).toHaveBeenCalledWith('meetup:update', {
+      meetupId: '10',
+    });
+    expect(mockedRefresh).toHaveBeenCalledWith('10');
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ meetup: { name: 'Keeb Night' } });
   });
 });
 

@@ -12,6 +12,8 @@ export interface RsvpConfirmationEmailProps {
    * `qr-code`). The backend attaches the PNG with a matching `contentId`.
    */
   qrCodeCid?: string;
+  /** Self-serve cancellation link; only set for guest RSVPs. */
+  cancelLink?: string;
 }
 
 export const RsvpConfirmationEmail = ({
@@ -21,6 +23,7 @@ export const RsvpConfirmationEmail = ({
   amountPaid,
   receiptUrl,
   qrCodeCid = 'qr-code',
+  cancelLink,
 }: RsvpConfirmationEmailProps) => (
   <EmailLayout preview={`RSVP confirmation for ${meetupName}`}>
     <Heading className="text-foreground m-0 mb-4 text-[22px] font-semibold">
@@ -60,6 +63,14 @@ export const RsvpConfirmationEmail = ({
       height={260}
       className="mx-auto block rounded-md"
     />
+    {cancelLink != null ? (
+      <Text className="text-muted-foreground m-0 mt-6 text-center text-[13px] leading-6">
+        Can&apos;t make it?{' '}
+        <Link href={cancelLink} className="text-primary underline">
+          Cancel your RSVP
+        </Link>
+      </Text>
+    ) : null}
   </EmailLayout>
 );
 

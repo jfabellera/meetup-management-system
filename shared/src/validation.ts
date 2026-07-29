@@ -198,6 +198,19 @@ export const confirmGuestRsvpSchema = z.object({
 
 export type ConfirmGuestRsvpPayload = z.infer<typeof confirmGuestRsvpSchema>;
 
+export const cancelGuestRsvpSchema = z.object({
+  token: z.string().min(1, 'A cancellation token is required'),
+});
+
+export type CancelGuestRsvpPayload = z.infer<typeof cancelGuestRsvpSchema>;
+
+export const releaseGuestHoldSchema = z.object({
+  ticket_id: z.string().min(1),
+  payment_intent_id: z.string().min(1),
+});
+
+export type ReleaseGuestHoldPayload = z.infer<typeof releaseGuestHoldSchema>;
+
 export const editTicketSchema = z.object({
   is_checked_in: z.boolean().optional(),
   raffle_entries: z.number().min(0).optional(),
