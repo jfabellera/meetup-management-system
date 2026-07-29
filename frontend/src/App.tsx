@@ -44,6 +44,7 @@ import NewArchiveMeetupPage from './pages/NewArchiveMeetupPage';
 import NewMeetupFromEventbritePage from './pages/NewMeetupFromEventbritePage';
 import OrganizerPaymentTermsPage from './pages/OrganizerPaymentTermsPage';
 import StripeRefreshPage from './pages/StripeRefreshPage';
+import GuestRsvpConfirmPage from './pages/GuestRsvpConfirmPage';
 import RsvpReturnPage from './pages/RsvpReturnPage';
 import StripeReturnPage from './pages/StripeReturnPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
@@ -82,6 +83,7 @@ const App = (): ReactNode => {
             {/* Same element as the meetup route so the modal expands in place. */}
             <Route path="/meetup/:meetupId/rsvp" element={<Homepage />} />
             <Route path="/rsvp/return" element={<RsvpReturnPage />} />
+            <Route path="/rsvp/confirm" element={<GuestRsvpConfirmPage />} />
             <Route
               path="/organizer"
               element={

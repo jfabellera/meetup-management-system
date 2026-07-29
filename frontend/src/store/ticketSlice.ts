@@ -35,6 +35,11 @@ export interface RsvpResult {
   ticketId?: string;
   clientSecret?: string;
   holdExpiresAt?: string;
+  requiresEmailConfirmation?: boolean;
+}
+
+export interface ConfirmGuestRsvpResult {
+  meetup?: { name: string; slug: string };
 }
 
 export const ticketSlice = createApi({
@@ -87,6 +92,14 @@ export const ticketSlice = createApi({
       }),
       invalidatesTags: ['Tickets'],
     }),
+    confirmGuestRsvp: builder.mutation<ConfirmGuestRsvpResult, string>({
+      query: (token) => ({
+        url: 'meetups/rsvp/confirm',
+        method: 'POST',
+        body: { token },
+      }),
+      invalidatesTags: ['Tickets'],
+    }),
     updateTicket: builder.mutation<void, UpdateTicketOptions>({
       query: ({ ticketId, ticketHolder }) => ({
         url: `tickets/${ticketId}`,
@@ -113,6 +126,7 @@ export const {
   useGetTicketQuery,
   useLazyGetTicketQuery,
   useCreateTicketMutation,
+  useConfirmGuestRsvpMutation,
   useUpdateTicketMutation,
   useDeleteTicketMutation,
 } = ticketSlice;

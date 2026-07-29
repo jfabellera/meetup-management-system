@@ -32,7 +32,11 @@ import {
   uploadMeetupImage,
 } from '../controllers/meetups';
 import { getRaffleRecords, rollRaffleWinner } from '../controllers/raffles';
-import { createTicket, updateTicketViaWebhook } from '../controllers/tickets';
+import {
+  confirmGuestRsvp,
+  createTicket,
+  updateTicketViaWebhook,
+} from '../controllers/tickets';
 import { Rule, authChecker, optionalAuth } from '../middleware/authChecker';
 import { uploadImageFile } from '../middleware/imageUpload';
 import { rsvpLimiter } from '../middleware/rateLimiter';
@@ -99,6 +103,8 @@ router.post(
   authChecker([Rule.requireOrganizer]) as RequestHandler,
   transferMeetup as RequestHandler
 );
+
+router.post('/rsvp/confirm', confirmGuestRsvp as RequestHandler);
 
 router.post(
   '/:meetup_id/rsvp',

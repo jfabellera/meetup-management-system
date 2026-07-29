@@ -1,6 +1,7 @@
 import {
   type EventbriteAttendee,
   type SimpleTicketInfo,
+  confirmGuestRsvpSchema,
   createTicketSchema,
   editTicketSchema,
 } from '@keebmeet/shared';
@@ -11,7 +12,13 @@ import { Meetup } from '../entity/Meetup';
 import { Ticket } from '../entity/Ticket';
 import { TicketType } from '../entity/TicketType';
 import { User } from '../entity/User';
+import { sendGuestRsvpVerificationEmail } from '../util/email';
 import { getEventbriteAttendeeByUri } from '../util/eventbriteApi';
+import {
+  buildGuestRsvpConfirmLink,
+  generateGuestRsvpToken,
+  verifyGuestRsvpToken,
+} from '../util/guestRsvp';
 import { refreshMeetupDiscordMessage } from '../util/meetupDiscordMessage';
 import { getMeetupEnd, isMeetupAtCapacity } from '../util/rsvp';
 import { verifyTurnstileToken } from '../util/turnstile';
@@ -152,6 +159,27 @@ export const createTicket = async (
     return res.status(400).json({ message: 'Meetup is full.' });
   }
 
+  // A guest's free RSVP holds no seat until they confirm ownership of the email,
+  // so a bot can't burn capacity with addresses it doesn't control.
+  if (user == null) {
+    const token = generateGuestRsvpToken({
+      meetup_id: meetup.id,
+      display_name: holder.ticket_holder_display_name,
+      first_name: holder.ticket_holder_first_name,
+      last_name: holder.ticket_holder_last_name,
+      email: holder.ticket_holder_email,
+    });
+    await sendGuestRsvpVerificationEmail(
+      holder.ticket_holder_email,
+      meetup.name,
+      buildGuestRsvpConfirmLink(token)
+    );
+    return res.status(202).json({
+      requiresEmailConfirmation: true,
+      message: 'Almost there! Check your email to confirm your RSVP.',
+    });
+  }
+
   const newTicket = Ticket.create({
     meetup,
     user,
@@ -166,6 +194,81 @@ export const createTicket = async (
   await finalizeTicketSideEffects(newTicket, meetup);
 
   return res.status(201).json(newTicket);
+};
+
+export const confirmGuestRsvp = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const result = confirmGuestRsvpSchema.safeParse(req.body ?? {});
+
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
+
+  const data = verifyGuestRsvpToken(result.data.token);
+  if (data == null) {
+    return res
+      .status(400)
+      .json({ message: 'This confirmation link is invalid or has expired.' });
+  }
+
+  const meetup = await Meetup.findOneBy({ id: data.meetup_id });
+  if (meetup == null) {
+    return res.status(404).json({ message: 'Invalid meetup ID.' });
+  }
+
+  if (getMeetupEnd(meetup) < new Date()) {
+    return res.status(400).json({ message: 'Meetup has already occurred.' });
+  }
+
+  const emailOwner = await User.findOne({
+    where: { email: ILike(data.email) },
+  });
+  if (emailOwner != null) {
+    return res.status(409).json({
+      message: 'This email now belongs to an account. Log in to RSVP.',
+    });
+  }
+
+  const existingTicket = await Ticket.findOne({
+    where: {
+      meetup: { id: meetup.id },
+      user: IsNull(),
+      ticket_holder_email: ILike(data.email),
+      payment_status: In(['confirmed', 'paid']),
+    },
+  });
+  if (existingTicket != null) {
+    return res
+      .status(200)
+      .json({ meetup: { name: meetup.name, slug: meetup.slug } });
+  }
+
+  if (await isMeetupAtCapacity(meetup.id, meetup.capacity)) {
+    return res
+      .status(400)
+      .json({ message: 'This meetup filled up before you confirmed.' });
+  }
+
+  const ticket = Ticket.create({
+    meetup,
+    user: null,
+    discord_id: null,
+    rsvp_method: 'keebmeet',
+    raffle_entries: meetup.default_raffle_entries,
+    ticket_holder_display_name: data.display_name,
+    ticket_holder_first_name: data.first_name,
+    ticket_holder_last_name: data.last_name,
+    ticket_holder_email: data.email,
+  });
+  await ticket.save();
+
+  await finalizeTicketSideEffects(ticket, meetup);
+
+  return res
+    .status(201)
+    .json({ meetup: { name: meetup.name, slug: meetup.slug } });
 };
 
 export const updateTicket = async (

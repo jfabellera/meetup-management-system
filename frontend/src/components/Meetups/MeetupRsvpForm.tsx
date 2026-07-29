@@ -200,6 +200,11 @@ export const MeetupRsvpForm = ({
               setPaidTicketId(result.ticketId ?? null);
               return;
             }
+            if (result.requiresEmailConfirmation === true) {
+              toast.success('Almost there! Check your email to confirm.');
+              onCollapse();
+              return;
+            }
             toast.success(`You're going to ${meetup.name}!`);
           }
           onCollapse();

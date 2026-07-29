@@ -192,6 +192,12 @@ export const createTicketSchema = z.object({
 
 export type CreateTicketPayload = z.infer<typeof createTicketSchema>;
 
+export const confirmGuestRsvpSchema = z.object({
+  token: z.string().min(1, 'A confirmation token is required'),
+});
+
+export type ConfirmGuestRsvpPayload = z.infer<typeof confirmGuestRsvpSchema>;
+
 export const editTicketSchema = z.object({
   is_checked_in: z.boolean().optional(),
   raffle_entries: z.number().min(0).optional(),
