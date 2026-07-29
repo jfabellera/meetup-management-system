@@ -199,8 +199,10 @@ export const MeetupRsvpForm = ({
             toast.success(`You're going to ${meetup.name}!`);
           }
           onCollapse();
-        } catch {
-          toast.error('Something went wrong. Please try again.');
+        } catch (error) {
+          const message = (error as { data?: { message?: string } }).data
+            ?.message;
+          toast.error(message ?? 'Something went wrong. Please try again.');
         }
       })();
     },
@@ -305,12 +307,14 @@ export const MeetupRsvpForm = ({
             name="displayName"
             label="Display Name"
             // Locked once payment starts — the hold already captured it.
-            disabled={!isLoggedIn || isPaymentStep}
+            disabled={isPaymentStep}
           />
           <div className="border-border flex flex-col gap-4 rounded-md border border-dashed p-3">
             <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
               <FiLock className="size-3 shrink-0" />
-              From your account · only visible to organizers
+              {isLoggedIn
+                ? 'From your account · only visible to organizers'
+                : 'Only visible to organizers'}
             </p>
             <div className="flex flex-row gap-2">
               <FormField
@@ -318,14 +322,14 @@ export const MeetupRsvpForm = ({
                 name="firstName"
                 label="First Name"
                 className="flex-1"
-                disabled
+                disabled={isLoggedIn || isPaymentStep}
               />
               <FormField
                 formik={formik}
                 name="lastName"
                 label="Last Name"
                 className="flex-1"
-                disabled
+                disabled={isLoggedIn || isPaymentStep}
               />
             </div>
             <FormField
@@ -333,7 +337,7 @@ export const MeetupRsvpForm = ({
               name="email"
               label="Email"
               type="email"
-              disabled
+              disabled={isLoggedIn || isPaymentStep}
             />
           </div>
         </div>
@@ -349,8 +353,9 @@ export const MeetupRsvpForm = ({
             This meetup has already ended.
           </p>
         ) : !isLoggedIn ? (
-          <p className="text-sm font-semibold text-yellow-600">
-            You must be logged in to RSVP.
+          <p className="text-muted-foreground text-sm">
+            RSVPing as a guest. You can create an account with this email later
+            and your ticket will be automatically linked.
           </p>
         ) : null}
       </div>
@@ -359,7 +364,7 @@ export const MeetupRsvpForm = ({
         {isPaymentStep && priceLabel != null ? (
           <PayButton
             amountLabel={priceLabel}
-            disabled={!isLoggedIn || hasEnded}
+            disabled={hasEnded}
             returnUrl={`${window.location.origin}/rsvp/return?ticket=${paidTicketId ?? ''}&meetup=${meetup.slug}`}
             onSuccess={onPaymentSuccess}
           />
@@ -367,7 +372,7 @@ export const MeetupRsvpForm = ({
           <Button
             type="submit"
             size="lg"
-            disabled={!isLoggedIn || hasEnded || isBusy || !formik.isValid}
+            disabled={hasEnded || isBusy || !formik.isValid}
           >
             <FiUserCheck />
             {isManaging
@@ -383,7 +388,7 @@ export const MeetupRsvpForm = ({
             type="button"
             variant="destructive"
             onClick={() => setCancelConfirmOpen(true)}
-            disabled={!isLoggedIn || hasEnded || isBusy}
+            disabled={hasEnded || isBusy}
           >
             <FiUserX />
             {isPendingHold ? 'Cancel reservation' : 'Cancel RSVP'}

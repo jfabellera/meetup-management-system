@@ -163,7 +163,7 @@ export const MeetupModal = ({
   const hasEnded = hasMeetupEnded(meetup);
   // A meetup can be RSVP'd to (or cancelled) right up until it ends.
   const isRsvpable = !hasEnded;
-  const isRsvpDisabled = !isLoggedIn || meetup.tickets?.available === 0;
+  const isRsvpDisabled = meetup.tickets?.available === 0;
   const goToRsvp = (): void => void navigate('/meetup/' + meetupId + '/rsvp');
   const goToEditMeetup = (): void =>
     void navigate('/meetup/' + meetupId + '/manage');
@@ -500,11 +500,7 @@ export const MeetupModal = ({
                         </span>
                       </TooltipTrigger>
                       {isRsvpDisabled && (
-                        <TooltipContent>
-                          {isLoggedIn
-                            ? 'No tickets available'
-                            : 'Please log in to RSVP'}
-                        </TooltipContent>
+                        <TooltipContent>No tickets available</TooltipContent>
                       )}
                     </Tooltip>
                   )
