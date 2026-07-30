@@ -268,6 +268,7 @@ const MapPage = (): ReactNode => {
                   latitude={shown.latitude}
                   anchor="bottom"
                   offset={12}
+                  focusAfterOpen={false}
                   onClose={() => {
                     setPinned(null);
                   }}
