@@ -29,24 +29,25 @@ import {
   RequireMeetupOrganizer,
   RequireOrganizer,
 } from './components/Guards/Guards';
+import MainLayout from './components/Page/MainLayout';
 import { TooltipProvider } from './components/ui/tooltip';
 import AccountPage from './pages/AccountPage';
-import AdminPage from './pages/AdminPage';
 import AdminGroupsPage from './pages/AdminGroupsPage';
+import AdminPage from './pages/AdminPage';
 import AdminRequestsPage from './pages/AdminRequestsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AuthorizeEventbritePage from './pages/AuthorizeEventbritePage';
 import DiscordCallbackPage from './pages/DiscordCallbackPage';
 import DiscordLinkPage from './pages/DiscordLinkPage';
+import GuestRsvpCancelPage from './pages/GuestRsvpCancelPage';
+import GuestRsvpConfirmPage from './pages/GuestRsvpConfirmPage';
 import { ManageMeetupDisplayPage } from './pages/ManageMeetupDisplayPage';
 import MeetupDisplayPage from './pages/MeetupDisplayPage';
 import NewArchiveMeetupPage from './pages/NewArchiveMeetupPage';
 import NewMeetupFromEventbritePage from './pages/NewMeetupFromEventbritePage';
 import OrganizerPaymentTermsPage from './pages/OrganizerPaymentTermsPage';
-import StripeRefreshPage from './pages/StripeRefreshPage';
-import GuestRsvpConfirmPage from './pages/GuestRsvpConfirmPage';
-import GuestRsvpCancelPage from './pages/GuestRsvpCancelPage';
 import RsvpReturnPage from './pages/RsvpReturnPage';
+import StripeRefreshPage from './pages/StripeRefreshPage';
 import StripeReturnPage from './pages/StripeReturnPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import { store } from './store/store';
@@ -59,16 +60,19 @@ const App = (): ReactNode => {
       <Provider store={store}>
         <Router>
           <Routes>
-            <Route path="/" element={<Homepage />} />
-            <Route
-              path="/map"
-              element={
-                <Suspense fallback={null}>
-                  <MapPage />
-                </Suspense>
-              }
-            />
-            <Route path="/meetup/:meetupId" element={<Homepage />} />
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Homepage />} />
+              <Route
+                path="/map"
+                element={
+                  <Suspense fallback={null}>
+                    <MapPage />
+                  </Suspense>
+                }
+              />
+              <Route path="/meetup/:meetupId" element={<Homepage />} />
+              <Route path="/meetup/:meetupId/rsvp" element={<Homepage />} />
+            </Route>
             <Route
               path="/login"
               element={
@@ -91,8 +95,6 @@ const App = (): ReactNode => {
               element={<DiscordCallbackPage />}
             />
             <Route path="/auth/discord/link" element={<DiscordLinkPage />} />
-            {/* Same element as the meetup route so the modal expands in place. */}
-            <Route path="/meetup/:meetupId/rsvp" element={<Homepage />} />
             <Route path="/rsvp/return" element={<RsvpReturnPage />} />
             <Route path="/rsvp/confirm" element={<GuestRsvpConfirmPage />} />
             <Route path="/rsvp/cancel" element={<GuestRsvpCancelPage />} />

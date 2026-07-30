@@ -8,8 +8,6 @@ import { MeetupCard } from '../components/Meetups/MeetupCard';
 import { MeetupModal } from '../components/Meetups/MeetupModal';
 import { MeetupSearchInput } from '../components/Meetups/MeetupSearchInput';
 import { MeetupTagFilter } from '../components/Meetups/MeetupTagFilter';
-import Page from '../components/Page/Page';
-import { mainSidebarItems } from '../components/Sidebar/navItems';
 import { useIsMobile } from '../hooks/use-mobile';
 import { useHoldExpiryRefetch } from '../hooks/useHoldExpiryRefetch';
 import { useMeetupSearch } from '../hooks/useMeetupSearch';
@@ -67,7 +65,6 @@ const Homepage = (): ReactNode => {
   // The selected meetup is driven by the URL slug so meetups can be linked to.
   const slug = slugParam ?? '';
   const isMobile = useIsMobile();
-  const [sidebarValue, setSidebarValue] = useState('home');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const {
     searchInput,
@@ -273,12 +270,7 @@ const Homepage = (): ReactNode => {
   }
 
   return (
-    <Page
-      sidebarItems={mainSidebarItems}
-      sidebarValue={sidebarValue}
-      setSidebarValue={setSidebarValue}
-      mobileMenu
-    >
+    <>
       {isLoading ? (
         <div className="flex h-full w-full items-center justify-center">
           <Spinner className="size-10" />
@@ -331,7 +323,7 @@ const Homepage = (): ReactNode => {
           />
         </div>
       )}
-    </Page>
+    </>
   );
 };
 

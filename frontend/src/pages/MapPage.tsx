@@ -17,8 +17,6 @@ import {
   type MapRef,
 } from 'react-map-gl/mapbox';
 import { MeetupModal } from '../components/Meetups/MeetupModal';
-import Page from '../components/Page/Page';
-import { mainSidebarItems } from '../components/Sidebar/navItems';
 import config from '../config';
 import { useHoldExpiryRefetch } from '../hooks/useHoldExpiryRefetch';
 import {
@@ -110,7 +108,6 @@ const toFeatureCollection = (points: MeetupPoint[]): FeatureCollection => ({
 });
 
 const MapPage = (): ReactNode => {
-  const [sidebarValue, setSidebarValue] = useState('map');
   const [mode, setMode] = useState<'heatmap' | 'points'>('points');
   const [hovered, setHovered] = useState<ActiveMeetup | null>(null);
   const [pinned, setPinned] = useState<ActiveMeetup | null>(null);
@@ -207,135 +204,126 @@ const MapPage = (): ReactNode => {
   const missingToken = config.mapboxToken === '';
 
   return (
-    <Page
-      sidebarItems={mainSidebarItems}
-      sidebarValue={sidebarValue}
-      setSidebarValue={setSidebarValue}
-      mobileMenu
-    >
-      <div className="relative h-full w-full">
-        {missingToken ? (
-          <div className="text-muted-foreground flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
-            <FiMap className="size-8" />
-            <p className="text-sm">
-              Set <code className="font-mono">VITE_MAPBOX_TOKEN</code> to enable
-              the map.
-            </p>
-          </div>
-        ) : (
-          <>
-            <Map
-              ref={mapRef}
-              mapboxAccessToken={config.mapboxToken}
-              initialViewState={{ longitude: -98, latitude: 39, zoom: 3 }}
-              mapStyle={mapStyle}
-              interactiveLayerIds={mode === 'points' ? [POINTS_LAYER_ID] : []}
-              cursor={cursor}
-              onClick={handleClick}
-              onMouseMove={handleMouseMove}
-              onMouseOut={() => {
-                setHovered(null);
-                setCursor('grab');
-              }}
-              style={{ width: '100%', height: '100%' }}
-            >
-              <NavigationControl position="bottom-right" />
-              <Source id="meetups" type="geojson" data={geojson}>
-                <Layer
-                  {...heatmapLayer}
-                  layout={{
-                    visibility: mode === 'heatmap' ? 'visible' : 'none',
-                  }}
-                />
-                <Layer
-                  {...pointsLayer}
-                  layout={{
-                    visibility: mode === 'points' ? 'visible' : 'none',
-                  }}
-                />
-              </Source>
-
-              {shown != null && mode === 'points' ? (
-                <Popup
-                  // Remount on pin-state changes so the className swap sticks.
-                  key={`${shown.slug}-${String(isPinned)}`}
-                  className={
-                    isPinned
-                      ? 'meetup-popup'
-                      : 'meetup-popup meetup-popup-hover'
-                  }
-                  longitude={shown.longitude}
-                  latitude={shown.latitude}
-                  anchor="bottom"
-                  offset={12}
-                  focusAfterOpen={false}
-                  onClose={() => {
-                    setPinned(null);
-                  }}
-                  closeButton={false}
-                  closeOnClick={false}
-                >
-                  <button
-                    className="flex flex-col gap-0.5 text-left"
-                    onClick={() => {
-                      setSelectedSlug(shown.slug);
-                    }}
-                  >
-                    <span className="text-foreground text-sm font-semibold hover:underline">
-                      {shown.name}
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      {shown.city}
-                    </span>
-                  </button>
-                </Popup>
-              ) : null}
-            </Map>
-
-            <div className="bg-card absolute top-4 left-4 z-10 flex gap-1 rounded-lg border p-1 shadow-md">
-              <Button
-                size="sm"
-                variant={mode === 'points' ? 'default' : 'ghost'}
-                onClick={() => {
-                  setMode('points');
+    <div className="relative h-full w-full">
+      {missingToken ? (
+        <div className="text-muted-foreground flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
+          <FiMap className="size-8" />
+          <p className="text-sm">
+            Set <code className="font-mono">VITE_MAPBOX_TOKEN</code> to enable
+            the map.
+          </p>
+        </div>
+      ) : (
+        <>
+          <Map
+            ref={mapRef}
+            mapboxAccessToken={config.mapboxToken}
+            initialViewState={{ longitude: -98, latitude: 39, zoom: 3 }}
+            mapStyle={mapStyle}
+            interactiveLayerIds={mode === 'points' ? [POINTS_LAYER_ID] : []}
+            cursor={cursor}
+            onClick={handleClick}
+            onMouseMove={handleMouseMove}
+            onMouseOut={() => {
+              setHovered(null);
+              setCursor('grab');
+            }}
+            style={{ width: '100%', height: '100%' }}
+          >
+            <NavigationControl position="bottom-right" />
+            <Source id="meetups" type="geojson" data={geojson}>
+              <Layer
+                {...heatmapLayer}
+                layout={{
+                  visibility: mode === 'heatmap' ? 'visible' : 'none',
                 }}
-              >
-                Points
-              </Button>
-              <Button
-                size="sm"
-                variant={mode === 'heatmap' ? 'default' : 'ghost'}
-                onClick={() => {
-                  setHovered(null);
+              />
+              <Layer
+                {...pointsLayer}
+                layout={{
+                  visibility: mode === 'points' ? 'visible' : 'none',
+                }}
+              />
+            </Source>
+
+            {shown != null && mode === 'points' ? (
+              <Popup
+                // Remount on pin-state changes so the className swap sticks.
+                key={`${shown.slug}-${String(isPinned)}`}
+                className={
+                  isPinned ? 'meetup-popup' : 'meetup-popup meetup-popup-hover'
+                }
+                longitude={shown.longitude}
+                latitude={shown.latitude}
+                anchor="bottom"
+                offset={12}
+                focusAfterOpen={false}
+                onClose={() => {
                   setPinned(null);
-                  setCursor('grab');
-                  setMode('heatmap');
                 }}
+                closeButton={false}
+                closeOnClick={false}
               >
-                Heatmap
-              </Button>
-            </div>
-
-            {isLoading ? (
-              <div className="bg-card text-muted-foreground absolute top-4 right-4 z-10 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs shadow-md">
-                <Spinner className="size-4" />
-                Locating meetups…
-              </div>
+                <button
+                  className="flex flex-col gap-0.5 text-left"
+                  onClick={() => {
+                    setSelectedSlug(shown.slug);
+                  }}
+                >
+                  <span className="text-foreground text-sm font-semibold hover:underline">
+                    {shown.name}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {shown.city}
+                  </span>
+                </button>
+              </Popup>
             ) : null}
-          </>
-        )}
-        <MeetupModal
-          meetupId={selectedSlug}
-          ticket={getTicketForMeetup(selectedMeetupId)}
-          isLoggedIn={isLoggedIn}
-          isOpen={selectedSlug !== ''}
-          isRsvp={false}
-          onClose={() => {
-            setSelectedSlug('');
-          }}
-        />
-      </div>
-    </Page>
+          </Map>
+
+          <div className="bg-card absolute top-4 left-4 z-10 flex gap-1 rounded-lg border p-1 shadow-md">
+            <Button
+              size="sm"
+              variant={mode === 'points' ? 'default' : 'ghost'}
+              onClick={() => {
+                setMode('points');
+              }}
+            >
+              Points
+            </Button>
+            <Button
+              size="sm"
+              variant={mode === 'heatmap' ? 'default' : 'ghost'}
+              onClick={() => {
+                setHovered(null);
+                setPinned(null);
+                setCursor('grab');
+                setMode('heatmap');
+              }}
+            >
+              Heatmap
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="bg-card text-muted-foreground absolute top-4 right-4 z-10 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs shadow-md">
+              <Spinner className="size-4" />
+              Locating meetups…
+            </div>
+          ) : null}
+        </>
+      )}
+      <MeetupModal
+        meetupId={selectedSlug}
+        ticket={getTicketForMeetup(selectedMeetupId)}
+        isLoggedIn={isLoggedIn}
+        isOpen={selectedSlug !== ''}
+        isRsvp={false}
+        onClose={() => {
+          setSelectedSlug('');
+        }}
+      />
+    </div>
   );
 };
 
