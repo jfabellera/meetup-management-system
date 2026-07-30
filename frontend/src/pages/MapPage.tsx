@@ -193,7 +193,12 @@ const MapPage = (): ReactNode => {
   };
 
   const handleClick = (event: MapMouseEvent): void => {
-    setPinned(toActiveMeetup(event));
+    const info = toActiveMeetup(event);
+    if (canHover) {
+      if (info != null) setSelectedSlug(info.slug);
+    } else {
+      setPinned(info);
+    }
   };
 
   const shown = hovered ?? pinned;
