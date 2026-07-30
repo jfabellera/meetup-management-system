@@ -40,6 +40,7 @@ import { hasMeetupEnded, isMeetupHappeningNow } from '../../util/timeUtil';
 import { CopyButton } from '../CopyButton';
 import { isNotFoundError } from '../Guards/Guards';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { AddToCalendarButton } from './AddToCalendarButton';
 import { HoldCountdown } from './HoldCountdown';
 import { MeetupCapacityStatus } from './MeetupCapacityStatus';
 import { UNLISTED_REASON_TEXT } from './MeetupCard';
@@ -453,6 +454,9 @@ export const MeetupModal = ({
                   toastMessage="Link copied to clipboard"
                   className="ml-auto"
                 />
+                {!hasEnded && !meetup.is_archive ? (
+                  <AddToCalendarButton meetup={meetup} />
+                ) : null}
                 {isUserOrganizer && (
                   <Button
                     variant="outline"

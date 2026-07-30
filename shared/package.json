@@ -9,6 +9,7 @@
     "build": "tsc"
   },
   "dependencies": {
+    "calendar-link": "^2.11.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {

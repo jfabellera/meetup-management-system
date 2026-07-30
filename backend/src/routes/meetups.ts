@@ -24,6 +24,7 @@ import {
   getAllMeetups,
   getMeetup,
   getMeetupAttendees,
+  getMeetupCalendar,
   getMeetupDisplayAssets,
   slugAvailable,
   syncEventbriteAttendees,
@@ -62,6 +63,8 @@ router.get(
   optionalAuth() as RequestHandler,
   getMeetup as RequestHandler
 );
+
+router.get('/:meetup_id/calendar.ics', getMeetupCalendar as RequestHandler);
 
 router.post(
   '/',

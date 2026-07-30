@@ -11,6 +11,10 @@ import { Ticket } from '../entity/Ticket';
 import { type TicketType } from '../entity/TicketType';
 import { type User } from '../entity/User';
 import { checkMeetupOrganizer } from '../middleware/authChecker';
+import {
+  buildMeetupCalendarLinksFromEntity,
+  buildMeetupIcsFromEntity,
+} from '../util/calendar';
 import { sendRefundEmail, sendRsvpConfirmationEmail } from '../util/email';
 import {
   buildGuestCancelLink,
@@ -167,6 +171,7 @@ export const finalizeTicketSideEffects = async (
           generateGuestCancelToken(ticket.id, getMeetupEnd(meetup))
         )
       : undefined;
+  const calendarLinks = buildMeetupCalendarLinksFromEntity(meetup);
   await sendRsvpConfirmationEmail(
     ticket.ticket_holder_email,
     meetup.name,
@@ -175,6 +180,10 @@ export const finalizeTicketSideEffects = async (
       .format('dddd, MMMM D, YYYY [at] h:mm A'),
     meetup.address,
     ticket.id,
+    {
+      links: { google: calendarLinks.google, outlook: calendarLinks.outlook },
+      ics: buildMeetupIcsFromEntity(meetup),
+    },
     await buildTicketReceipt(ticket),
     cancelLink
   );

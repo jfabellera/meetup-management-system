@@ -35,6 +35,7 @@ import { Tag } from '../entity/Tag';
 import { Ticket } from '../entity/Ticket';
 import { TicketType } from '../entity/TicketType';
 import { User } from '../entity/User';
+import { buildMeetupIcsFromEntity } from '../util/calendar';
 import { deleteEmbedMessage } from '../util/discord';
 import { sendMeetupTransferredEmail } from '../util/email';
 import {
@@ -431,6 +432,24 @@ export const getMeetup = async (
   );
 
   return res.json(meetupInfo);
+};
+
+// Real .ics response so mobile hands it to the calendar app (a data: URI can't).
+export const getMeetupCalendar = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { meetup_id: slug } = req.params as Record<string, string>;
+
+  const meetup = await Meetup.findOne({ where: { slug } });
+
+  if (meetup == null) {
+    return res.status(404).json({ message: 'Meetup not found.' });
+  }
+
+  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${slug}.ics"`);
+  return res.send(buildMeetupIcsFromEntity(meetup));
 };
 
 export const slugAvailable = async (

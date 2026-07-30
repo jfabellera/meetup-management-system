@@ -165,6 +165,11 @@ export const sendRsvpConfirmationEmail = async (
   meetupDate: string,
   meetupLocation: string,
   ticketId: string,
+  calendar?: {
+    links: { google: string; outlook: string };
+    // Raw .ics, attached as a file since many clients strip data: links.
+    ics: string;
+  },
   receipt?: { amountPaid: string; receiptUrl?: string },
   cancelLink?: string
 ) => {
@@ -181,6 +186,7 @@ export const sendRsvpConfirmationEmail = async (
       amountPaid: receipt?.amountPaid,
       receiptUrl: receipt?.receiptUrl,
       cancelLink,
+      calendarLinks: calendar?.links,
     }),
     attachments: [
       {
@@ -188,6 +194,15 @@ export const sendRsvpConfirmationEmail = async (
         content: qrCode,
         contentId: 'qr-code',
       },
+      ...(calendar != null
+        ? [
+            {
+              filename: `${meetupName.replace(/[^\w\s-]/g, '').trim() || 'meetup'}.ics`,
+              content: Buffer.from(calendar.ics, 'utf-8'),
+              contentType: 'text/calendar',
+            },
+          ]
+        : []),
     ],
   });
 
