@@ -65,6 +65,26 @@ const pointsLayer: LayerProps = {
   },
 };
 
+interface ActiveMeetup {
+  longitude: number;
+  latitude: number;
+  slug: string;
+  name: string;
+  city: string;
+}
+
+const toActiveMeetup = (event: MapMouseEvent): ActiveMeetup | null => {
+  const feature = event.features?.[0];
+  if (feature == null) return null;
+  const [longitude, latitude] = (feature.geometry as Point).coordinates;
+  const props = feature.properties as {
+    slug: string;
+    name: string;
+    city: string;
+  };
+  return { longitude, latitude, ...props };
+};
+
 const toFeatureCollection = (points: MeetupPoint[]): FeatureCollection => ({
   type: 'FeatureCollection',
   features: points.map((point) => ({
@@ -85,13 +105,9 @@ const toFeatureCollection = (points: MeetupPoint[]): FeatureCollection => ({
 const MapPage = (): ReactNode => {
   const [sidebarValue, setSidebarValue] = useState('map');
   const [mode, setMode] = useState<'heatmap' | 'points'>('points');
-  const [selected, setSelected] = useState<{
-    longitude: number;
-    latitude: number;
-    slug: string;
-    name: string;
-    city: string;
-  } | null>(null);
+  const [hovered, setHovered] = useState<ActiveMeetup | null>(null);
+  const [pinned, setPinned] = useState<ActiveMeetup | null>(null);
+  const [cursor, setCursor] = useState('grab');
 
   const mapRef = useRef<MapRef>(null);
   const navigate = useNavigate();
@@ -131,20 +147,20 @@ const MapPage = (): ReactNode => {
       ? 'mapbox://styles/mapbox/dark-v11'
       : 'mapbox://styles/mapbox/light-v11';
 
-  const handleClick = (event: MapMouseEvent): void => {
-    const feature = event.features?.[0];
-    if (feature == null) {
-      setSelected(null);
-      return;
-    }
-    const [longitude, latitude] = (feature.geometry as Point).coordinates;
-    const props = feature.properties as {
-      slug: string;
-      name: string;
-      city: string;
-    };
-    setSelected({ longitude, latitude, ...props });
+  const handleMouseMove = (event: MapMouseEvent): void => {
+    const info = toActiveMeetup(event);
+    setCursor(info != null ? 'pointer' : 'grab');
+    setHovered((current) =>
+      info == null ? null : current?.slug === info.slug ? current : info
+    );
   };
+
+  const handleClick = (event: MapMouseEvent): void => {
+    setPinned(toActiveMeetup(event));
+  };
+
+  const shown = hovered ?? pinned;
+  const isPinned = pinned != null && shown?.slug === pinned.slug;
 
   const missingToken = config.mapboxToken === '';
 
@@ -172,7 +188,13 @@ const MapPage = (): ReactNode => {
               initialViewState={{ longitude: -98, latitude: 39, zoom: 3 }}
               mapStyle={mapStyle}
               interactiveLayerIds={mode === 'points' ? [POINTS_LAYER_ID] : []}
+              cursor={cursor}
               onClick={handleClick}
+              onMouseMove={handleMouseMove}
+              onMouseOut={() => {
+                setHovered(null);
+                setCursor('grab');
+              }}
               style={{ width: '100%', height: '100%' }}
             >
               <NavigationControl position="bottom-right" />
@@ -191,28 +213,33 @@ const MapPage = (): ReactNode => {
                 />
               </Source>
 
-              {selected != null && mode === 'points' ? (
+              {shown != null && mode === 'points' ? (
                 <Popup
-                  longitude={selected.longitude}
-                  latitude={selected.latitude}
+                  // Remount on pin-state changes so the className swap sticks.
+                  key={`${shown.slug}-${String(isPinned)}`}
+                  className={
+                    isPinned ? 'meetup-popup' : 'meetup-popup meetup-popup-hover'
+                  }
+                  longitude={shown.longitude}
+                  latitude={shown.latitude}
                   anchor="bottom"
                   offset={12}
                   onClose={() => {
-                    setSelected(null);
+                    setPinned(null);
                   }}
                   closeButton={false}
                 >
                   <button
                     className="flex flex-col gap-0.5 text-left"
                     onClick={() => {
-                      void navigate('/meetup/' + selected.slug);
+                      void navigate('/meetup/' + shown.slug);
                     }}
                   >
                     <span className="text-foreground text-sm font-semibold hover:underline">
-                      {selected.name}
+                      {shown.name}
                     </span>
                     <span className="text-muted-foreground text-xs">
-                      {selected.city}
+                      {shown.city}
                     </span>
                   </button>
                 </Popup>
@@ -233,7 +260,9 @@ const MapPage = (): ReactNode => {
                 size="sm"
                 variant={mode === 'heatmap' ? 'default' : 'ghost'}
                 onClick={() => {
-                  setSelected(null);
+                  setHovered(null);
+                  setPinned(null);
+                  setCursor('grab');
                   setMode('heatmap');
                 }}
               >
