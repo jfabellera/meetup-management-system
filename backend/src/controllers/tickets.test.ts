@@ -449,6 +449,14 @@ describe('createTicket', () => {
       expect.any(String),
       '123 Main St',
       'new-ticket-id',
+      // calendar arg: links + attached .ics
+      expect.objectContaining({
+        links: expect.objectContaining({
+          google: expect.any(String),
+          outlook: expect.any(String),
+        }),
+        ics: expect.stringContaining('BEGIN:VCALENDAR'),
+      }),
       // Free RSVP: no receipt.
       undefined,
       // Every free RSVP carries a self-serve cancel link.

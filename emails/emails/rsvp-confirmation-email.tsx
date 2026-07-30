@@ -1,4 +1,4 @@
-import { Heading, Img, Link, Section, Text } from '@react-email/components';
+import { Heading, Hr, Img, Link, Section, Text } from '@react-email/components';
 import { EmailLayout } from '../components/EmailLayout';
 
 export interface RsvpConfirmationEmailProps {
@@ -14,6 +14,11 @@ export interface RsvpConfirmationEmailProps {
   qrCodeCid?: string;
   /** Self-serve cancellation link; only set for guest RSVPs. */
   cancelLink?: string;
+  // Web links only; the .ics is attached separately (clients strip data: URIs).
+  calendarLinks?: {
+    google: string;
+    outlook: string;
+  };
 }
 
 export const RsvpConfirmationEmail = ({
@@ -24,6 +29,7 @@ export const RsvpConfirmationEmail = ({
   receiptUrl,
   qrCodeCid = 'qr-code',
   cancelLink,
+  calendarLinks,
 }: RsvpConfirmationEmailProps) => (
   <EmailLayout preview={`RSVP confirmation for ${meetupName}`}>
     <Heading className="text-foreground m-0 mb-4 text-[22px] font-semibold">
@@ -52,6 +58,27 @@ export const RsvpConfirmationEmail = ({
           ) : null}
         </Text>
       ) : null}
+      {calendarLinks != null ? (
+        <>
+          <Hr className="border-border my-3 border-0 border-t border-solid" />
+          <Text className="text-foreground m-0 text-[14px] leading-6">
+            <strong>Add to calendar:</strong>{' '}
+            <Link href={calendarLinks.google} className="text-primary underline">
+              Google
+            </Link>
+            {' · '}
+            <Link
+              href={calendarLinks.outlook}
+              className="text-primary underline"
+            >
+              Outlook
+            </Link>
+          </Text>
+          <Text className="text-muted-foreground m-0 mt-1 text-[12px] leading-5">
+            Apple Calendar users: open the attached invite (.ics).
+          </Text>
+        </>
+      ) : null}
     </Section>
     <Text className="text-foreground m-0 mb-3 text-center text-[15px] leading-6">
       If asked, present this QR code at the event:
@@ -78,6 +105,10 @@ RsvpConfirmationEmail.PreviewProps = {
   meetupName: 'Tex Mechs Spring Meetup',
   meetupDate: 'Saturday, April 12, 2026 at 1:00 PM',
   meetupLocation: 'Austin Convention Center, Austin, TX',
+  calendarLinks: {
+    google: 'https://calendar.google.com/calendar/render?action=TEMPLATE',
+    outlook: 'https://outlook.live.com/calendar/0/action/compose',
+  },
 } satisfies RsvpConfirmationEmailProps;
 
 export default RsvpConfirmationEmail;
