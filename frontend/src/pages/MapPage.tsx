@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import type { FeatureCollection, Point } from 'geojson';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { useTheme } from 'next-themes';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { FiMap } from 'react-icons/fi';
@@ -14,8 +16,6 @@ import {
   type MapRef,
 } from 'react-map-gl/mapbox';
 import { useNavigate } from 'react-router-dom';
-import type { FeatureCollection, Point } from 'geojson';
-import 'mapbox-gl/dist/mapbox-gl.css';
 import Page from '../components/Page/Page';
 import { mainSidebarItems } from '../components/Sidebar/navItems';
 import config from '../config';
@@ -26,6 +26,8 @@ import {
 import { useGetMeetupsQuery } from '../store/meetupSlice';
 
 const POINTS_LAYER_ID = 'meetup-points';
+
+const canHover = window.matchMedia('(hover: hover)').matches;
 
 const heatmapLayer: LayerProps = {
   id: 'meetup-heatmap',
@@ -148,6 +150,7 @@ const MapPage = (): ReactNode => {
       : 'mapbox://styles/mapbox/light-v11';
 
   const handleMouseMove = (event: MapMouseEvent): void => {
+    if (!canHover) return;
     const info = toActiveMeetup(event);
     setCursor(info != null ? 'pointer' : 'grab');
     setHovered((current) =>
@@ -218,7 +221,9 @@ const MapPage = (): ReactNode => {
                   // Remount on pin-state changes so the className swap sticks.
                   key={`${shown.slug}-${String(isPinned)}`}
                   className={
-                    isPinned ? 'meetup-popup' : 'meetup-popup meetup-popup-hover'
+                    isPinned
+                      ? 'meetup-popup'
+                      : 'meetup-popup meetup-popup-hover'
                   }
                   longitude={shown.longitude}
                   latitude={shown.latitude}
@@ -228,6 +233,7 @@ const MapPage = (): ReactNode => {
                     setPinned(null);
                   }}
                   closeButton={false}
+                  closeOnClick={false}
                 >
                   <button
                     className="flex flex-col gap-0.5 text-left"
