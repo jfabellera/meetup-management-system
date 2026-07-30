@@ -4,13 +4,21 @@ import config from '../config';
 
 export interface MeetupPoint {
   meetup: MeetupInfo;
+  address: string;
   longitude: number;
   latitude: number;
 }
 
-const CACHE_KEY = 'meetup-geocode-cache';
+// v2 discards v1 entries, which cached degraded results forever.
+const CACHE_KEY = 'meetup-geocode-cache-v2';
 
-type Cache = Record<string, { longitude: number; latitude: number } | null>;
+interface CachedCoords {
+  longitude: number;
+  latitude: number;
+  precise: boolean;
+}
+
+type Cache = Record<string, CachedCoords | null>;
 
 const readCache = (): Cache => {
   try {
@@ -20,8 +28,12 @@ const readCache = (): Cache => {
   }
 };
 
+// Failures and centroid fallbacks aren't persisted so they retry next visit.
 const writeCache = (cache: Cache): void => {
-  localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  const precise = Object.fromEntries(
+    Object.entries(cache).filter(([, coords]) => coords?.precise)
+  );
+  localStorage.setItem(CACHE_KEY, JSON.stringify(precise));
 };
 
 const addressOf = (meetup: MeetupInfo): string => {
@@ -40,9 +52,9 @@ const addressOf = (meetup: MeetupInfo): string => {
     .join(', ');
 };
 
-const geocode = async (
-  address: string
-): Promise<{ longitude: number; latitude: number } | null> => {
+const STREET_LEVEL = new Set(['rooftop', 'parcel', 'point', 'interpolated']);
+
+const geocode = async (address: string): Promise<CachedCoords | null> => {
   const url =
     'https://api.mapbox.com/search/geocode/v6/forward?' +
     new URLSearchParams({
@@ -55,12 +67,20 @@ const geocode = async (
   if (!response.ok) return null;
 
   const data = (await response.json()) as {
-    features: { geometry: { coordinates: [number, number] } }[];
+    features: {
+      geometry: { coordinates: [number, number] };
+      properties: { coordinates?: { accuracy?: string } };
+    }[];
   };
-  const coordinates = data.features[0]?.geometry.coordinates;
-  if (coordinates == null) return null;
+  const feature = data.features[0];
+  if (feature == null) return null;
 
-  return { longitude: coordinates[0], latitude: coordinates[1] };
+  const [longitude, latitude] = feature.geometry.coordinates;
+  return {
+    longitude,
+    latitude,
+    precise: STREET_LEVEL.has(feature.properties.coordinates?.accuracy ?? ''),
+  };
 };
 
 /**
@@ -97,7 +117,12 @@ export const useMeetupCoordinates = (
           cache[address] = coords;
         }
         if (coords != null) {
-          resolved.push({ meetup, ...coords });
+          resolved.push({
+            meetup,
+            address,
+            longitude: coords.longitude,
+            latitude: coords.latitude,
+          });
         }
       }
 

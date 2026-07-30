@@ -94,6 +94,8 @@ const mapMeetupInfo = async (
     date: dayjs(meetup.date).utcOffset(meetup.utc_offset).format(),
     duration_hours: meetup.duration_hours,
     location: {
+      // Public via the detail endpoint anyway; the map geocodes from the list.
+      full_address: meetup.address,
       city: meetup.city,
       state: meetup.state,
       country: meetup.country,
@@ -128,7 +130,6 @@ const mapMeetupInfo = async (
   }
 
   if (type === MeetupInfoDetailLevel.Detailed) {
-    meetupInfo.location.full_address = meetup.address;
     meetupInfo.description = meetup.description;
 
     meetupInfo.organizers = meetup.organizers.map((organizer) => ({

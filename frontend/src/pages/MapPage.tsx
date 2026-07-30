@@ -36,7 +36,7 @@ const heatmapLayer: LayerProps = {
   id: 'meetup-heatmap',
   type: 'heatmap',
   paint: {
-    'heatmap-weight': 1,
+    'heatmap-weight': ['get', 'count'],
     'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
     'heatmap-color': [
       'interpolate',
@@ -70,47 +70,87 @@ const pointsLayer: LayerProps = {
   },
 };
 
-interface ActiveMeetup {
-  longitude: number;
-  latitude: number;
+interface VenueMeetup {
   slug: string;
   name: string;
-  city: string;
 }
 
-const toActiveMeetup = (event: MapMouseEvent): ActiveMeetup | null => {
+interface ActiveVenue {
+  longitude: number;
+  latitude: number;
+  city: string;
+  meetups: VenueMeetup[];
+}
+
+const venueKey = (venue: { longitude: number; latitude: number }): string =>
+  `${String(venue.longitude)},${String(venue.latitude)}`;
+
+const toActiveVenue = (event: MapMouseEvent): ActiveVenue | null => {
   const feature = event.features?.[0];
   if (feature == null) return null;
   const [longitude, latitude] = (feature.geometry as Point).coordinates;
-  const props = feature.properties as {
-    slug: string;
-    name: string;
-    city: string;
+  // Mapbox serializes nested feature properties to JSON strings.
+  const props = feature.properties as { city: string; meetups: string };
+  return {
+    longitude,
+    latitude,
+    city: props.city,
+    meetups: JSON.parse(props.meetups) as VenueMeetup[],
   };
-  return { longitude, latitude, ...props };
 };
 
-const toFeatureCollection = (points: MeetupPoint[]): FeatureCollection => ({
-  type: 'FeatureCollection',
-  features: points.map((point) => ({
-    type: 'Feature',
-    geometry: {
-      type: 'Point',
-      coordinates: [point.longitude, point.latitude],
-    },
-    properties: {
-      id: point.meetup.id,
+// Grouped by address, not coordinates: unresolvable addresses all geocode to
+// the same city centroid but are different venues.
+const toFeatureCollection = (points: MeetupPoint[]): FeatureCollection => {
+  // Plain object: react-map-gl's Map import shadows the built-in.
+  const venues: Record<string, ActiveVenue> = {};
+  for (const point of points) {
+    venues[point.address] ??= {
+      longitude: point.longitude,
+      latitude: point.latitude,
+      city: point.meetup.location.city,
+      meetups: [],
+    };
+    venues[point.address].meetups.push({
       slug: point.meetup.slug,
       name: point.meetup.name,
-      city: point.meetup.location.city,
-    },
-  })),
-});
+    });
+  }
+
+  // Fan out venues that still collide so each pin stays hoverable.
+  const coordCounts: Record<string, number> = {};
+  for (const venue of Object.values(venues)) {
+    const key = venueKey(venue);
+    const n = coordCounts[key] ?? 0;
+    coordCounts[key] = n + 1;
+    if (n > 0) {
+      const angle = (n * 2 * Math.PI) / 6;
+      venue.longitude += 0.004 * Math.cos(angle);
+      venue.latitude += 0.004 * Math.sin(angle);
+    }
+  }
+
+  return {
+    type: 'FeatureCollection',
+    features: Object.values(venues).map((venue) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [venue.longitude, venue.latitude],
+      },
+      properties: {
+        city: venue.city,
+        meetups: venue.meetups,
+        count: venue.meetups.length,
+      },
+    })),
+  };
+};
 
 const MapPage = (): ReactNode => {
   const [mode, setMode] = useState<'heatmap' | 'points'>('points');
-  const [hovered, setHovered] = useState<ActiveMeetup | null>(null);
-  const [pinned, setPinned] = useState<ActiveMeetup | null>(null);
+  const [hovered, setHovered] = useState<ActiveVenue | null>(null);
+  const [pinned, setPinned] = useState<ActiveVenue | null>(null);
   const [cursor, setCursor] = useState('grab');
 
   const [selectedSlug, setSelectedSlug] = useState('');
@@ -182,24 +222,31 @@ const MapPage = (): ReactNode => {
 
   const handleMouseMove = (event: MapMouseEvent): void => {
     if (!canHover) return;
-    const info = toActiveMeetup(event);
+    const info = toActiveVenue(event);
     setCursor(info != null ? 'pointer' : 'grab');
     setHovered((current) =>
-      info == null ? null : current?.slug === info.slug ? current : info
+      info == null
+        ? null
+        : current != null && venueKey(current) === venueKey(info)
+          ? current
+          : info
     );
   };
 
   const handleClick = (event: MapMouseEvent): void => {
-    const info = toActiveMeetup(event);
-    if (canHover) {
-      if (info != null) setSelectedSlug(info.slug);
-    } else {
-      setPinned(info);
+    const info = toActiveVenue(event);
+    // Multi-meetup venues pin instead: hover popups ignore the pointer, so
+    // pinning is what makes the list clickable.
+    if (canHover && info != null && info.meetups.length === 1) {
+      setSelectedSlug(info.meetups[0].slug);
+      return;
     }
+    setPinned(info);
   };
 
   const shown = hovered ?? pinned;
-  const isPinned = pinned != null && shown?.slug === pinned.slug;
+  const isPinned =
+    pinned != null && shown != null && venueKey(shown) === venueKey(pinned);
 
   const missingToken = config.mapboxToken === '';
 
@@ -249,7 +296,7 @@ const MapPage = (): ReactNode => {
             {shown != null && mode === 'points' ? (
               <Popup
                 // Remount on pin-state changes so the className swap sticks.
-                key={`${shown.slug}-${String(isPinned)}`}
+                key={`${venueKey(shown)}-${String(isPinned)}`}
                 className={
                   isPinned ? 'meetup-popup' : 'meetup-popup meetup-popup-hover'
                 }
@@ -264,19 +311,24 @@ const MapPage = (): ReactNode => {
                 closeButton={false}
                 closeOnClick={false}
               >
-                <button
-                  className="flex flex-col gap-0.5 text-left"
-                  onClick={() => {
-                    setSelectedSlug(shown.slug);
-                  }}
-                >
-                  <span className="text-foreground text-sm font-semibold hover:underline">
-                    {shown.name}
-                  </span>
+                <div className="flex flex-col gap-0.5">
+                  {shown.meetups.map((meetup) => (
+                    <button
+                      key={meetup.slug}
+                      className="text-left"
+                      onClick={() => {
+                        setSelectedSlug(meetup.slug);
+                      }}
+                    >
+                      <span className="text-foreground text-sm font-semibold hover:underline">
+                        {meetup.name}
+                      </span>
+                    </button>
+                  ))}
                   <span className="text-muted-foreground text-xs">
                     {shown.city}
                   </span>
-                </button>
+                </div>
               </Popup>
             ) : null}
           </Map>
