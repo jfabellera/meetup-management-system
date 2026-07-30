@@ -5,6 +5,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useTheme } from 'next-themes';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { FiMap } from 'react-icons/fi';
+import { type SimpleTicketInfo } from '@keebmeet/shared';
 import {
   Layer,
   Map,
@@ -15,15 +16,19 @@ import {
   type MapMouseEvent,
   type MapRef,
 } from 'react-map-gl/mapbox';
-import { useNavigate } from 'react-router-dom';
+import { MeetupModal } from '../components/Meetups/MeetupModal';
 import Page from '../components/Page/Page';
 import { mainSidebarItems } from '../components/Sidebar/navItems';
 import config from '../config';
+import { useHoldExpiryRefetch } from '../hooks/useHoldExpiryRefetch';
 import {
   useMeetupCoordinates,
   type MeetupPoint,
 } from '../hooks/useMeetupCoordinates';
+import { useAppSelector } from '../store/hooks';
 import { useGetMeetupsQuery } from '../store/meetupSlice';
+import { useGetTicketsQuery } from '../store/ticketSlice';
+import { readGuestHold } from '../util/guestHold';
 
 const POINTS_LAYER_ID = 'meetup-points';
 
@@ -111,12 +116,41 @@ const MapPage = (): ReactNode => {
   const [pinned, setPinned] = useState<ActiveMeetup | null>(null);
   const [cursor, setCursor] = useState('grab');
 
+  const [selectedSlug, setSelectedSlug] = useState('');
+
   const mapRef = useRef<MapRef>(null);
-  const navigate = useNavigate();
   const { resolvedTheme } = useTheme();
+  const { isLoggedIn, user } = useAppSelector((state) => state.user);
 
   const { data: meetups } = useGetMeetupsQuery({});
   const { points, isLoading } = useMeetupCoordinates(meetups);
+
+  const selectedMeetupId =
+    meetups?.find((meetup) => meetup.slug === selectedSlug)?.id ?? '';
+  const { data: tickets } = useGetTicketsQuery(user != null ? user.id : '', {
+    skip: user == null,
+  });
+  useHoldExpiryRefetch(tickets);
+
+  // Same lookup as the homepage: the user's ticket, or a guest's pending hold.
+  const getTicketForMeetup = (meetupId: string): SimpleTicketInfo | null => {
+    if (user != null) {
+      if (tickets == null) return null;
+      const ticket = tickets.filter(
+        (ticket) => ticket.meetup_id === meetupId
+      )[0];
+      return ticket ?? null;
+    }
+    const hold = readGuestHold(meetupId);
+    return hold != null
+      ? {
+          id: hold.ticketId,
+          meetup_id: meetupId,
+          payment_status: 'pending',
+          hold_expires_at: hold.holdExpiresAt,
+        }
+      : null;
+  };
 
   const geojson = useMemo(() => toFeatureCollection(points), [points]);
 
@@ -238,7 +272,7 @@ const MapPage = (): ReactNode => {
                   <button
                     className="flex flex-col gap-0.5 text-left"
                     onClick={() => {
-                      void navigate('/meetup/' + shown.slug);
+                      setSelectedSlug(shown.slug);
                     }}
                   >
                     <span className="text-foreground text-sm font-semibold hover:underline">
@@ -284,6 +318,16 @@ const MapPage = (): ReactNode => {
             ) : null}
           </>
         )}
+        <MeetupModal
+          meetupId={selectedSlug}
+          ticket={getTicketForMeetup(selectedMeetupId)}
+          isLoggedIn={isLoggedIn}
+          isOpen={selectedSlug !== ''}
+          isRsvp={false}
+          onClose={() => {
+            setSelectedSlug('');
+          }}
+        />
       </div>
     </Page>
   );
