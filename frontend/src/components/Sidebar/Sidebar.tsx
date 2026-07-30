@@ -70,7 +70,7 @@ const Sidebar = ({
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                className="text-muted-foreground"
+                className="text-muted-foreground h-11 gap-3 px-3 text-[0.9375rem] [&>svg]:size-5"
                 onClick={() => {
                   goTo(backTo.url);
                 }}
@@ -85,7 +85,7 @@ const Sidebar = ({
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-2">
               {sidebarItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -95,7 +95,7 @@ const Sidebar = ({
                       onClick={() => {
                         goTo(item.url, item.value);
                       }}
-                      className="data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground"
+                      className="data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground h-11 gap-3 px-3 text-[0.9375rem] [&>svg]:size-5"
                     >
                       <Icon />
                       <span>{item.name}</span>
