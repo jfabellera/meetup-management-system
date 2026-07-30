@@ -7,6 +7,7 @@ interface Config {
   discordRedirectUri: string;
   cdnBaseUrl: string;
   stripePublishableKey: string;
+  mapboxToken: string;
 }
 
 const appUrl = import.meta.env.VITE_KEEBMEET_APP_URL ?? 'http://localhost:5173';
@@ -25,6 +26,7 @@ const config: Config = {
     `${appUrl}/auth/discord/callback`,
   cdnBaseUrl: import.meta.env.VITE_KEEBMEET_CDN_BASE_URL ?? '',
   stripePublishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? '',
+  mapboxToken: import.meta.env.VITE_MAPBOX_TOKEN ?? '',
 };
 
 export default config;

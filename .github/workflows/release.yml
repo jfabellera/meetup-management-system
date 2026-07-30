@@ -76,6 +76,7 @@ jobs:
             VITE_DISCORD_CLIENT_ID=${{ vars.DISCORD_CLIENT_ID }}
             VITE_DISCORD_REDIRECT_URI=${{ vars.DISCORD_REDIRECT_URI }}
             VITE_STRIPE_PUBLISHABLE_KEY=${{ vars.STRIPE_PUBLISHABLE_KEY }}
+            VITE_MAPBOX_TOKEN=${{ vars.MAPBOX_TOKEN }}
           tags: |
             ghcr.io/${{ env.OWNER }}/keebmeet-web:latest
             ghcr.io/${{ env.OWNER }}/keebmeet-web:${{ github.sha }}

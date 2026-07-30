@@ -1,5 +1,10 @@
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import {
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react';
 import { useScrollRestoration } from '../../hooks/useScrollRestoration';
 import BottomNav from '../BottomNav/BottomNav';
 import Navbar from '../Navbar/Navbar';
@@ -15,6 +20,7 @@ export interface PageProps {
   setSidebarValue?: Dispatch<SetStateAction<string>>;
   /** Optional link shown atop the sidebar for returning to a parent view. */
   sidebarBackTo?: SidebarBackLink;
+  mobileMenu?: boolean;
 }
 
 const Page = ({
@@ -23,15 +29,22 @@ const Page = ({
   sidebarValue,
   setSidebarValue,
   sidebarBackTo,
+  mobileMenu = false,
 }: PageProps): ReactNode => {
   const hasSidebar =
     sidebarItems != null && sidebarValue != null && setSidebarValue != null;
 
   const scrollRef = useScrollRestoration<HTMLDivElement>();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   return (
     <div className="bg-muted flex h-svh flex-col">
-      <Navbar />
+      <Navbar
+        sidebar={hasSidebar && mobileMenu}
+        onOpen={() => {
+          setMobileSidebarOpen(true);
+        }}
+      />
       {hasSidebar ? (
         <>
           {/* Desktop: navigation rail beside the content. */}
@@ -41,6 +54,8 @@ const Page = ({
               value={sidebarValue}
               setValue={setSidebarValue}
               backTo={sidebarBackTo}
+              mobileOpen={mobileMenu ? mobileSidebarOpen : undefined}
+              setMobileOpen={mobileMenu ? setMobileSidebarOpen : undefined}
             />
             <SidebarInset
               ref={scrollRef}
@@ -49,13 +64,14 @@ const Page = ({
               {children}
             </SidebarInset>
           </SidebarProvider>
-          {/* Mobile: bottom navigation takes over for the sidebar. */}
-          <BottomNav
-            items={sidebarItems}
-            value={sidebarValue}
-            setValue={setSidebarValue}
-            className="md:hidden"
-          />
+          {!mobileMenu ? (
+            <BottomNav
+              items={sidebarItems}
+              value={sidebarValue}
+              setValue={setSidebarValue}
+              className="md:hidden"
+            />
+          ) : null}
         </>
       ) : (
         <div className="h-full w-auto overflow-hidden">

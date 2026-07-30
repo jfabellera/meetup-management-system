@@ -8,7 +8,6 @@ import { MeetupCard } from '../components/Meetups/MeetupCard';
 import { MeetupModal } from '../components/Meetups/MeetupModal';
 import { MeetupSearchInput } from '../components/Meetups/MeetupSearchInput';
 import { MeetupTagFilter } from '../components/Meetups/MeetupTagFilter';
-import Page from '../components/Page/Page';
 import { useIsMobile } from '../hooks/use-mobile';
 import { useHoldExpiryRefetch } from '../hooks/useHoldExpiryRefetch';
 import { useMeetupSearch } from '../hooks/useMeetupSearch';
@@ -271,7 +270,7 @@ const Homepage = (): ReactNode => {
   }
 
   return (
-    <Page>
+    <>
       {isLoading ? (
         <div className="flex h-full w-full items-center justify-center">
           <Spinner className="size-10" />
@@ -324,7 +323,7 @@ const Homepage = (): ReactNode => {
           />
         </div>
       )}
-    </Page>
+    </>
   );
 };
 
