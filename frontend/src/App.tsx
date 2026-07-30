@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import {
   Outlet,
   Route,
@@ -51,6 +51,8 @@ import StripeReturnPage from './pages/StripeReturnPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import { store } from './store/store';
 
+const MapPage = lazy(async () => import('./pages/MapPage'));
+
 const App = (): ReactNode => {
   return (
     <TooltipProvider>
@@ -58,6 +60,14 @@ const App = (): ReactNode => {
         <Router>
           <Routes>
             <Route path="/" element={<Homepage />} />
+            <Route
+              path="/map"
+              element={
+                <Suspense fallback={null}>
+                  <MapPage />
+                </Suspense>
+              }
+            />
             <Route path="/meetup/:meetupId" element={<Homepage />} />
             <Route
               path="/login"

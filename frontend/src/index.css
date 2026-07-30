@@ -211,3 +211,22 @@
     bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
   }
 }
+
+.mapboxgl-popup-content {
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 0.5rem 0.75rem;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: var(--card);
+  border-bottom-color: var(--card);
+}
+
+.mapboxgl-ctrl-group {
+  background: var(--card);
+  border: 1px solid var(--border);
+}
