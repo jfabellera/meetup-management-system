@@ -1,6 +1,6 @@
-import type * as React from 'react';
 import { XIcon } from 'lucide-react';
 import { Dialog as SheetPrimitive } from 'radix-ui';
+import type * as React from 'react';
 
 import { cn, isTouchDevice } from '@/lib/utils';
 
@@ -44,6 +44,7 @@ function SheetOverlay({
 
 function SheetContent({
   className,
+  overlayClassName,
   children,
   side = 'right',
   showCloseButton = true,
@@ -52,10 +53,11 @@ function SheetContent({
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left';
   showCloseButton?: boolean;
+  overlayClassName?: string;
 }) {
   return (
     <SheetPortal>
-      <SheetOverlay />
+      <SheetOverlay className={overlayClassName} />
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
@@ -139,11 +141,11 @@ function SheetDescription({
 
 export {
   Sheet,
-  SheetTrigger,
   SheetClose,
   SheetContent,
-  SheetHeader,
-  SheetFooter,
-  SheetTitle,
   SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
 };

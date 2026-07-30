@@ -1,4 +1,10 @@
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
@@ -31,25 +37,34 @@ interface SidebarProps {
   setValue: Dispatch<SetStateAction<string>>;
   /** Optional link rendered above the nav for returning to a parent view. */
   backTo?: SidebarBackLink;
+  mobileOpen?: boolean;
+  setMobileOpen?: (open: boolean) => void;
 }
 
 /**
- * Desktop navigation rail built on shadcn's sidebar primitives. Hidden on
- * mobile, where {@link ../BottomNav/BottomNav BottomNav} takes over instead.
+ * Desktop navigation rail built on shadcn's sidebar primitives. When
+ * {@link SidebarProps.setMobileOpen} is provided it also renders a mobile
+ * drawer; otherwise mobile navigation is handled by
+ * {@link ../BottomNav/BottomNav BottomNav} instead.
  */
 const Sidebar = ({
   sidebarItems,
   value,
   setValue,
   backTo,
+  mobileOpen,
+  setMobileOpen,
 }: SidebarProps): ReactNode => {
   const navigate = useNavigate();
 
-  return (
-    <SidebarPrimitive
-      collapsible="none"
-      className="hidden h-full border-r md:flex"
-    >
+  const goTo = (url: string, itemValue?: string): void => {
+    if (itemValue != null) setValue(itemValue);
+    void navigate(url, { replace: itemValue != null });
+    setMobileOpen?.(false);
+  };
+
+  const menu = (
+    <>
       {backTo != null ? (
         <SidebarHeader>
           <SidebarMenu>
@@ -57,7 +72,7 @@ const Sidebar = ({
               <SidebarMenuButton
                 className="text-muted-foreground"
                 onClick={() => {
-                  void navigate(backTo.url);
+                  goTo(backTo.url);
                 }}
               >
                 <FiArrowLeft />
@@ -78,8 +93,7 @@ const Sidebar = ({
                     <SidebarMenuButton
                       isActive={item.value === value}
                       onClick={() => {
-                        setValue(item.value);
-                        void navigate(item.url, { replace: true });
+                        goTo(item.url, item.value);
                       }}
                       className="data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground"
                     >
@@ -93,7 +107,36 @@ const Sidebar = ({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-    </SidebarPrimitive>
+    </>
+  );
+
+  return (
+    <>
+      <SidebarPrimitive
+        collapsible="none"
+        className="hidden h-full border-r md:flex"
+      >
+        {menu}
+      </SidebarPrimitive>
+      {setMobileOpen != null ? (
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent
+            side="left"
+            showCloseButton={false}
+            // Slide over the content area only; the navbar (h-16) sits at the top of the viewport.
+            overlayClassName="top-16!"
+            className="bg-sidebar top-16! h-auto! w-64 gap-0 p-0"
+          >
+            <SheetHeader className="sr-only">
+              <SheetTitle>Menu</SheetTitle>
+            </SheetHeader>
+            <div className="text-sidebar-foreground flex h-full w-full flex-col">
+              {menu}
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : null}
+    </>
   );
 };
 

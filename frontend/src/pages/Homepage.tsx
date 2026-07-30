@@ -3,12 +3,14 @@ import { Spinner } from '@/components/ui/spinner';
 import { type MeetupInfo, type SimpleTicketInfo } from '@keebmeet/shared';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { FiHome } from 'react-icons/fi';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { MeetupCard } from '../components/Meetups/MeetupCard';
 import { MeetupModal } from '../components/Meetups/MeetupModal';
 import { MeetupSearchInput } from '../components/Meetups/MeetupSearchInput';
 import { MeetupTagFilter } from '../components/Meetups/MeetupTagFilter';
 import Page from '../components/Page/Page';
+import { type SidebarItem } from '../components/Sidebar/Sidebar';
 import { useIsMobile } from '../hooks/use-mobile';
 import { useHoldExpiryRefetch } from '../hooks/useHoldExpiryRefetch';
 import { useMeetupSearch } from '../hooks/useMeetupSearch';
@@ -25,6 +27,10 @@ import {
   hasMeetupStarted,
   isMeetupHappeningNow,
 } from '../util/timeUtil';
+
+const sidebarItems: SidebarItem[] = [
+  { name: 'Home', value: 'home', icon: FiHome, url: '/' },
+];
 
 interface PrefetchingMeetupCardProps {
   meetup: MeetupInfo;
@@ -66,6 +72,7 @@ const Homepage = (): ReactNode => {
   // The selected meetup is driven by the URL slug so meetups can be linked to.
   const slug = slugParam ?? '';
   const isMobile = useIsMobile();
+  const [sidebarValue, setSidebarValue] = useState('home');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const {
     searchInput,
@@ -271,7 +278,12 @@ const Homepage = (): ReactNode => {
   }
 
   return (
-    <Page>
+    <Page
+      sidebarItems={sidebarItems}
+      sidebarValue={sidebarValue}
+      setSidebarValue={setSidebarValue}
+      mobileMenu
+    >
       {isLoading ? (
         <div className="flex h-full w-full items-center justify-center">
           <Spinner className="size-10" />

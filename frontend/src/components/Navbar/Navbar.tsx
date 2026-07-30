@@ -71,13 +71,13 @@ const Nav = ({ sidebar, onOpen }: NavbarProps): ReactNode => {
     <div className="bg-background flex h-16 w-full items-center gap-1 border-b px-4">
       {sidebar === true ? (
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
-          className="mr-2 md:hidden"
+          className="mr-3 size-8 md:hidden"
           onClick={onOpen}
           aria-label="menu"
         >
-          <FiMenu />
+          <FiMenu className="size-6" />
         </Button>
       ) : null}
       <span
