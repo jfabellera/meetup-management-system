@@ -9,6 +9,7 @@ interface Props {
   onRemove?: () => void;
   editable?: boolean;
   label?: string;
+  className?: string;
 }
 
 /** Meetup image picker — a 2:1 banner wired to the meetup upload endpoint. */

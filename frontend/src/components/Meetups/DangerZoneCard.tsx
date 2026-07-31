@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import {
   useDeleteMeetupMutation,
@@ -113,155 +112,168 @@ export const DangerZoneCard = ({ meetupId }: Props): ReactNode => {
 
   return (
     <Card className="border-destructive gap-2 p-4">
-      <h2 className="text-destructive text-2xl font-semibold">Danger zone</h2>
+      <h2 className="text-destructive text-lg font-semibold">Danger zone</h2>
 
-      <p className="text-muted-foreground">
-        Transferring this meetup hands it off to another organizer, replacing
-        you as the lead organizer entirely. This action cannot be undone.
-      </p>
-      <Dialog
-        open={transferOpen}
-        onOpenChange={(next) => {
-          setTransferOpen(next);
-          if (!next) resetTransfer();
-        }}
-      >
-        <DialogTrigger asChild>
-          <Button className="self-start" variant="outline">
-            Transfer meetup
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Transfer this meetup?</DialogTitle>
-            <DialogDescription>
-              This replaces you as the lead organizer entirely. The new lead
-              gains full control of the meetup and this action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          {meetup?.is_archive ? (
-            <p className="text-muted-foreground text-sm">
-              Since this is an archived meetup, the new lead organizer will be
-              credited as its organizer
-              {meetup.organizer_name != null ? (
-                <>
-                  , replacing{' '}
-                  <span className="font-bold">{meetup.organizer_name}</span>
-                </>
-              ) : null}
-              , and <span className="font-bold">you will lose all access</span>{' '}
-              to it.
-            </p>
-          ) : (
-            <p className="text-muted-foreground text-sm">
-              You&apos;ll remain an organizer with access to manage this meetup
-              — you just won&apos;t be the lead organizer.
-            </p>
-          )}
-          <Field>
-            <FieldLabel htmlFor="transfer-organizer">
-              New lead organizer
-            </FieldLabel>
-            <OrganizerSelect
-              id="transfer-organizer"
-              value={transferOrganizerId}
-              onChange={setTransferOrganizerId}
-              // Can't transfer the meetup to its current lead organizer.
-              excludeIds={
-                meetup?.lead_organizer != null ? [meetup.lead_organizer.id] : []
-              }
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="confirm-transfer">
-              Type{' '}
-              <span className="font-bold">
-                {transferConfirmTarget ?? 'organizer-meetup'}
-              </span>{' '}
-              to confirm.
-            </FieldLabel>
-            <Input
-              id="confirm-transfer"
-              value={transferConfirmText}
-              onChange={(event) => setTransferConfirmText(event.target.value)}
-              placeholder={transferConfirmTarget ?? 'organizer-meetup'}
-              autoComplete="off"
-              disabled={selectedOrganizer == null}
-            />
-          </Field>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="secondary">Cancel</Button>
-            </DialogClose>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                void onTransfer();
-              }}
-              disabled={!canConfirmTransfer || isTransferring}
-            >
-              Transfer meetup
-              {isTransferring && <Spinner />}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-2">
+          <p className="text-muted-foreground">
+            Transferring this meetup hands it off to another organizer,
+            replacing you as the lead organizer entirely. This action cannot be
+            undone.
+          </p>
+          <Dialog
+            open={transferOpen}
+            onOpenChange={(next) => {
+              setTransferOpen(next);
+              if (!next) resetTransfer();
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button className="mt-auto self-start" variant="outline">
+                Transfer meetup
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Transfer this meetup?</DialogTitle>
+                <DialogDescription>
+                  This replaces you as the lead organizer entirely. The new lead
+                  gains full control of the meetup and this action cannot be
+                  undone.
+                </DialogDescription>
+              </DialogHeader>
+              {meetup?.is_archive ? (
+                <p className="text-muted-foreground text-sm">
+                  Since this is an archived meetup, the new lead organizer will
+                  be credited as its organizer
+                  {meetup.organizer_name != null ? (
+                    <>
+                      , replacing{' '}
+                      <span className="font-bold">{meetup.organizer_name}</span>
+                    </>
+                  ) : null}
+                  , and{' '}
+                  <span className="font-bold">you will lose all access</span> to
+                  it.
+                </p>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  You&apos;ll remain an organizer with access to manage this
+                  meetup — you just won&apos;t be the lead organizer.
+                </p>
+              )}
+              <Field>
+                <FieldLabel htmlFor="transfer-organizer">
+                  New lead organizer
+                </FieldLabel>
+                <OrganizerSelect
+                  id="transfer-organizer"
+                  value={transferOrganizerId}
+                  onChange={setTransferOrganizerId}
+                  // Can't transfer the meetup to its current lead organizer.
+                  excludeIds={
+                    meetup?.lead_organizer != null
+                      ? [meetup.lead_organizer.id]
+                      : []
+                  }
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="confirm-transfer">
+                  Type{' '}
+                  <span className="font-bold">
+                    {transferConfirmTarget ?? 'organizer-meetup'}
+                  </span>{' '}
+                  to confirm.
+                </FieldLabel>
+                <Input
+                  id="confirm-transfer"
+                  value={transferConfirmText}
+                  onChange={(event) =>
+                    setTransferConfirmText(event.target.value)
+                  }
+                  placeholder={transferConfirmTarget ?? 'organizer-meetup'}
+                  autoComplete="off"
+                  disabled={selectedOrganizer == null}
+                />
+              </Field>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="secondary">Cancel</Button>
+                </DialogClose>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    void onTransfer();
+                  }}
+                  disabled={!canConfirmTransfer || isTransferring}
+                >
+                  Transfer meetup
+                  {isTransferring && <Spinner />}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
 
-      <Separator className="my-2" />
-
-      <p className="text-muted-foreground">
-        Deleting this meetup permanently removes it along with all of its
-        tickets, raffle records, and raffle wins. This action cannot be undone.
-      </p>
-      <Dialog
-        open={open}
-        onOpenChange={(next) => {
-          setOpen(next);
-          if (!next) setConfirmText('');
-        }}
-      >
-        <DialogTrigger asChild>
-          <Button className="self-start" variant="destructive">
-            Delete meetup
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete this meetup?</DialogTitle>
-            <DialogDescription>
-              This permanently deletes the meetup and all of its tickets, raffle
-              records, and raffle wins. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <Field>
-            <FieldLabel htmlFor="confirm-meetup-name">
-              Type <span className="font-bold">{meetup?.name}</span> to confirm.
-            </FieldLabel>
-            <Input
-              id="confirm-meetup-name"
-              value={confirmText}
-              onChange={(event) => setConfirmText(event.target.value)}
-              placeholder={meetup?.name}
-              autoComplete="off"
-            />
-          </Field>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="secondary">Cancel</Button>
-            </DialogClose>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                void onDelete();
-              }}
-              disabled={!canConfirm || isDeleting}
-            >
-              Delete meetup
-              {isDeleting && <Spinner />}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <div className="flex min-w-0 flex-col gap-2">
+          <p className="text-muted-foreground">
+            Deleting this meetup permanently removes it along with all of its
+            tickets, raffle records, and raffle wins. This action cannot be
+            undone.
+          </p>
+          <Dialog
+            open={open}
+            onOpenChange={(next) => {
+              setOpen(next);
+              if (!next) setConfirmText('');
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button className="mt-auto self-start" variant="destructive">
+                Delete meetup
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete this meetup?</DialogTitle>
+                <DialogDescription>
+                  This permanently deletes the meetup and all of its tickets,
+                  raffle records, and raffle wins. This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <Field>
+                <FieldLabel htmlFor="confirm-meetup-name">
+                  Type <span className="font-bold">{meetup?.name}</span> to
+                  confirm.
+                </FieldLabel>
+                <Input
+                  id="confirm-meetup-name"
+                  value={confirmText}
+                  onChange={(event) => setConfirmText(event.target.value)}
+                  placeholder={meetup?.name}
+                  autoComplete="off"
+                />
+              </Field>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="secondary">Cancel</Button>
+                </DialogClose>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    void onDelete();
+                  }}
+                  disabled={!canConfirm || isDeleting}
+                >
+                  Delete meetup
+                  {isDeleting && <Spinner />}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
     </Card>
   );
 };

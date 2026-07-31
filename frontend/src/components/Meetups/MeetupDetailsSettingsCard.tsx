@@ -42,6 +42,23 @@ interface Props {
   meetupId: string;
 }
 
+const SettingsSection = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}): ReactNode => (
+  <section className="border-t pt-4 first:border-t-0 first:pt-0">
+    <h3 className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
+      {title}
+    </h3>
+    <div className="grid grid-cols-1 items-start gap-x-8 gap-y-4 sm:grid-cols-2">
+      {children}
+    </div>
+  </section>
+);
+
 const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
   const { data: meetup } = useGetMeetupQuery(meetupId);
   const currentUserId = useAppSelector((state) => state.user.user?.id);
@@ -213,234 +230,249 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
       isFormInvalid={slugError != null}
       isSubmitDisabled={isUploading}
     >
-      <form onSubmit={formik.handleSubmit} noValidate>
-        {isArchive ? (
-          <Field className="max-w-sm min-w-0 py-2">
-            <FieldLabel htmlFor="organizerType">Organizer</FieldLabel>
-            {isEditable ? (
-              <div className="flex flex-col gap-2">
-                <Select
-                  value={formik.values.organizerType}
-                  onValueChange={(value) => {
-                    void formik.setFieldValue('organizerType', value);
-                    // Clear a stale name when switching back to self-credit.
-                    if (value === 'me') {
-                      void formik.setFieldValue('organizerName', '');
-                    }
-                  }}
-                >
-                  <SelectTrigger id="organizerType" className="w-full">
-                    <SelectValue placeholder="Who organized this meetup?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="me">I organized this</SelectItem>
-                    <SelectItem value="other">
-                      Someone else organized this
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                {formik.values.organizerType === 'other' ? (
-                  <Input
-                    id="organizerName"
-                    name="organizerName"
-                    placeholder="Organizer name"
-                    value={formik.values.organizerName}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                  />
-                ) : null}
-              </div>
-            ) : (
-              <p className="text-foreground/70">
-                {meetup?.organizer_name ??
-                  meetup?.lead_organizer?.display_name ??
-                  'N/A'}
-              </p>
-            )}
-          </Field>
-        ) : (
-          <Field className="max-w-sm min-w-0 py-2">
-            <FieldLabel htmlFor="organizers">Organizers</FieldLabel>
-            <div className="flex flex-wrap gap-2">
-              {meetup?.lead_organizer != null ? (
-                <Badge>{meetup.lead_organizer.display_name} · Lead</Badge>
-              ) : null}
-
-              {!isEditable &&
-                meetup?.organizers?.map((organizer) => (
-                  <Badge variant="secondary" key={organizer.id}>
-                    {organizer.display_name}
-                  </Badge>
-                ))}
-            </div>
-            {isEditable && (
-              <OrganizerCombobox
-                id="organizers"
-                disabled={
-                  !isEditable || currentUserId !== meetup?.lead_organizer?.id
-                }
-                excludeIds={
-                  meetup?.lead_organizer != null
-                    ? [meetup.lead_organizer.id]
-                    : []
-                }
-                value={formik.values.organizerIds}
-                onChange={(organizerIds) =>
-                  void formik.setFieldValue('organizerIds', organizerIds)
-                }
-              />
-            )}
-          </Field>
-        )}
-        <Field className="max-w-sm min-w-0 py-2">
-          <FieldLabel htmlFor="tags">Tags</FieldLabel>
-          {isEditable ? (
-            <TagCombobox
-              id="tags"
-              value={formik.values.tagIds}
-              onChange={(tagIds) => void formik.setFieldValue('tagIds', tagIds)}
-            />
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {meetup?.tags != null && meetup.tags.length > 0 ? (
-                meetup.tags.map((tag) => (
-                  <Badge variant="secondary" key={tag.id}>
-                    <span
-                      aria-hidden
-                      className="mr-1 size-2.5 rounded-full"
-                      style={{ backgroundColor: tag.color }}
+      <form
+        onSubmit={formik.handleSubmit}
+        noValidate
+        className="flex flex-col gap-5 pt-2"
+      >
+        <SettingsSection title="Basics">
+          <EditableFormField
+            name={'Meetup Name'}
+            className="max-w-none py-0"
+            value={meetup?.name}
+            editable={isEditable}
+            id={'name'}
+            type={'text'}
+            isInvalid={formik.errors.name != null && formik.touched.name}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            errorMessage={formik.errors.name}
+          />
+          <EditableFormField
+            name={'URL slug'}
+            className="max-w-none py-0"
+            value={meetup?.slug}
+            editable={isEditable}
+            id={'slug'}
+            type={'text'}
+            isInvalid={slugError != null}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            errorMessage={slugError}
+          />
+          {isArchive ? (
+            <Field className="min-w-0">
+              <FieldLabel htmlFor="organizerType">Organizer</FieldLabel>
+              {isEditable ? (
+                <div className="flex flex-col gap-2">
+                  <Select
+                    value={formik.values.organizerType}
+                    onValueChange={(value) => {
+                      void formik.setFieldValue('organizerType', value);
+                      // Clear a stale name when switching back to self-credit.
+                      if (value === 'me') {
+                        void formik.setFieldValue('organizerName', '');
+                      }
+                    }}
+                  >
+                    <SelectTrigger id="organizerType" className="w-full">
+                      <SelectValue placeholder="Who organized this meetup?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="me">I organized this</SelectItem>
+                      <SelectItem value="other">
+                        Someone else organized this
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {formik.values.organizerType === 'other' ? (
+                    <Input
+                      id="organizerName"
+                      name="organizerName"
+                      placeholder="Organizer name"
+                      value={formik.values.organizerName}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
                     />
-                    {tag.name}
-                  </Badge>
-                ))
+                  ) : null}
+                </div>
               ) : (
-                <p className="text-foreground/70">No tags</p>
+                <p className="text-foreground/70">
+                  {meetup?.organizer_name ??
+                    meetup?.lead_organizer?.display_name ??
+                    'N/A'}
+                </p>
               )}
-            </div>
-          )}
-        </Field>
-        <EditableFormField
-          name={'Meetup Name'}
-          value={meetup?.name}
-          editable={isEditable}
-          id={'name'}
-          type={'text'}
-          isInvalid={formik.errors.name != null && formik.touched.name}
-          onChange={formik.handleChange}
-          onBlur={formik.handleBlur}
-          errorMessage={formik.errors.name}
-        />
-        <EditableFormField
-          name={'URL slug'}
-          value={meetup?.slug}
-          editable={isEditable}
-          id={'slug'}
-          type={'text'}
-          isInvalid={slugError != null}
-          onChange={formik.handleChange}
-          onBlur={formik.handleBlur}
-          errorMessage={slugError}
-        />
-        <Field className="max-w-sm min-w-0 py-2">
-          <FieldLabel htmlFor="isUnlisted">Visibility</FieldLabel>
-          {isEditable ? (
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="isUnlisted"
-                name="isUnlisted"
-                checked={formik.values.isUnlisted}
-                onCheckedChange={(checked) => {
-                  const isUnlisted = checked === true;
-                  void formik.setFieldValue('isUnlisted', isUnlisted);
-                  if (!isUnlisted) void formik.setFieldValue('groupIds', []);
-                }}
-              />
-              <Label htmlFor="isUnlisted">
-                Hide from public listings (reachable only by direct link)
-              </Label>
-            </div>
+            </Field>
           ) : (
-            <p className="text-foreground/70">
-              {meetup?.is_unlisted === true ? 'Unlisted' : 'Public'}
-            </p>
-          )}
-        </Field>
-        {isEditable && formik.values.isUnlisted ? (
-          <p className="text-sm text-amber-600">{UNLISTED_SLUG_NOTE}</p>
-        ) : null}
-        {formik.values.isUnlisted ? (
-          <Field className="max-w-sm min-w-0 py-2">
-            <FieldLabel htmlFor="groups">Groups</FieldLabel>
-            <FieldDescription>{UNLISTED_GROUPS_DESCRIPTION}</FieldDescription>
-            {/* Only the lead edits groups; everyone else sees them read-only. */}
-            {!(isEditable && isLead) ? (
+            <Field className="min-w-0">
+              <FieldLabel htmlFor="organizers">Organizers</FieldLabel>
               <div className="flex flex-wrap gap-2">
-                {meetup?.groups != null && meetup.groups.length > 0 ? (
-                  meetup.groups.map((group) => (
-                    <Badge variant="secondary" key={group.id}>
-                      {group.name}
+                {meetup?.lead_organizer != null ? (
+                  <Badge>{meetup.lead_organizer.display_name} · Lead</Badge>
+                ) : null}
+
+                {!isEditable &&
+                  meetup?.organizers?.map((organizer) => (
+                    <Badge variant="secondary" key={organizer.id}>
+                      {organizer.display_name}
+                    </Badge>
+                  ))}
+              </div>
+              {isEditable && (
+                <OrganizerCombobox
+                  id="organizers"
+                  disabled={
+                    !isEditable || currentUserId !== meetup?.lead_organizer?.id
+                  }
+                  excludeIds={
+                    meetup?.lead_organizer != null
+                      ? [meetup.lead_organizer.id]
+                      : []
+                  }
+                  value={formik.values.organizerIds}
+                  onChange={(organizerIds) =>
+                    void formik.setFieldValue('organizerIds', organizerIds)
+                  }
+                />
+              )}
+            </Field>
+          )}
+          <Field className="min-w-0">
+            <FieldLabel htmlFor="tags">Tags</FieldLabel>
+            {isEditable ? (
+              <TagCombobox
+                id="tags"
+                value={formik.values.tagIds}
+                onChange={(tagIds) =>
+                  void formik.setFieldValue('tagIds', tagIds)
+                }
+              />
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {meetup?.tags != null && meetup.tags.length > 0 ? (
+                  meetup.tags.map((tag) => (
+                    <Badge variant="secondary" key={tag.id}>
+                      <span
+                        aria-hidden
+                        className="mr-1 size-2.5 rounded-full"
+                        style={{ backgroundColor: tag.color }}
+                      />
+                      {tag.name}
                     </Badge>
                   ))
                 ) : (
-                  <p className="text-foreground/70">No groups</p>
+                  <p className="text-foreground/70">No tags</p>
                 )}
               </div>
-            ) : (
-              <GroupCombobox
-                id="groups"
-                value={formik.values.groupIds}
-                onChange={(groupIds) =>
-                  void formik.setFieldValue('groupIds', groupIds)
-                }
-              />
             )}
           </Field>
-        ) : null}
-        <EditableFormField
-          name={'Date'}
-          value={dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format(
-            'YYYY-MM-DD'
-          )}
-          editable={isEditable}
-          id={'date'}
-          type={'date'}
-          isInvalid={formik.errors.date != null && formik.touched.date}
-          onChange={formik.handleChange}
-          onBlur={formik.handleBlur}
-          errorMessage={formik.errors.date}
-        />
-        {/* Archives capture the day only — no start time. */}
-        {!isArchive ? (
+          <Field className="min-w-0">
+            <FieldLabel htmlFor="isUnlisted">Visibility</FieldLabel>
+            {isEditable ? (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="isUnlisted"
+                  name="isUnlisted"
+                  checked={formik.values.isUnlisted}
+                  onCheckedChange={(checked) => {
+                    const isUnlisted = checked === true;
+                    void formik.setFieldValue('isUnlisted', isUnlisted);
+                    if (!isUnlisted) void formik.setFieldValue('groupIds', []);
+                  }}
+                />
+                <Label htmlFor="isUnlisted">
+                  Hide from public listings (reachable only by direct link)
+                </Label>
+              </div>
+            ) : (
+              <p className="text-foreground/70">
+                {meetup?.is_unlisted === true ? 'Unlisted' : 'Public'}
+              </p>
+            )}
+          </Field>
+          {formik.values.isUnlisted ? (
+            <Field className="min-w-0">
+              <FieldLabel htmlFor="groups">Groups</FieldLabel>
+              <FieldDescription>{UNLISTED_GROUPS_DESCRIPTION}</FieldDescription>
+              {/* Only the lead edits groups; everyone else sees them read-only. */}
+              {!(isEditable && isLead) ? (
+                <div className="flex flex-wrap gap-2">
+                  {meetup?.groups != null && meetup.groups.length > 0 ? (
+                    meetup.groups.map((group) => (
+                      <Badge variant="secondary" key={group.id}>
+                        {group.name}
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-foreground/70">No groups</p>
+                  )}
+                </div>
+              ) : (
+                <GroupCombobox
+                  id="groups"
+                  value={formik.values.groupIds}
+                  onChange={(groupIds) =>
+                    void formik.setFieldValue('groupIds', groupIds)
+                  }
+                />
+              )}
+            </Field>
+          ) : null}
+          {isEditable && formik.values.isUnlisted ? (
+            <p className="text-sm text-amber-600 sm:col-span-2">
+              {UNLISTED_SLUG_NOTE}
+            </p>
+          ) : null}
+        </SettingsSection>
+        <SettingsSection title="Schedule & location">
           <EditableFormField
-            name={'Start Time'}
-            value={dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format('HH:mm')}
+            name={'Date'}
+            className="max-w-none py-0"
+            value={dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format(
+              'YYYY-MM-DD'
+            )}
             editable={isEditable}
-            id={'startTime'}
-            type={'time'}
-            isInvalid={
-              formik.errors.startTime != null && formik.touched.startTime
-            }
+            id={'date'}
+            type={'date'}
+            isInvalid={formik.errors.date != null && formik.touched.date}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
-            errorMessage={formik.errors.startTime}
+            errorMessage={formik.errors.date}
           />
-        ) : null}
-        <EditableFormField
-          name={'Address'}
-          value={meetup?.location.full_address}
-          editable={isEditable}
-          id={'address'}
-          type={'text'}
-          isInvalid={formik.errors.address != null && formik.touched.address}
-          onChange={formik.handleChange}
-          onBlur={formik.handleBlur}
-          errorMessage={formik.errors.address}
-        />
-        {/* Archives have no live sign-ups or schedule. */}
-        {!isArchive ? (
-          <>
+          {/* Archives capture the day only — no start time. */}
+          {!isArchive ? (
+            <EditableFormField
+              name={'Start Time'}
+              className="max-w-none py-0"
+              value={dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format('HH:mm')}
+              editable={isEditable}
+              id={'startTime'}
+              type={'time'}
+              isInvalid={
+                formik.errors.startTime != null && formik.touched.startTime
+              }
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              errorMessage={formik.errors.startTime}
+            />
+          ) : null}
+          <EditableFormField
+            name={'Address'}
+            className="max-w-none py-0"
+            value={meetup?.location.full_address}
+            editable={isEditable}
+            id={'address'}
+            type={'text'}
+            isInvalid={formik.errors.address != null && formik.touched.address}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            errorMessage={formik.errors.address}
+          />
+          {!isArchive ? (
             <EditableFormField
               name={'Duration (hours)'}
+              className="max-w-none py-0"
               value={meetup?.duration_hours}
               editable={isEditable}
               id={'duration'}
@@ -452,8 +484,29 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               onBlur={formik.handleBlur}
               errorMessage={formik.errors.duration}
             />
+          ) : null}
+        </SettingsSection>
+        {/* Archives have no live sign-ups. */}
+        {!isArchive ? (
+          <SettingsSection title="Tickets">
+            {isEditable ? (
+              <div className="flex items-center gap-2 sm:col-span-2">
+                <Checkbox
+                  id="isPaid"
+                  name="isPaid"
+                  checked={formik.values.isPaid}
+                  onCheckedChange={(checked) => {
+                    const isPaid = checked === true;
+                    void formik.setFieldValue('isPaid', isPaid);
+                    if (!isPaid) void formik.setFieldValue('price', 0);
+                  }}
+                />
+                <Label htmlFor="isPaid">Charge for tickets</Label>
+              </div>
+            ) : null}
             <EditableFormField
               name={'Capacity'}
+              className="max-w-none py-0"
               value={meetup?.tickets?.total}
               editable={isEditable}
               id={'capacity'}
@@ -465,25 +518,9 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               onBlur={formik.handleBlur}
               errorMessage={formik.errors.capacity}
             />
-            {isEditable ? (
-              <div className="flex flex-col gap-1 py-2">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="isPaid"
-                    name="isPaid"
-                    checked={formik.values.isPaid}
-                    onCheckedChange={(checked) => {
-                      const isPaid = checked === true;
-                      void formik.setFieldValue('isPaid', isPaid);
-                      if (!isPaid) void formik.setFieldValue('price', 0);
-                    }}
-                  />
-                  <Label htmlFor="isPaid">Charge for tickets</Label>
-                </div>
-              </div>
-            ) : null}
             <EditableFormField
               name={'Ticket price in USD'}
+              className="max-w-none py-0"
               key={`price-${formik.values.isPaid}`}
               value={formik.values.price}
               editable={isEditable}
@@ -495,7 +532,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               onBlur={formik.handleBlur}
               errorMessage={formik.errors.price}
             />
-            <p className="text-muted-foreground text-xs">
+            <p className="text-muted-foreground text-xs sm:col-span-2">
               Paid tickets are subject to the{' '}
               <Link
                 to="/legal/organizer-payment-terms"
@@ -506,35 +543,39 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               </Link>
               .
             </p>
-          </>
+          </SettingsSection>
         ) : null}
-        <MeetupImageField
-          previewUrl={formik.values.imageUrl}
-          editable={isEditable}
-          onUploadingChange={onUploadingChange}
-          onUploaded={(imageKey, imageUrl) => {
-            void formik.setFieldValue('imageKey', imageKey);
-            void formik.setFieldValue('imageUrl', imageUrl);
-          }}
-          onRemove={() => {
-            void formik.setFieldValue('imageKey', '');
-            void formik.setFieldValue('imageUrl', '');
-          }}
-        />
-        <EditableFormField
-          name={'Description'}
-          value={meetup?.description}
-          editable={isEditable}
-          id={'description'}
-          type={'text'}
-          multiline
-          isInvalid={
-            formik.errors.description != null && formik.touched.description
-          }
-          onChange={formik.handleChange}
-          onBlur={formik.handleBlur}
-          errorMessage={formik.errors.description}
-        />
+        <SettingsSection title="Image & description">
+          <MeetupImageField
+            className="max-w-none py-0"
+            previewUrl={formik.values.imageUrl}
+            editable={isEditable}
+            onUploadingChange={onUploadingChange}
+            onUploaded={(imageKey, imageUrl) => {
+              void formik.setFieldValue('imageKey', imageKey);
+              void formik.setFieldValue('imageUrl', imageUrl);
+            }}
+            onRemove={() => {
+              void formik.setFieldValue('imageKey', '');
+              void formik.setFieldValue('imageUrl', '');
+            }}
+          />
+          <EditableFormField
+            name={'Description'}
+            className="max-w-none py-0"
+            value={meetup?.description}
+            editable={isEditable}
+            id={'description'}
+            type={'text'}
+            multiline
+            isInvalid={
+              formik.errors.description != null && formik.touched.description
+            }
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            errorMessage={formik.errors.description}
+          />
+        </SettingsSection>
       </form>
     </EditableFormCard>
   );

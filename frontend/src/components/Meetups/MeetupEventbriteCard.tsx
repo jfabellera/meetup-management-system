@@ -35,7 +35,7 @@ export const MeetupEventbriteCard = ({ meetupId }: Props): ReactNode => {
 
   return (
     <Card className="gap-2 p-4">
-      <h2 className="text-2xl font-semibold">Eventbrite</h2>
+      <h2 className="text-lg font-semibold">Eventbrite</h2>
       <p className="text-muted-foreground">
         This meetup is linked to an Eventbrite event. Attendees sync
         automatically, but you can pull the latest list manually at any time.
