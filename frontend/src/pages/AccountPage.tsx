@@ -252,47 +252,50 @@ const AccountPage = (): ReactNode => {
         <div className="bg-card text-card-foreground rounded-lg p-8 shadow-lg">
           <form onSubmit={formik.handleSubmit} noValidate>
             <div className="flex flex-col gap-4">
-              <div className="flex justify-center">
-                <ImageUploadField
-                  className="w-40"
-                  label="Profile Photo"
-                  aspectRatio={1}
-                  rounded
-                  useUploadMutation={useUploadUserImageMutation}
-                  previewUrl={formik.values.photoUrl}
-                  onUploaded={(imageKey, imageUrl) => {
-                    void formik.setFieldValue('photoKey', imageKey);
-                    void formik.setFieldValue('photoUrl', imageUrl);
-                  }}
-                  onUploadingChange={onUploadingChange}
-                  onRemove={() => {
-                    void formik.setFieldValue('photoKey', '');
-                    void formik.setFieldValue('photoUrl', '');
-                  }}
-                />
-              </div>
-              <div className="mt-4 flex flex-col gap-4">
+              <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                   <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
                     Public · shown on your profile
                   </h2>
                   <Separator className="flex-1" />
                 </div>
-                <FormField
-                  formik={formik}
-                  name="displayName"
-                  label="Display Name"
-                />
-                <FormField
-                  formik={formik}
-                  name="username"
-                  label="Username"
-                  invalid={
-                    usernameTaken ||
-                    (formik.errors.username != null && formik.touched.username)
-                  }
-                  message={usernameTaken ? 'Username is taken' : undefined}
-                />
+                <div className="flex flex-col items-center gap-x-6 gap-y-4 sm:flex-row sm:items-start">
+                  <ImageUploadField
+                    className="w-28 shrink-0 py-0"
+                    label="Profile Photo"
+                    aspectRatio={1}
+                    rounded
+                    useUploadMutation={useUploadUserImageMutation}
+                    previewUrl={formik.values.photoUrl}
+                    onUploaded={(imageKey, imageUrl) => {
+                      void formik.setFieldValue('photoKey', imageKey);
+                      void formik.setFieldValue('photoUrl', imageUrl);
+                    }}
+                    onUploadingChange={onUploadingChange}
+                    onRemove={() => {
+                      void formik.setFieldValue('photoKey', '');
+                      void formik.setFieldValue('photoUrl', '');
+                    }}
+                  />
+                  <div className="flex w-full min-w-0 flex-1 flex-col gap-4">
+                    <FormField
+                      formik={formik}
+                      name="displayName"
+                      label="Display Name"
+                    />
+                    <FormField
+                      formik={formik}
+                      name="username"
+                      label="Username"
+                      invalid={
+                        usernameTaken ||
+                        (formik.errors.username != null &&
+                          formik.touched.username)
+                      }
+                      message={usernameTaken ? 'Username is taken' : undefined}
+                    />
+                  </div>
+                </div>
               </div>
               <div className="mt-4 flex flex-col gap-4">
                 <div className="flex items-center gap-3">
@@ -323,24 +326,33 @@ const AccountPage = (): ReactNode => {
                   />
                 </div>
               </div>
-              <div className="border-border mt-2 border-t pt-4">
-                <div className="flex flex-col gap-4">
+              <div className="mt-4 flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
+                    Change password
+                  </h2>
+                  <Separator className="flex-1" />
+                </div>
+                <div className="flex flex-row gap-2">
                   <FormField
                     formik={formik}
                     name="password"
                     label="New Password"
                     type="password"
+                    className="flex-1"
                   />
                   <FormField
                     formik={formik}
                     name="confirmPassword"
                     label="Confirm New Password"
                     type="password"
+                    className="flex-1"
                   />
                 </div>
               </div>
               <Button
                 type="submit"
+                className="self-end"
                 disabled={
                   loading ||
                   !formik.isValid ||
@@ -348,7 +360,6 @@ const AccountPage = (): ReactNode => {
                   isUploading ||
                   usernameTaken
                 }
-                size="lg"
               >
                 Save changes
                 {loading ? <Spinner /> : null}
@@ -360,25 +371,24 @@ const AccountPage = (): ReactNode => {
         <div className="bg-card text-card-foreground flex flex-col gap-4 rounded-lg p-8 shadow-lg">
           <h2 className="text-lg font-medium">Connections</h2>
           <div className="flex items-center justify-between gap-4">
-            <span>Discord</span>
+            <div className="flex flex-col">
+              <span>Discord</span>
+              <span className="text-muted-foreground text-xs">
+                {(user?.is_discord_linked ?? false)
+                  ? user?.discord_username != null
+                    ? `Linked as @${user.discord_username}`
+                    : 'Linked'
+                  : 'Link your account to access groups from your Discord servers.'}
+              </span>
+            </div>
             {(user?.is_discord_linked ?? false) ? (
-              <div className="flex items-center gap-2">
-                {user?.discord_username != null ? (
-                  <span className="text-foreground/70 text-sm">
-                    @{user.discord_username}
-                  </span>
-                ) : null}
-                <span className="text-sm font-medium text-green-600">
-                  Linked
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowUnlinkConfirm(true)}
-                >
-                  Unlink
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowUnlinkConfirm(true)}
+              >
+                Unlink
+              </Button>
             ) : (
               <Button
                 className="bg-[#5865F2] text-white hover:bg-[#4752c4]"
@@ -391,52 +401,55 @@ const AccountPage = (): ReactNode => {
           </div>
         </div>
         <div className="bg-card text-card-foreground flex flex-col gap-4 rounded-lg p-8 shadow-lg">
-          <h2 className="text-lg font-medium">Organizer access</h2>
-          {(user?.is_organizer ?? false) ? (
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-medium">Organizer access</h2>
+            {isOrganizer ? (
+              <Badge variant="secondary">
+                <span
+                  aria-hidden
+                  className="mr-1 size-2 rounded-full bg-green-600"
+                />
+                Active
+              </Badge>
+            ) : null}
+          </div>
+          {isOrganizer ? (
             <div className="flex flex-col gap-4">
-              <span className="t text-green-600">You're an organizer.</span>
-
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col">
                   <span>Payments</span>
-                  {(stripeStatus?.stripe_charges_enabled ?? false) ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-green-600">
-                        Payments enabled
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={onOpenDashboard}
-                        disabled={isOpeningDashboard}
-                      >
-                        Stripe dashboard
-                        {isOpeningDashboard ? <Spinner /> : null}
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={onSetupPayments}
-                      disabled={isStartingStripe}
+                  <span className="text-muted-foreground text-xs">
+                    Selling tickets is subject to the{' '}
+                    <Link
+                      to="/legal/organizer-payment-terms"
+                      target="_blank"
+                      className="underline underline-offset-2"
                     >
-                      {(stripeStatus?.is_stripe_connected ?? false)
-                        ? 'Continue setup'
-                        : 'Set up payments'}
-                    </Button>
-                  )}
+                      Organizer Payment Terms
+                    </Link>
+                    .
+                  </span>
                 </div>
-                <p className="text-muted-foreground text-xs">
-                  Selling tickets is subject to the{' '}
-                  <Link
-                    to="/legal/organizer-payment-terms"
-                    target="_blank"
-                    className="underline underline-offset-2"
+                {(stripeStatus?.stripe_charges_enabled ?? false) ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onOpenDashboard}
+                    disabled={isOpeningDashboard}
                   >
-                    Organizer Payment Terms
-                  </Link>
-                  .
-                </p>
+                    Stripe dashboard
+                    {isOpeningDashboard ? <Spinner /> : null}
+                  </Button>
+                ) : (
+                  <Button onClick={onSetupPayments} disabled={isStartingStripe}>
+                    {(stripeStatus?.is_stripe_connected ?? false)
+                      ? 'Continue setup'
+                      : 'Set up payments'}
+                  </Button>
+                )}
               </div>
+
+              <Separator />
 
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2">

@@ -138,7 +138,7 @@ export const MeetupDiscordCard = ({ meetupId }: Props): ReactNode => {
 
   return (
     <Card className="gap-2 p-4">
-      <h2 className="text-2xl font-semibold">Discord</h2>
+      <h2 className="text-lg font-semibold">Discord</h2>
 
       {!isLinked ? (
         <p>
@@ -245,46 +245,48 @@ export const MeetupDiscordCard = ({ meetupId }: Props): ReactNode => {
       ) : (
         <div className="flex flex-col gap-2">
           <p>Post an announcement for this meetup to a Discord channel.</p>
-          <Field>
-            <FieldLabel htmlFor="discord-server">Server</FieldLabel>
-            <Select
-              value={selectedServer}
-              onValueChange={(value) => {
-                setSelectedServer(value);
-                setSelectedChannel('');
-              }}
-            >
-              <SelectTrigger id="discord-server" className="w-full">
-                <SelectValue placeholder="Select a server" />
-              </SelectTrigger>
-              <SelectContent>
-                {servers?.map((server) => (
-                  <SelectItem key={server.id} value={server.id}>
-                    {server.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="discord-channel">Channel</FieldLabel>
-            <Select
-              value={selectedChannel}
-              onValueChange={setSelectedChannel}
-              disabled={selectedServer === ''}
-            >
-              <SelectTrigger id="discord-channel" className="w-full">
-                <SelectValue placeholder="Select a channel" />
-              </SelectTrigger>
-              <SelectContent>
-                {channels?.map((channel) => (
-                  <SelectItem key={channel.id} value={channel.id}>
-                    #{channel.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="discord-server">Server</FieldLabel>
+              <Select
+                value={selectedServer}
+                onValueChange={(value) => {
+                  setSelectedServer(value);
+                  setSelectedChannel('');
+                }}
+              >
+                <SelectTrigger id="discord-server" className="w-full">
+                  <SelectValue placeholder="Select a server" />
+                </SelectTrigger>
+                <SelectContent>
+                  {servers?.map((server) => (
+                    <SelectItem key={server.id} value={server.id}>
+                      {server.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="discord-channel">Channel</FieldLabel>
+              <Select
+                value={selectedChannel}
+                onValueChange={setSelectedChannel}
+                disabled={selectedServer === ''}
+              >
+                <SelectTrigger id="discord-channel" className="w-full">
+                  <SelectValue placeholder="Select a channel" />
+                </SelectTrigger>
+                <SelectContent>
+                  {channels?.map((channel) => (
+                    <SelectItem key={channel.id} value={channel.id}>
+                      #{channel.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
           <Field orientation="horizontal">
             <Checkbox
               id="discord-allow-rsvp"
