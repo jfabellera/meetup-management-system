@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogFooter,
   DialogHeader,
-  DialogOverlay,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
@@ -241,8 +240,8 @@ export const MeetupModal = ({
         onClose();
       }}
     >
-      <DialogOverlay className="backdrop-blur-xs" />
       <DialogContent
+        overlayClassName="backdrop-blur-xs"
         className="flex max-h-[90dvh] w-full flex-col gap-0 overflow-hidden p-0 sm:w-auto lg:max-w-[calc(100vw-2rem)]"
         showCloseButton={false}
         {...swipeHandlers}

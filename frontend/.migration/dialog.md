@@ -22,6 +22,18 @@ Consumers NOT needing changes (Dialog imported, but `asChild` only on Tooltip/Dr
 
 Typecheck clean; full `npm run build` succeeds (1529 modules).
 
+## Close-flash fix (follow-up, verified in-browser)
+
+Reported symptom: closing any dialog flashed the screen. Root-caused by driving the real dialog headless (Chrome CDP) and sampling opacity per frame during close:
+- Base UI keeps the backdrop mounted until the whole dialog finishes closing (gated by the content's longer exit), but tw-animate-css `animate-out` uses `animation-fill-mode: none`. So the backdrop's 150ms fade completed, then **reverted to opacity 1** (full dim) and sat there ~200ms until unmount — the flash. Radix never showed this because it unmounted each element at its own `animationend`.
+  - Fix: `data-closed:fill-mode-forwards` on `DialogOverlay` so the exit holds opacity 0 until unmount. Verified: backdrop now fades 1→0 monotonically and holds at 0 (no snap-back).
+- MeetupModal had a SECOND backdrop (sibling `<DialogOverlay className="backdrop-blur-xs">` plus the one inside `DialogContent`). Two Base UI `Dialog.Backdrop`s don't transition together — the blur one stuck at opacity 1 for ~400ms after content unmounted (screen stayed blurred).
+  - Fix: added an `overlayClassName` prop to `DialogContent` (forwarded to its single internal `DialogOverlay`); MeetupModal now passes `overlayClassName="backdrop-blur-xs"` and no longer renders its own backdrop. Verified: one backdrop, fades and unmounts with the content (~250ms), clean.
+
+Files: `src/components/ui/dialog.tsx` (fill-mode-forwards + `overlayClassName`), `src/components/Meetups/MeetupModal.tsx` (drop sibling backdrop, use `overlayClassName`). Typecheck + build green.
+
+Note for future overlay migrations (sheet, popover, dropdown-menu, select, tooltip): any lingering animated-out element that outlives its own animation needs `data-closed:fill-mode-forwards`, and never render two Base UI backdrops in one overlay.
+
 ## Left alone
 
 - base-lyra restyle (`rounded-none`, `ring-1 ring-foreground/10`, `bg-popover`, `IconPlaceholder`, blur backdrop defaults) NOT adopted.
