@@ -156,10 +156,10 @@ const OrganizerDashboard = (): ReactNode => {
           <ButtonGroup>
             <Button onClick={newMeetupOnClick}>New meetup</Button>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="icon" aria-label="More Options">
-                  <MoreHorizontalIcon />
-                </Button>
+              <DropdownMenuTrigger
+                render={<Button size="icon" aria-label="More Options" />}
+              >
+                <MoreHorizontalIcon />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuGroup>

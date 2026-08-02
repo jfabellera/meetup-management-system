@@ -127,30 +127,32 @@ export const GalleryActions = ({
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Gallery options"
-            className="-mt-0.5 -mr-1 size-7 shrink-0"
-          >
-            <FiMoreVertical />
-          </Button>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Gallery options"
+              className="-mt-0.5 -mr-1 size-7 shrink-0"
+            />
+          }
+        >
+          <FiMoreVertical />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {onOpenMeetup != null ? (
-            <DropdownMenuItem onSelect={() => onOpenMeetup()}>
+            <DropdownMenuItem onClick={() => onOpenMeetup()}>
               <FiCalendar />
               Open meetup
             </DropdownMenuItem>
           ) : null}
           {onOpenProfile != null ? (
-            <DropdownMenuItem onSelect={() => onOpenProfile()}>
+            <DropdownMenuItem onClick={() => onOpenProfile()}>
               <FiUser />
               View profile
             </DropdownMenuItem>
           ) : null}
-          <DropdownMenuItem onSelect={() => handleCopyUrl()}>
+          <DropdownMenuItem onClick={() => handleCopyUrl()}>
             <FiCopy />
             Copy URL
           </DropdownMenuItem>
@@ -159,8 +161,8 @@ export const GalleryActions = ({
           ) : null}
           {canEdit ? (
             <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
+              closeOnClick={false}
+              onClick={() => {
                 setEditOpen(true);
               }}
             >
@@ -170,8 +172,8 @@ export const GalleryActions = ({
           ) : null}
           {canTransfer ? (
             <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
+              closeOnClick={false}
+              onClick={() => {
                 setTransferOpen(true);
               }}
             >
@@ -182,10 +184,10 @@ export const GalleryActions = ({
           {canDelete ? (
             <DropdownMenuItem
               variant="destructive"
-              onSelect={(event) => {
-                // Keep the menu's own close from stealing focus, then open the
-                // confirmation dialog ourselves.
-                event.preventDefault();
+              // Keep the menu open so its close doesn't steal focus; open the
+              // confirmation dialog ourselves.
+              closeOnClick={false}
+              onClick={() => {
                 handleOpenChange(true);
               }}
             >

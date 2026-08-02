@@ -33,32 +33,40 @@ export const AddToCalendarButton = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          title="Add to calendar"
-          aria-label="Add to calendar"
-        >
-          <FiCalendar />
-        </Button>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Add to calendar"
+            aria-label="Add to calendar"
+          />
+        }
+      >
+        <FiCalendar />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem asChild>
-          <a href={links.google} target="_blank" rel="noopener noreferrer">
-            Google Calendar
-          </a>
+        <DropdownMenuItem
+          render={
+            <a href={links.google} target="_blank" rel="noopener noreferrer" />
+          }
+        >
+          Google Calendar
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <a href={links.outlook} target="_blank" rel="noopener noreferrer">
-            Outlook
-          </a>
+        <DropdownMenuItem
+          render={
+            <a href={links.outlook} target="_blank" rel="noopener noreferrer" />
+          }
+        >
+          Outlook
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          {/* An endpoint, not a data: URI, so mobile opens the calendar app. */}
-          <a href={`${config.apiUrl}/meetups/${meetup.slug}/calendar.ics`}>
-            Apple / other (.ics)
-          </a>
+        <DropdownMenuItem
+          // An endpoint, not a data: URI, so mobile opens the calendar app.
+          render={
+            <a href={`${config.apiUrl}/meetups/${meetup.slug}/calendar.ics`} />
+          }
+        >
+          Apple / other (.ics)
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

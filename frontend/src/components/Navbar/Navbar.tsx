@@ -170,22 +170,24 @@ const NavbarDropdown = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="relative rounded-full" aria-label="account menu">
-          <Avatar className="size-8">
-            <AvatarImage src={avatarSrc} />
-            <AvatarFallback>
-              <FiUser />
-            </AvatarFallback>
-          </Avatar>
-          {/* Notify admins of pending requests without opening the menu. */}
-          {pendingRequestCount > 0 ? (
-            <span
-              className="border-background absolute -top-0.5 -right-0.5 size-3 rounded-full border-2 bg-red-500"
-              aria-label={`${pendingRequestCount} pending organizer requests`}
-            />
-          ) : null}
-        </button>
+      <DropdownMenuTrigger
+        render={
+          <button className="relative rounded-full" aria-label="account menu" />
+        }
+      >
+        <Avatar className="size-8">
+          <AvatarImage src={avatarSrc} />
+          <AvatarFallback>
+            <FiUser />
+          </AvatarFallback>
+        </Avatar>
+        {/* Notify admins of pending requests without opening the menu. */}
+        {pendingRequestCount > 0 ? (
+          <span
+            className="border-background absolute -top-0.5 -right-0.5 size-3 rounded-full border-2 bg-red-500"
+            aria-label={`${pendingRequestCount} pending organizer requests`}
+          />
+        ) : null}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <div className="flex flex-col items-center gap-2 p-2">

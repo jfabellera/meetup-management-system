@@ -232,7 +232,7 @@ export const MeetupModal = ({
         // HACK: don't close the modal when clicking on a dropdown menu
         if (
           eventDetails.reason === 'outside-press' &&
-          document.querySelector('[data-radix-popper-content-wrapper]')
+          document.querySelector('[data-slot=dropdown-menu-content]')
         ) {
           eventDetails.cancel();
           return;
