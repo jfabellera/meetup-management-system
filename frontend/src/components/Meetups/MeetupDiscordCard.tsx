@@ -184,14 +184,17 @@ export const MeetupDiscordCard = ({ meetupId }: Props): ReactNode => {
             </FieldLabel>
           </Field>
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="secondary">
-              <a
-                href={`https://discord.com/channels/${message.guild_id}/${message.channel_id}/${message.message_id}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                View in Discord
-              </a>
+            <Button
+              variant="secondary"
+              render={
+                <a
+                  href={`https://discord.com/channels/${message.guild_id}/${message.channel_id}/${message.message_id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                />
+              }
+            >
+              View in Discord
             </Button>
             <Button
               onClick={() => {

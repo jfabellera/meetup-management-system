@@ -41,10 +41,13 @@ export const MeetupEventbriteCard = ({ meetupId }: Props): ReactNode => {
         automatically, but you can pull the latest list manually at any time.
       </p>
       <div className="flex flex-wrap gap-2">
-        <Button asChild variant="secondary">
-          <a href={meetup.eventbrite_url} target="_blank" rel="noreferrer">
-            View on Eventbrite
-          </a>
+        <Button
+          variant="secondary"
+          render={
+            <a href={meetup.eventbrite_url} target="_blank" rel="noreferrer" />
+          }
+        >
+          View on Eventbrite
         </Button>
         <Button
           onClick={() => {
