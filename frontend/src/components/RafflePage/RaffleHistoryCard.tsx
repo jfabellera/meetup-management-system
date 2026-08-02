@@ -94,15 +94,17 @@ const RaffleHistoryCard = ({
           </p>
         </div>
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-          <DialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={isDeleting}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <FiX />
-            </Button>
+          <DialogTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={isDeleting}
+                onClick={(e) => e.stopPropagation()}
+              />
+            }
+          >
+            <FiX />
           </DialogTrigger>
           {/* Stop card-selection clicks from firing while interacting with the dialog. */}
           <DialogContent
@@ -141,18 +143,20 @@ const RaffleHistoryCard = ({
               ) : null}
             </DialogHeader>
             <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+              <DialogClose render={<Button variant="outline" />}>
+                Cancel
               </DialogClose>
-              <DialogClose asChild>
-                <Button
-                  variant="destructive"
-                  disabled={cooldown > 0}
-                  onClick={() => void handleDelete()}
-                >
-                  {cooldown > 0 ? `Delete (${cooldown})` : 'Delete'}
-                  {isDeleting && <Spinner />}
-                </Button>
+              <DialogClose
+                render={
+                  <Button
+                    variant="destructive"
+                    disabled={cooldown > 0}
+                    onClick={() => void handleDelete()}
+                  />
+                }
+              >
+                {cooldown > 0 ? `Delete (${cooldown})` : 'Delete'}
+                {isDeleting && <Spinner />}
               </DialogClose>
             </DialogFooter>
           </DialogContent>

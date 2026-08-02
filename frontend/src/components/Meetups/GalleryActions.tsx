@@ -225,8 +225,8 @@ export const GalleryActions = ({
               ) : null}
             </DialogHeader>
             <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="secondary">Cancel</Button>
+              <DialogClose render={<Button variant="secondary" />}>
+                Cancel
               </DialogClose>
               <Button
                 variant="destructive"
@@ -316,10 +316,8 @@ const TransferGalleryDialog = ({
             />
           </Field>
           <DialogFooter className="mt-4">
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">
-                Cancel
-              </Button>
+            <DialogClose render={<Button type="button" variant="secondary" />}>
+              Cancel
             </DialogClose>
             <Button
               type="submit"
@@ -434,10 +432,8 @@ const EditGalleryDialog = ({
             }}
           />
           <DialogFooter className="mt-4">
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">
-                Cancel
-              </Button>
+            <DialogClose render={<Button type="button" variant="secondary" />}>
+              Cancel
             </DialogClose>
             <Button type="submit" disabled={busy || url.trim() === ''}>
               Save

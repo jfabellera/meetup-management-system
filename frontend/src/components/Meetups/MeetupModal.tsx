@@ -228,37 +228,42 @@ export const MeetupModal = ({
   return (
     <Dialog
       open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) onClose();
+      onOpenChange={(open, eventDetails) => {
+        if (open) return;
+        // HACK: don't close the modal when clicking on a dropdown menu
+        if (
+          eventDetails.reason === 'outside-press' &&
+          document.querySelector('[data-radix-popper-content-wrapper]')
+        ) {
+          eventDetails.cancel();
+          return;
+        }
+        onClose();
       }}
     >
       <DialogOverlay className="backdrop-blur-xs" />
       <DialogContent
         className="flex max-h-[90dvh] w-full flex-col gap-0 overflow-hidden p-0 sm:w-auto lg:max-w-[calc(100vw-2rem)]"
         showCloseButton={false}
-        onInteractOutside={(event) => {
-          // HACK: don't close the modal when clicking on a dropdown menu
-          if (document.querySelector('[data-radix-popper-content-wrapper]')) {
-            event.preventDefault();
-          }
-        }}
         {...swipeHandlers}
       >
-        <DialogClose asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Close"
-            aria-label="Close"
-            className={cn(
-              'absolute top-3 right-3 z-20 size-8',
-              hasImage &&
-                !rsvpPanelOpen &&
-                'rounded-full bg-black/40 text-white hover:bg-black/60 hover:text-white'
-            )}
-          >
-            <FiX className="size-4" />
-          </Button>
+        <DialogClose
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Close"
+              aria-label="Close"
+              className={cn(
+                'absolute top-3 right-3 z-20 size-8',
+                hasImage &&
+                  !rsvpPanelOpen &&
+                  'rounded-full bg-black/40 text-white hover:bg-black/60 hover:text-white'
+              )}
+            />
+          }
+        >
+          <FiX className="size-4" />
         </DialogClose>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-none lg:flex-row lg:overflow-visible">
           <div

@@ -577,10 +577,8 @@ export const MeetupRsvpForm = ({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">
-                Keep RSVP
-              </Button>
+            <DialogClose render={<Button type="button" variant="secondary" />}>
+              Keep RSVP
             </DialogClose>
             <Button
               type="button"

@@ -128,10 +128,12 @@ export const DangerZoneCard = ({ meetupId }: Props): ReactNode => {
               if (!next) resetTransfer();
             }}
           >
-            <DialogTrigger asChild>
-              <Button className="mt-auto self-start" variant="outline">
-                Transfer meetup
-              </Button>
+            <DialogTrigger
+              render={
+                <Button className="mt-auto self-start" variant="outline" />
+              }
+            >
+              Transfer meetup
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -198,8 +200,8 @@ export const DangerZoneCard = ({ meetupId }: Props): ReactNode => {
                 />
               </Field>
               <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="secondary">Cancel</Button>
+                <DialogClose render={<Button variant="secondary" />}>
+                  Cancel
                 </DialogClose>
                 <Button
                   variant="destructive"
@@ -229,10 +231,12 @@ export const DangerZoneCard = ({ meetupId }: Props): ReactNode => {
               if (!next) setConfirmText('');
             }}
           >
-            <DialogTrigger asChild>
-              <Button className="mt-auto self-start" variant="destructive">
-                Delete meetup
-              </Button>
+            <DialogTrigger
+              render={
+                <Button className="mt-auto self-start" variant="destructive" />
+              }
+            >
+              Delete meetup
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -256,8 +260,8 @@ export const DangerZoneCard = ({ meetupId }: Props): ReactNode => {
                 />
               </Field>
               <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="secondary">Cancel</Button>
+                <DialogClose render={<Button variant="secondary" />}>
+                  Cancel
                 </DialogClose>
                 <Button
                   variant="destructive"

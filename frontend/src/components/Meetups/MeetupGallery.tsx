@@ -215,19 +215,21 @@ const AddGalleryTile = ({
         if (!next) reset();
       }}
     >
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          className="text-muted-foreground hover:border-ring hover:text-foreground rounded-md border border-dashed transition-colors"
-          aria-label="Add a gallery"
-        >
-          <AspectRatio ratio={1}>
-            <div className="flex size-full flex-col items-center justify-center gap-1">
-              <FiPlus className="size-6" />
-              <span className="text-xs font-medium">Add gallery</span>
-            </div>
-          </AspectRatio>
-        </button>
+      <DialogTrigger
+        render={
+          <button
+            type="button"
+            className="text-muted-foreground hover:border-ring hover:text-foreground rounded-md border border-dashed transition-colors"
+            aria-label="Add a gallery"
+          />
+        }
+      >
+        <AspectRatio ratio={1}>
+          <div className="flex size-full flex-col items-center justify-center gap-1">
+            <FiPlus className="size-6" />
+            <span className="text-xs font-medium">Add gallery</span>
+          </div>
+        </AspectRatio>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -286,10 +288,8 @@ const AddGalleryTile = ({
             />
           </Field>
           <DialogFooter className="mt-4">
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">
-                Cancel
-              </Button>
+            <DialogClose render={<Button type="button" variant="secondary" />}>
+              Cancel
             </DialogClose>
             <Button type="submit" disabled={submitDisabled}>
               Add

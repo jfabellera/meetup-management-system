@@ -209,10 +209,12 @@ export const MeetupDiscordCard = ({ meetupId }: Props): ReactNode => {
               open={confirmDeleteOpen}
               onOpenChange={setConfirmDeleteOpen}
             >
-              <DialogTrigger asChild>
-                <Button variant="destructive" disabled={isDeleting}>
-                  Delete
-                </Button>
+              <DialogTrigger
+                render={
+                  <Button variant="destructive" disabled={isDeleting} />
+                }
+              >
+                Delete
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -223,8 +225,8 @@ export const MeetupDiscordCard = ({ meetupId }: Props): ReactNode => {
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant="secondary">Cancel</Button>
+                  <DialogClose render={<Button variant="secondary" />}>
+                    Cancel
                   </DialogClose>
                   <Button
                     variant="destructive"
