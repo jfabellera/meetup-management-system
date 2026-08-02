@@ -4,7 +4,7 @@
 
 ## Changed
 
-- `src/components/ui/aspect-ratio.tsx` — replaced the `radix-ui` `AspectRatioPrimitive.Root` passthrough with a plain `<div>` using the Tailwind v4 `aspect-(--ratio)` utility driven by a `--ratio` CSS variable, matching the shadcn base registry shape (`ratio` is now a required prop; it was optional with default 1 on Radix, but every consumer already passes it explicitly). Kept the project's `data-slot="aspect-ratio"` and `React.JSX.Element` return-type conventions. Leftover scan clean: `grep -n "radix-ui\|@radix-ui\|IconPlaceholder" src/components/ui/aspect-ratio.tsx` → no matches.
+- `src/components/ui/aspect-ratio.tsx` — removed the `radix-ui` `AspectRatioPrimitive.Root` passthrough. **Correction (2026-08-02):** the first attempt used the shadcn base-registry shape (single div + Tailwind `aspect-(--ratio)`), but bare CSS `aspect-ratio` lets layout context override the box height in some cases — a rounded avatar (ImageUploadField, ratio 1) rendered as an oval. Reverting the commit fixed it, confirming this file. Final version reproduces Radix's proven technique as a plain div (still no radix import): an outer `relative w-full` box with inline `padding-bottom: ${100/ratio}%` (ratio-forced height that layout can't collapse) and an inner `absolute inset-0` layer holding the children. `ratio` defaults to 1. Verified in-browser (headless Chrome): the register-page avatar renders a 160×160 circle with a landscape image, and MeetupCards render exact 2:1 boxes with the image filling them. Leftover scan clean: `grep -n "radix-ui\|@radix-ui\|IconPlaceholder"` → no matches.
 
 Consumers audited, none needed edits (all pass `ratio` and use `size-full` children, which fill the box identically):
 - `src/components/Meetups/MeetupCard.tsx`
