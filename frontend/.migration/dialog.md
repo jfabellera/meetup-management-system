@@ -34,6 +34,12 @@ Files: `src/components/ui/dialog.tsx` (fill-mode-forwards + `overlayClassName`),
 
 Note for future overlay migrations (sheet, popover, dropdown-menu, select, tooltip): any lingering animated-out element that outlives its own animation needs `data-closed:fill-mode-forwards`, and never render two Base UI backdrops in one overlay.
 
+## Swipe-to-dismiss fix (follow-up, verified in-browser)
+
+Reported symptom: on mobile, swipe-down-to-dismiss stopped working on long (scrollable) modals (short ones were fine). Root-caused with touch emulation + per-event logging: the `useSwipeToDismiss` hook used React pointer handlers on the Popup. Radix's `react-remove-scroll` used to install a non-passive document `touchmove` listener that kept the touch stream alive; Base UI's scroll lock (just `overflow:hidden` on `<body>`) does not. Without it, the browser claims the vertical drag for scrolling and fires `pointercancel` after the first move, springing the card back — and React's synthetic touch/pointer handlers are passive, so they can't `preventDefault` to stop it.
+
+Fix (in `src/hooks/useSwipeToDismiss.ts`, not the dialog wrapper): rewrote the hook to attach native **non-passive** `touchmove`/`touchend`/`touchcancel` listeners on first touch, and `preventDefault()` the move once it decides the gesture is a downward pull at `scrollTop === 0`. Non-swipe gestures (upward, or not at top) release immediately so native scrolling is untouched. The hook now returns a single `onTouchStart` (still spread onto `DialogContent` via `{...swipeHandlers}`, so MeetupModal is unchanged). Verified in-browser: no more `pointercancel`, the card follows the finger and dismisses; on a scrollable modal, scrolling up/down still works and only a downward pull at the top dismisses.
+
 ## Left alone
 
 - base-lyra restyle (`rounded-none`, `ring-1 ring-foreground/10`, `bg-popover`, `IconPlaceholder`, blur backdrop defaults) NOT adopted.

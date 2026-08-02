@@ -1,4 +1,4 @@
-import { useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { useRef, type TouchEvent as ReactTouchEvent } from 'react';
 
 // Movement (px) before a downward pointer gesture counts as a swipe rather
 // than a jitter or a tap.
@@ -14,10 +14,7 @@ const OVERLAY_DISMISS_TRANSITION = 'opacity 0.25s ease-out';
 const OVERLAY_SPRING_BACK = 'opacity 0.2s ease-out';
 
 interface SwipeHandlers {
-  onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
-  onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
-  onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void;
-  onPointerCancel: (event: ReactPointerEvent<HTMLElement>) => void;
+  onTouchStart: (event: ReactTouchEvent<HTMLElement>) => void;
 }
 
 interface UseSwipeToDismissOptions {
@@ -44,133 +41,161 @@ const isScrolledToTop = (
 /**
  * Swipe-down-to-dismiss gesture, intended for full-screen-ish dialogs on touch.
  *
- * Spread the returned handlers onto the element that should follow the finger
- * (typically the dialog content). The gesture is driven imperatively on that
- * element's own node, so dragging never re-renders the caller. It only engages
- * on a downward pull that starts at the top of the scrollable region, so it
- * never steals a scroll.
+ * Spread the returned handler onto the element that should follow the finger
+ * (typically the dialog content). On the first touch we attach non-passive
+ * `touchmove`/`touchend` listeners to that element's own node and drive the
+ * drag imperatively, so dragging never re-renders the caller.
  *
- * Centering is left to the element's own layout; the handlers add a
+ * It only engages on a downward pull that starts at the top of the scrollable
+ * region, and once engaged it calls `preventDefault()` on the move so the
+ * browser doesn't hand the gesture to native scrolling (which otherwise fires
+ * `pointercancel`/steals the drag). React's synthetic touch handlers are
+ * passive and cannot `preventDefault`, which is why the listeners are native.
+ * When the gesture isn't ours (upward, or not at the top) we bail immediately
+ * and leave native scrolling untouched.
+ *
+ * Centering is left to the element's own layout; the handler adds a
  * `translateY` offset on top, so the two compose rather than fight.
  *
- * Returns `undefined` when `enabled` is false so the handlers can be spread
+ * Returns `undefined` when `enabled` is false so the handler can be spread
  * directly (`<El {...swipe} />`) with no effect.
  */
 export const useSwipeToDismiss = ({
   enabled,
   onDismiss,
 }: UseSwipeToDismissOptions): SwipeHandlers | undefined => {
-  const state = useRef({
-    card: null as HTMLElement | null,
-    overlays: [] as HTMLElement[],
-    active: false,
-    dragging: false,
-    startY: 0,
-    startTime: 0,
-  });
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   if (!enabled) return undefined;
 
-  const onPointerDown = (event: ReactPointerEvent<HTMLElement>): void => {
-    // Swipe-to-dismiss is a touch gesture; a mouse (or pen) has no equivalent,
-    // so ignore those pointers rather than have the dialog follow the cursor.
-    if (event.pointerType !== 'touch') {
-      state.current = { ...state.current, active: false };
-      return;
-    }
-    state.current = {
-      card: event.currentTarget,
-      overlays: [],
-      active: true,
-      dragging: false,
-      startY: event.clientY,
-      startTime: event.timeStamp,
+  const onTouchStart = (event: ReactTouchEvent<HTMLElement>): void => {
+    // Single-finger gestures only; a pinch/second finger is never a dismiss.
+    if (event.touches.length !== 1) return;
+    // A stray touchstart mid-gesture: tear down the previous one first.
+    cleanupRef.current?.();
+
+    const card = event.currentTarget;
+    const startTouch = event.touches[0];
+    const startX = startTouch.clientX;
+    const startY = startTouch.clientY;
+    const startTime = event.timeStamp;
+    const overlays: HTMLElement[] = [];
+    let decided = false;
+    let dragging = false;
+
+    const cleanup = (): void => {
+      card.removeEventListener('touchmove', onMove);
+      card.removeEventListener('touchend', onEnd);
+      card.removeEventListener('touchcancel', onCancel);
+      cleanupRef.current = null;
     };
-  };
 
-  const onPointerMove = (event: ReactPointerEvent<HTMLElement>): void => {
-    const s = state.current;
-    if (!s.active || s.card == null) return;
-    const dy = event.clientY - s.startY;
+    const onMove = (moveEvent: TouchEvent): void => {
+      const touch = moveEvent.touches[0];
+      if (touch == null) return;
+      const dy = touch.clientY - startY;
+      const dx = touch.clientX - startX;
 
-    if (!s.dragging) {
-      // Decide once, on the first meaningful movement, whether this gesture is
-      // ours (downward, at the top) or belongs to the native scroll.
-      if (dy > SWIPE_SLOP && isScrolledToTop(event.target, s.card)) {
-        s.dragging = true;
-        s.card.style.transition = 'none';
-        // Grab the backdrop(s) so they can fade in step with the drag.
-        s.overlays = Array.from(
-          document.querySelectorAll<HTMLElement>('[data-slot="dialog-overlay"]')
-        );
-        s.overlays.forEach((overlay) => (overlay.style.transition = 'none'));
-      } else if (dy > SWIPE_SLOP || dy < -SWIPE_SLOP) {
-        s.active = false;
-        return;
-      } else {
-        return;
+      if (!decided) {
+        if (Math.abs(dy) < SWIPE_SLOP && Math.abs(dx) < SWIPE_SLOP) return;
+        decided = true;
+        // Ours only when it's a downward, mostly-vertical pull that starts at
+        // the top of the scroll region; anything else stays a native scroll.
+        if (
+          dy > SWIPE_SLOP &&
+          dy > Math.abs(dx) &&
+          isScrolledToTop(moveEvent.target, card)
+        ) {
+          dragging = true;
+          card.style.transition = 'none';
+          overlays.push(
+            ...Array.from(
+              document.querySelectorAll<HTMLElement>(
+                '[data-slot="dialog-overlay"]'
+              )
+            )
+          );
+          overlays.forEach((overlay) => (overlay.style.transition = 'none'));
+        } else {
+          // Not our gesture — release so native scrolling proceeds normally.
+          cleanup();
+          return;
+        }
       }
-    }
 
-    const offset = Math.max(0, dy - SWIPE_SLOP);
-    s.card.style.transform = `translateY(${offset}px)`;
-    // Fade the backdrop out as the card travels toward the bottom of the
-    // viewport, so it's gone by the time a full swipe would clear the screen.
-    const opacity = String(1 - Math.min(offset / window.innerHeight, 1));
-    s.overlays.forEach((overlay) => (overlay.style.opacity = opacity));
-  };
+      if (!dragging) return;
+      // Claim the gesture: without this the browser starts scrolling and fires
+      // pointercancel, springing the card back.
+      moveEvent.preventDefault();
+      const offset = Math.max(0, dy - SWIPE_SLOP);
+      card.style.transform = `translateY(${offset}px)`;
+      // Fade the backdrop out as the card travels toward the bottom of the
+      // viewport, so it's gone by the time a full swipe would clear the screen.
+      const opacity = String(1 - Math.min(offset / window.innerHeight, 1));
+      overlays.forEach((overlay) => (overlay.style.opacity = opacity));
+    };
 
-  const onPointerUp = (event: ReactPointerEvent<HTMLElement>): void => {
-    const s = state.current;
-    state.current = { ...s, active: false, dragging: false };
-    const card = s.card;
-    if (!s.dragging || card == null) return;
+    const onEnd = (endEvent: TouchEvent): void => {
+      cleanup();
+      if (!dragging) return;
+      const touch = endEvent.changedTouches[0];
+      const dy = touch != null ? touch.clientY - startY : 0;
+      const dt = endEvent.timeStamp - startTime;
+      const velocity = dt > 0 ? dy / dt : 0;
 
-    const dy = event.clientY - s.startY;
-    const dt = event.timeStamp - s.startTime;
-    const velocity = dt > 0 ? dy / dt : 0;
+      if (dy > SWIPE_DISMISS_OFFSET || velocity > SWIPE_DISMISS_VELOCITY) {
+        card.style.animation = 'none';
+        card.style.transition = SWIPE_DISMISS_TRANSITION;
+        card.style.transform = `translateY(${window.innerHeight}px)`;
+        card.style.opacity = '0';
+        // Finish fading the backdrop out alongside the card. `animation: none`
+        // keeps its own close animation from restarting it at full opacity.
+        overlays.forEach((overlay) => {
+          overlay.style.animation = 'none';
+          overlay.style.transition = OVERLAY_DISMISS_TRANSITION;
+          overlay.style.opacity = '0';
+        });
+        const finish = (transitionEvent: TransitionEvent): void => {
+          if (transitionEvent.propertyName !== 'transform') return;
+          card.removeEventListener('transitionend', finish);
+          onDismiss();
+        };
+        card.addEventListener('transitionend', finish);
+      } else {
+        card.style.transition = SWIPE_SPRING_BACK;
+        card.style.transform = 'translateY(0px)';
+        overlays.forEach((overlay) => {
+          overlay.style.transition = OVERLAY_SPRING_BACK;
+          overlay.style.opacity = '';
+        });
+        const clear = (): void => {
+          card.style.transition = '';
+          card.style.transform = '';
+          overlays.forEach((overlay) => {
+            overlay.style.transition = '';
+          });
+          card.removeEventListener('transitionend', clear);
+        };
+        card.addEventListener('transitionend', clear);
+      }
+    };
 
-    if (dy > SWIPE_DISMISS_OFFSET || velocity > SWIPE_DISMISS_VELOCITY) {
-      card.style.animation = 'none';
-      card.style.transition = SWIPE_DISMISS_TRANSITION;
-      card.style.transform = `translateY(${window.innerHeight}px)`;
-      card.style.opacity = '0';
-      // Finish fading the backdrop out alongside the card. `animation: none`
-      // keeps its own close animation from restarting it at full opacity.
-      s.overlays.forEach((overlay) => {
-        overlay.style.animation = 'none';
-        overlay.style.transition = OVERLAY_DISMISS_TRANSITION;
-        overlay.style.opacity = '0';
-      });
-      const finish = (transitionEvent: TransitionEvent): void => {
-        if (transitionEvent.propertyName !== 'transform') return;
-        card.removeEventListener('transitionend', finish);
-        onDismiss();
-      };
-      card.addEventListener('transitionend', finish);
-    } else {
+    const onCancel = (): void => {
+      cleanup();
+      if (!dragging) return;
       card.style.transition = SWIPE_SPRING_BACK;
       card.style.transform = 'translateY(0px)';
-      s.overlays.forEach((overlay) => {
+      overlays.forEach((overlay) => {
         overlay.style.transition = OVERLAY_SPRING_BACK;
         overlay.style.opacity = '';
       });
-      const clear = (): void => {
-        card.style.transition = '';
-        card.style.transform = '';
-        s.overlays.forEach((overlay) => {
-          overlay.style.transition = '';
-        });
-        card.removeEventListener('transitionend', clear);
-      };
-      card.addEventListener('transitionend', clear);
-    }
+    };
+
+    card.addEventListener('touchmove', onMove, { passive: false });
+    card.addEventListener('touchend', onEnd, { passive: false });
+    card.addEventListener('touchcancel', onCancel, { passive: false });
+    cleanupRef.current = cleanup;
   };
 
-  return {
-    onPointerDown,
-    onPointerMove,
-    onPointerUp,
-    onPointerCancel: onPointerUp,
-  };
+  return { onTouchStart };
 };
