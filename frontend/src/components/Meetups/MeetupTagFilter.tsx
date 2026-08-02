@@ -51,15 +51,17 @@ export const MeetupTagFilter = ({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={selectedCount > 0 ? 'default' : 'ghost'}
-          size="sm"
-          className="flex gap-2"
-        >
-          <ListFilter />
-          {selectedCount > 0 && <span>{selectedCount}</span>}
-        </Button>
+      <PopoverTrigger
+        render={
+          <Button
+            variant={selectedCount > 0 ? 'default' : 'ghost'}
+            size="sm"
+            className="flex gap-2"
+          />
+        }
+      >
+        <ListFilter />
+        {selectedCount > 0 && <span>{selectedCount}</span>}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 overflow-hidden p-0">
         <div className="flex flex-col gap-2.5 p-3">

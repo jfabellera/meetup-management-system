@@ -79,10 +79,10 @@ const SortPopover = ({
   const [open, setOpen] = useState(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" aria-label="Sort">
-          <ArrowUpDown />
-        </Button>
+      <PopoverTrigger
+        render={<Button variant="ghost" size="sm" aria-label="Sort" />}
+      >
+        <ArrowUpDown />
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">
         <div className="p-3">
@@ -147,16 +147,18 @@ const FilterPopover = ({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant={count > 0 ? 'default' : 'ghost'}
-          size="sm"
-          className="gap-2"
-          aria-label={label}
-        >
-          <ListFilter />
-          {count > 0 ? <span>{count}</span> : null}
-        </Button>
+      <PopoverTrigger
+        render={
+          <Button
+            variant={count > 0 ? 'default' : 'ghost'}
+            size="sm"
+            className="gap-2"
+            aria-label={label}
+          />
+        }
+      >
+        <ListFilter />
+        {count > 0 ? <span>{count}</span> : null}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">
         <div className="flex items-center justify-between p-3">
