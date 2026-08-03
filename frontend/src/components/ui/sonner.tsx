@@ -35,8 +35,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }
       toastOptions={{
         classNames: {
+          // Radix modals set pointer-events:none on body; keep toasts interactive.
+          toast: 'pointer-events-auto',
+          content: 'flex-1',
           actionButton:
             'bg-transparent! text-current! border! border-current/25! hover:bg-current/10!',
+          closeButton:
+            'static! order-last shrink-0 transform-none! bg-transparent! border-none! text-current! hover:bg-current/10!',
         },
       }}
       {...props}
