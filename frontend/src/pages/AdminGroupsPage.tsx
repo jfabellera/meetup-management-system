@@ -417,6 +417,25 @@ const AdminGroupsPage = (): ReactNode => {
                         : prev
                     )
                   }
+                  items={[
+                    { value: NO_SERVER, label: 'None' },
+                    ...(discordServers?.map((server) => ({
+                      value: server.id,
+                      label: server.name,
+                    })) ?? []),
+                    ...(form?.discord_server_id != null &&
+                    form.discord_server_id !== '' &&
+                    !(discordServers ?? []).some(
+                      (server) => server.id === form.discord_server_id
+                    )
+                      ? [
+                          {
+                            value: form.discord_server_id,
+                            label: `Unknown server (${form.discord_server_id})`,
+                          },
+                        ]
+                      : []),
+                  ]}
                 >
                   <SelectTrigger id="group-discord" className="w-full">
                     <SelectValue placeholder="Select a server" />

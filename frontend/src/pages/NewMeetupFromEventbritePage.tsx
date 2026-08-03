@@ -139,6 +139,10 @@ const NewMeetupFromEventbritePage = (): ReactNode => {
             void formik.setFieldValue(id, selected);
           }}
           disabled={disabled}
+          items={options?.map((option) => ({
+            value: option.id,
+            label: option.name,
+          }))}
         >
           <SelectTrigger id={id} className="w-full">
             <SelectValue placeholder="Select" />

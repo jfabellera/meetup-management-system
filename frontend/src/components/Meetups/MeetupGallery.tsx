@@ -254,6 +254,10 @@ const AddGalleryTile = ({
                   if (value === 'me') setContributorName('');
                 }}
                 disabled={isLoading}
+                items={{
+                  me: 'I took these',
+                  other: 'Someone else took these',
+                }}
               >
                 <SelectTrigger id="gallery-contributor-type" className="w-full">
                   <SelectValue placeholder="Who took these photos?" />

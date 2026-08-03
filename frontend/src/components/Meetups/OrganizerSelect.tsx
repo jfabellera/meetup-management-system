@@ -40,7 +40,27 @@ const OrganizerSelect = ({
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger id={id} className="w-full">
-        <SelectValue placeholder={placeholder} />
+        {/* Base UI's Value renders the raw value by default; map it back to the
+            organizer's avatar + name to match the selected item. */}
+        <SelectValue placeholder={placeholder}>
+          {(selected) => {
+            const organizer = options.find((o) => o.id === selected);
+            return organizer == null ? null : (
+              <>
+                <Avatar size="sm">
+                  <AvatarImage
+                    src={organizer.photo_url}
+                    alt={organizer.display_name}
+                  />
+                  <AvatarFallback>
+                    {organizer.display_name[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {organizer.display_name}
+              </>
+            );
+          }}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {options.map((organizer) => (

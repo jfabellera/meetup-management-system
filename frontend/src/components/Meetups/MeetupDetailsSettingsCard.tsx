@@ -274,6 +274,10 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
                         void formik.setFieldValue('organizerName', '');
                       }
                     }}
+                    items={{
+                      me: 'I organized this',
+                      other: 'Someone else organized this',
+                    }}
                   >
                     <SelectTrigger id="organizerType" className="w-full">
                       <SelectValue placeholder="Who organized this meetup?" />

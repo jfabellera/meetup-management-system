@@ -259,6 +259,10 @@ export const MeetupDiscordCard = ({ meetupId }: Props): ReactNode => {
                   setSelectedServer(value);
                   setSelectedChannel('');
                 }}
+                items={servers?.map((server) => ({
+                  value: server.id,
+                  label: server.name,
+                }))}
               >
                 <SelectTrigger id="discord-server" className="w-full">
                   <SelectValue placeholder="Select a server" />
@@ -278,6 +282,10 @@ export const MeetupDiscordCard = ({ meetupId }: Props): ReactNode => {
                 value={selectedChannel}
                 onValueChange={setSelectedChannel}
                 disabled={selectedServer === ''}
+                items={channels?.map((channel) => ({
+                  value: channel.id,
+                  label: `#${channel.name}`,
+                }))}
               >
                 <SelectTrigger id="discord-channel" className="w-full">
                   <SelectValue placeholder="Select a channel" />
