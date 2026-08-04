@@ -10,6 +10,12 @@ import {
   DialogOverlay,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 import { useSwipeToDismiss } from '@/hooks/useSwipeToDismiss';
 import { cn } from '@/lib/utils';
@@ -17,7 +23,7 @@ import { type SimpleTicketInfo } from '@keebmeet/shared';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArchiveIcon, EyeOffIcon, Settings } from 'lucide-react';
+import { ArchiveIcon, EyeOffIcon, Settings, Ticket } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   FiCalendar,
@@ -26,22 +32,23 @@ import {
   FiLink,
   FiMap,
   FiMapPin,
+  FiMoreHorizontal,
   FiTag,
   FiUser,
   FiUserCheck,
   FiX,
 } from 'react-icons/fi';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useHoldCountdown } from '../../hooks/useHoldCountdown';
 import { socket } from '../../socket';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { meetupSlice, useGetMeetupQuery } from '../../store/meetupSlice';
 import { formatMoney } from '../../util/money';
 import { hasMeetupEnded, isMeetupHappeningNow } from '../../util/timeUtil';
-import { CopyButton } from '../CopyButton';
 import { isNotFoundError } from '../Guards/Guards';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-import { AddToCalendarButton } from './AddToCalendarButton';
+import { AddToCalendarSubMenu } from './AddToCalendarSubMenu';
 import { HoldCountdown } from './HoldCountdown';
 import { MeetupCapacityStatus } from './MeetupCapacityStatus';
 import { UNLISTED_REASON_TEXT } from './MeetupCard';
@@ -189,6 +196,12 @@ export const MeetupModal = ({
   const hasPendingHold = effectiveTicket?.payment_status === 'pending';
   const isConfirmedAttendee = effectiveTicket != null && !hasPendingHold;
   const showRsvpAction = !isRsvp && isRsvpable;
+  const showCalendarAction = !hasEnded && !meetup.is_archive;
+  const showBadges =
+    isHappeningNow ||
+    hasEnded ||
+    meetup.is_archive ||
+    meetup.is_unlisted === true;
 
   const linkedOrganizers =
     meetup.organizers != null
@@ -284,11 +297,61 @@ export const MeetupModal = ({
               ) : null}
               <div className="flex flex-col p-4 pb-0">
                 <DialogHeader className="space-y-0 text-left">
-                  {isHappeningNow ||
-                  hasEnded ||
-                  meetup.is_archive ||
-                  meetup.is_unlisted === true ||
-                  (meetup.tags?.length ?? 0) > 0 ? (
+                  <div
+                    className={cn(
+                      'flex items-start justify-between gap-2',
+                      !hasImage && 'pr-8'
+                    )}
+                  >
+                    <DialogTitle className="min-w-0 text-2xl font-bold">
+                      {meetup.name}
+                    </DialogTitle>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="More actions"
+                          aria-label="More actions"
+                          className="-mt-1 shrink-0"
+                        >
+                          <FiMoreHorizontal />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="gap-2"
+                          onClick={() => {
+                            void navigator.clipboard.writeText(
+                              `${window.location.origin}/meetup/${meetupId}`
+                            );
+                            toast.success('Link copied to clipboard');
+                          }}
+                        >
+                          <FiLink />
+                          Copy link
+                        </DropdownMenuItem>
+                        {showCalendarAction ? (
+                          <AddToCalendarSubMenu meetup={meetup} />
+                        ) : null}
+                        {!onMapPage ? (
+                          <DropdownMenuItem
+                            className="gap-2"
+                            onClick={() => {
+                              onClose();
+                              void navigate('/map', {
+                                state: { focusSlug: meetup.slug },
+                              });
+                            }}
+                          >
+                            <FiMap />
+                            View on map
+                          </DropdownMenuItem>
+                        ) : null}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  {showBadges ? (
                     <div className="flex flex-wrap items-center gap-2 pb-2">
                       {isHappeningNow ? (
                         <Badge className="bg-green-600 text-white">
@@ -327,19 +390,13 @@ export const MeetupModal = ({
                           </TooltipContent>
                         </Tooltip>
                       ) : null}
-                      {meetup.tags?.map((tag) => (
-                        <TagBadge key={tag.id} tag={tag} />
-                      ))}
                     </div>
                   ) : null}
-                  <DialogTitle className="pb-2 text-2xl font-bold">
-                    {meetup.name}
-                  </DialogTitle>
                 </DialogHeader>
                 <div className="flex flex-col gap-1 pb-4 font-semibold">
                   {paidTicketType != null ? (
                     <div className="flex items-start gap-2">
-                      <FiTag className="mt-1 shrink-0" />
+                      <Ticket className="mt-1 size-4 shrink-0" />
                       <p>
                         {formatMoney(
                           paidTicketType.price_cents,
@@ -406,6 +463,18 @@ export const MeetupModal = ({
                       <p>Organized by {organizerNodes}</p>
                     </div>
                   ) : null}
+
+                  {/* Tags */}
+                  {(meetup.tags?.length ?? 0) > 0 ? (
+                    <div className="flex items-start gap-2">
+                      <FiTag className="mt-1 shrink-0" />
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {meetup.tags?.map((tag) => (
+                          <TagBadge key={tag.id} tag={tag} />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Photos */}
@@ -448,33 +517,7 @@ export const MeetupModal = ({
               ) : (
                 <span />
               )}
-              <div className="ml-auto flex flex-wrap items-center gap-3">
-                <CopyButton
-                  value={`${window.location.origin}/meetup/${meetupId}`}
-                  icon={FiLink}
-                  label="Copy link"
-                  toastMessage="Link copied to clipboard"
-                  className="ml-auto"
-                />
-                {!hasEnded && !meetup.is_archive ? (
-                  <AddToCalendarButton meetup={meetup} />
-                ) : null}
-                {!onMapPage ? (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="View on map"
-                    aria-label="View on map"
-                    onClick={() => {
-                      onClose();
-                      void navigate('/map', {
-                        state: { focusSlug: meetup.slug },
-                      });
-                    }}
-                  >
-                    <FiMap />
-                  </Button>
-                ) : null}
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
                 {isUserOrganizer && (
                   <Button
                     variant="outline"
