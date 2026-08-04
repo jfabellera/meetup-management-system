@@ -448,7 +448,7 @@ export const MeetupModal = ({
               ) : (
                 <span />
               )}
-              <div className="ml-auto flex flex-wrap items-center gap-3">
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
                 <CopyButton
                   value={`${window.location.origin}/meetup/${meetupId}`}
                   icon={FiLink}
