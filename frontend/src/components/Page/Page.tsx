@@ -20,6 +20,7 @@ export interface PageProps {
   setSidebarValue?: Dispatch<SetStateAction<string>>;
   /** Optional link shown atop the sidebar for returning to a parent view. */
   sidebarBackTo?: SidebarBackLink;
+  sidebarCompact?: boolean;
   mobileMenu?: boolean;
 }
 
@@ -29,6 +30,7 @@ const Page = ({
   sidebarValue,
   setSidebarValue,
   sidebarBackTo,
+  sidebarCompact = false,
   mobileMenu = false,
 }: PageProps): ReactNode => {
   const hasSidebar =
@@ -54,6 +56,7 @@ const Page = ({
               value={sidebarValue}
               setValue={setSidebarValue}
               backTo={sidebarBackTo}
+              compact={sidebarCompact}
               mobileOpen={mobileMenu ? mobileSidebarOpen : undefined}
               setMobileOpen={mobileMenu ? setMobileSidebarOpen : undefined}
             />

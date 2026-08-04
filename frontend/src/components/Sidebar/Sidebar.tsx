@@ -14,6 +14,7 @@ import {
   SidebarMenuItem,
   Sidebar as SidebarPrimitive,
 } from '@/components/ui/sidebar';
+import { cn } from '@/lib/utils';
 import { type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { type IconType } from 'react-icons';
 import { FiArrowLeft } from 'react-icons/fi';
@@ -37,9 +38,13 @@ interface SidebarProps {
   setValue: Dispatch<SetStateAction<string>>;
   /** Optional link rendered above the nav for returning to a parent view. */
   backTo?: SidebarBackLink;
+  compact?: boolean;
   mobileOpen?: boolean;
   setMobileOpen?: (open: boolean) => void;
 }
+
+const activeItemClasses =
+  'data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground';
 
 /**
  * Desktop navigation rail built on shadcn's sidebar primitives. When
@@ -52,6 +57,7 @@ const Sidebar = ({
   value,
   setValue,
   backTo,
+  compact = false,
   mobileOpen,
   setMobileOpen,
 }: SidebarProps): ReactNode => {
@@ -95,7 +101,10 @@ const Sidebar = ({
                       onClick={() => {
                         goTo(item.url, item.value);
                       }}
-                      className="data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground h-11 gap-3 px-3 text-[0.9375rem] [&>svg]:size-5"
+                      className={cn(
+                        activeItemClasses,
+                        'h-11 gap-3 px-3 text-[0.9375rem] [&>svg]:size-5'
+                      )}
                     >
                       <Icon />
                       <span>{item.name}</span>
@@ -110,13 +119,47 @@ const Sidebar = ({
     </>
   );
 
+  const compactMenu = (
+    <SidebarContent>
+      <SidebarGroup className="px-1.5">
+        <SidebarGroupContent>
+          <SidebarMenu className="gap-2">
+            {sidebarItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <SidebarMenuItem key={item.value}>
+                  <SidebarMenuButton
+                    isActive={item.value === value}
+                    onClick={() => {
+                      goTo(item.url, item.value);
+                    }}
+                    className={cn(
+                      activeItemClasses,
+                      'h-auto flex-col gap-1 px-1 py-2 text-xs font-medium [&>svg]:size-5'
+                    )}
+                  >
+                    <Icon />
+                    <span>{item.name}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </SidebarContent>
+  );
+
   return (
     <>
       <SidebarPrimitive
         collapsible="none"
-        className="hidden h-full border-r md:flex"
+        className={cn(
+          'hidden h-full border-r md:flex',
+          compact && 'w-[4.5rem]'
+        )}
       >
-        {menu}
+        {compact ? compactMenu : menu}
       </SidebarPrimitive>
       {setMobileOpen != null ? (
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>

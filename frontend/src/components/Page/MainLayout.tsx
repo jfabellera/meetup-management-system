@@ -20,6 +20,7 @@ const MainLayout = (): ReactNode => {
       sidebarItems={mainSidebarItems}
       sidebarValue={sidebarValue}
       setSidebarValue={setSidebarValue}
+      sidebarCompact
       mobileMenu
     >
       <Outlet />
