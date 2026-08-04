@@ -17,8 +17,11 @@ import {
   type MapRef,
 } from 'react-map-gl/mapbox';
 import { MeetupModal } from '../components/Meetups/MeetupModal';
+import { MeetupSearchInput } from '../components/Meetups/MeetupSearchInput';
+import { MeetupTagFilter } from '../components/Meetups/MeetupTagFilter';
 import config from '../config';
 import { useHoldExpiryRefetch } from '../hooks/useHoldExpiryRefetch';
+import { useMeetupSearch } from '../hooks/useMeetupSearch';
 import {
   useMeetupCoordinates,
   type MeetupPoint,
@@ -154,12 +157,39 @@ const MapPage = (): ReactNode => {
   const [cursor, setCursor] = useState('grab');
 
   const [selectedSlug, setSelectedSlug] = useState('');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const {
+    searchInput,
+    setSearchInput,
+    searchExpanded,
+    setSearchExpanded,
+    debouncedSearch,
+    byName,
+  } = useMeetupSearch();
 
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
   const { isLoggedIn, user } = useAppSelector((state) => state.user);
 
-  const { data: meetups } = useGetMeetupsQuery({});
+  const { data: meetups } = useGetMeetupsQuery({
+    by_tag_ids: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+    by_name: byName,
+  });
+
+  // Filtering can remove the venue a popup points at.
+  const clearPopups = (): void => {
+    setHovered(null);
+    setPinned(null);
+  };
+
+  const toggleTag = (tagId: string): void => {
+    clearPopups();
+    setSelectedTagIds((current) =>
+      current.includes(tagId)
+        ? current.filter((id) => id !== tagId)
+        : [...current, tagId]
+    );
+  };
   const { points, isLoading } = useMeetupCoordinates(meetups);
 
   const selectedMeetupId =
@@ -357,12 +387,41 @@ const MapPage = (): ReactNode => {
             </Button>
           </div>
 
-          {isLoading ? (
-            <div className="bg-card text-muted-foreground absolute top-4 right-4 z-10 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs shadow-md">
-              <Spinner className="size-4" />
-              Locating meetups…
+          <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
+            <div className="bg-card flex items-center gap-1 rounded-lg border p-1 shadow-md">
+              <MeetupSearchInput
+                value={searchInput}
+                onChange={(value) => {
+                  clearPopups();
+                  setSearchInput(value);
+                }}
+                expanded={searchExpanded}
+                onExpandedChange={setSearchExpanded}
+                expandInline
+              />
+              <MeetupTagFilter
+                selectedTagIds={selectedTagIds}
+                onToggle={toggleTag}
+                onClear={() => {
+                  clearPopups();
+                  setSelectedTagIds([]);
+                }}
+              />
             </div>
-          ) : null}
+            {isLoading ? (
+              <div className="bg-card text-muted-foreground flex items-center gap-2 rounded-lg border px-3 py-2 text-xs shadow-md">
+                <Spinner className="size-4" />
+                Locating meetups…
+              </div>
+            ) : null}
+            {!isLoading &&
+            points.length === 0 &&
+            (debouncedSearch !== '' || selectedTagIds.length > 0) ? (
+              <div className="bg-card text-muted-foreground rounded-lg border px-3 py-2 text-xs shadow-md">
+                No meetups match your search.
+              </div>
+            ) : null}
+          </div>
         </>
       )}
       <MeetupModal
