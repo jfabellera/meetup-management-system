@@ -1,22 +1,21 @@
-import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
 import config from '@/config';
 import { buildMeetupCalendarLinks, type MeetupInfo } from '@keebmeet/shared';
 import { type ReactNode } from 'react';
 import { FiCalendar } from 'react-icons/fi';
 
-interface AddToCalendarButtonProps {
+interface AddToCalendarSubMenuProps {
   meetup: MeetupInfo;
 }
 
-export const AddToCalendarButton = ({
+export const AddToCalendarSubMenu = ({
   meetup,
-}: AddToCalendarButtonProps): ReactNode => {
+}: AddToCalendarSubMenuProps): ReactNode => {
   const links = buildMeetupCalendarLinks({
     id: meetup.id,
     title: meetup.name,
@@ -32,18 +31,12 @@ export const AddToCalendarButton = ({
   });
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          title="Add to calendar"
-          aria-label="Add to calendar"
-        >
-          <FiCalendar />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger className="gap-2">
+        <FiCalendar />
+        Add to calendar
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent>
         <DropdownMenuItem asChild>
           <a href={links.google} target="_blank" rel="noopener noreferrer">
             Google Calendar
@@ -60,7 +53,7 @@ export const AddToCalendarButton = ({
             Apple / other (.ics)
           </a>
         </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   );
 };
