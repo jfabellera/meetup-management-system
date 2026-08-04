@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { type SimpleTicketInfo } from '@keebmeet/shared';
 import type { FeatureCollection, Point } from 'geojson';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useTheme } from 'next-themes';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { FiMap } from 'react-icons/fi';
-import { type SimpleTicketInfo } from '@keebmeet/shared';
 import {
   Layer,
   Map,
@@ -16,16 +16,17 @@ import {
   type MapMouseEvent,
   type MapRef,
 } from 'react-map-gl/mapbox';
+import { useLocation } from 'react-router-dom';
 import { MeetupModal } from '../components/Meetups/MeetupModal';
 import { MeetupSearchInput } from '../components/Meetups/MeetupSearchInput';
 import { MeetupTagFilter } from '../components/Meetups/MeetupTagFilter';
 import config from '../config';
 import { useHoldExpiryRefetch } from '../hooks/useHoldExpiryRefetch';
-import { useMeetupSearch } from '../hooks/useMeetupSearch';
 import {
   useMeetupCoordinates,
   type MeetupPoint,
 } from '../hooks/useMeetupCoordinates';
+import { useMeetupSearch } from '../hooks/useMeetupSearch';
 import { useAppSelector } from '../store/hooks';
 import { useGetMeetupsQuery } from '../store/meetupSlice';
 import { useGetTicketsQuery } from '../store/ticketSlice';
@@ -155,6 +156,7 @@ const MapPage = (): ReactNode => {
   const [hovered, setHovered] = useState<ActiveVenue | null>(null);
   const [pinned, setPinned] = useState<ActiveVenue | null>(null);
   const [cursor, setCursor] = useState('grab');
+  const [mapReady, setMapReady] = useState(false);
 
   const [selectedSlug, setSelectedSlug] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -170,6 +172,11 @@ const MapPage = (): ReactNode => {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
   const { isLoggedIn, user } = useAppSelector((state) => state.user);
+
+  const location = useLocation();
+  const focusSlug = (location.state as { focusSlug?: string } | null)
+    ?.focusSlug;
+  const focusHandledKey = useRef('');
 
   const { data: meetups } = useGetMeetupsQuery({
     by_tag_ids: selectedTagIds.length > 0 ? selectedTagIds : undefined,
@@ -222,9 +229,35 @@ const MapPage = (): ReactNode => {
   const geojson = useMemo(() => toFeatureCollection(points), [points]);
 
   useEffect(() => {
-    if (points.length === 0 || mapRef.current == null) return;
-
     const map = mapRef.current;
+    if (!mapReady || map == null || points.length === 0) return;
+
+    if (focusSlug != null && focusHandledKey.current !== location.key) {
+      focusHandledKey.current = location.key;
+      const feature = geojson.features.find((candidate) =>
+        (candidate.properties as { meetups: VenueMeetup[] }).meetups.some(
+          (meetup) => meetup.slug === focusSlug
+        )
+      );
+      if (feature != null) {
+        const [longitude, latitude] = (feature.geometry as Point).coordinates;
+        map.flyTo({ center: [longitude, latitude], zoom: 11, speed: 2.5 });
+        const props = feature.properties as {
+          city: string;
+          meetups: VenueMeetup[];
+        };
+        requestAnimationFrame(() => {
+          setPinned({
+            longitude,
+            latitude,
+            city: props.city,
+            meetups: props.meetups,
+          });
+        });
+        return;
+      }
+    }
+
     const first = points[0];
     let minLng = first.longitude;
     let maxLng = first.longitude;
@@ -243,7 +276,7 @@ const MapPage = (): ReactNode => {
       ],
       { padding: 80, maxZoom: 10, duration: 0 }
     );
-  }, [points]);
+  }, [mapReady, points, geojson, focusSlug, location.key]);
 
   const mapStyle =
     resolvedTheme === 'dark'
@@ -299,6 +332,12 @@ const MapPage = (): ReactNode => {
             mapStyle={mapStyle}
             interactiveLayerIds={mode === 'points' ? [POINTS_LAYER_ID] : []}
             cursor={cursor}
+            onStyleData={() => {
+              setMapReady(true);
+            }}
+            onLoad={() => {
+              setMapReady(true);
+            }}
             onClick={handleClick}
             onMouseMove={handleMouseMove}
             onMouseOut={() => {
