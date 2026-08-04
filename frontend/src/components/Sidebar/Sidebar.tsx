@@ -44,7 +44,7 @@ interface SidebarProps {
 }
 
 const activeItemClasses =
-  'data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground';
+  'data-[active=true]:bg-transparent data-[active=true]:text-primary data-[active=true]:hover:bg-primary/10 data-[active=true]:hover:text-primary';
 
 /**
  * Desktop navigation rail built on shadcn's sidebar primitives. When
