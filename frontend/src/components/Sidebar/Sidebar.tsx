@@ -43,6 +43,9 @@ interface SidebarProps {
   setMobileOpen?: (open: boolean) => void;
 }
 
+const interactionClasses =
+  'transition-all duration-200 ease-in-out active:scale-95 [&>svg]:transition-transform [&>svg]:duration-200 [&>svg]:ease-out hover:[&>svg]:scale-115';
+
 const activeItemClasses =
   'data-[active=true]:bg-transparent data-[active=true]:text-primary data-[active=true]:hover:bg-primary/10 data-[active=true]:hover:text-primary';
 
@@ -76,7 +79,10 @@ const Sidebar = ({
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                className="text-muted-foreground h-11 gap-3 px-3 text-[0.9375rem] [&>svg]:size-5"
+                className={cn(
+                  interactionClasses,
+                  'text-muted-foreground h-11 gap-3 px-3 text-[0.9375rem] [&>svg]:size-5'
+                )}
                 onClick={() => {
                   goTo(backTo.url);
                 }}
@@ -102,6 +108,7 @@ const Sidebar = ({
                         goTo(item.url, item.value);
                       }}
                       className={cn(
+                        interactionClasses,
                         activeItemClasses,
                         'h-11 gap-3 px-3 text-[0.9375rem] [&>svg]:size-5'
                       )}
@@ -134,6 +141,7 @@ const Sidebar = ({
                       goTo(item.url, item.value);
                     }}
                     className={cn(
+                      interactionClasses,
                       activeItemClasses,
                       'h-auto flex-col gap-1 px-1 py-2 text-xs font-medium [&>svg]:size-5'
                     )}
