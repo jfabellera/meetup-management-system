@@ -24,13 +24,14 @@ import {
   FiClock,
   FiExternalLink,
   FiLink,
+  FiMap,
   FiMapPin,
   FiTag,
   FiUser,
   FiUserCheck,
   FiX,
 } from 'react-icons/fi';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useHoldCountdown } from '../../hooks/useHoldCountdown';
 import { socket } from '../../socket';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -108,6 +109,7 @@ export const MeetupModal = ({
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user.user);
   const navigate = useNavigate();
+  const onMapPage = useLocation().pathname === '/map';
   const isWide = useIsWide();
 
   // Swipe-down-to-dismiss, mobile only (the lg layout is two-column).
@@ -456,6 +458,22 @@ export const MeetupModal = ({
                 />
                 {!hasEnded && !meetup.is_archive ? (
                   <AddToCalendarButton meetup={meetup} />
+                ) : null}
+                {!onMapPage ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="View on map"
+                    aria-label="View on map"
+                    onClick={() => {
+                      onClose();
+                      void navigate('/map', {
+                        state: { focusSlug: meetup.slug },
+                      });
+                    }}
+                  >
+                    <FiMap />
+                  </Button>
                 ) : null}
                 {isUserOrganizer && (
                   <Button
