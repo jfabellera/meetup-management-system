@@ -197,6 +197,12 @@ export const MeetupModal = ({
   const isConfirmedAttendee = effectiveTicket != null && !hasPendingHold;
   const showRsvpAction = !isRsvp && isRsvpable;
   const showCalendarAction = !hasEnded && !meetup.is_archive;
+  const showBadges =
+    isHappeningNow ||
+    hasEnded ||
+    meetup.is_archive ||
+    meetup.is_unlisted === true ||
+    (meetup.tags?.length ?? 0) > 0;
 
   const linkedOrganizers =
     meetup.organizers != null
@@ -292,11 +298,7 @@ export const MeetupModal = ({
               ) : null}
               <div className="flex flex-col p-4 pb-0">
                 <DialogHeader className="space-y-0 text-left">
-                  {isHappeningNow ||
-                  hasEnded ||
-                  meetup.is_archive ||
-                  meetup.is_unlisted === true ||
-                  (meetup.tags?.length ?? 0) > 0 ? (
+                  {showBadges ? (
                     <div className="flex flex-wrap items-center gap-2 pb-2">
                       {isHappeningNow ? (
                         <Badge className="bg-green-600 text-white">
@@ -340,9 +342,60 @@ export const MeetupModal = ({
                       ))}
                     </div>
                   ) : null}
-                  <DialogTitle className="pb-2 text-2xl font-bold">
-                    {meetup.name}
-                  </DialogTitle>
+                  <div
+                    className={cn(
+                      'flex items-start justify-between gap-2 pb-2',
+                      !hasImage && !showBadges && 'pr-8'
+                    )}
+                  >
+                    <DialogTitle className="min-w-0 text-2xl font-bold">
+                      {meetup.name}
+                    </DialogTitle>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="More actions"
+                          aria-label="More actions"
+                          className="-mt-1 shrink-0"
+                        >
+                          <FiMoreHorizontal />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="gap-2"
+                          onClick={() => {
+                            void navigator.clipboard.writeText(
+                              `${window.location.origin}/meetup/${meetupId}`
+                            );
+                            toast.success('Link copied to clipboard');
+                          }}
+                        >
+                          <FiLink />
+                          Copy link
+                        </DropdownMenuItem>
+                        {showCalendarAction ? (
+                          <AddToCalendarSubMenu meetup={meetup} />
+                        ) : null}
+                        {!onMapPage ? (
+                          <DropdownMenuItem
+                            className="gap-2"
+                            onClick={() => {
+                              onClose();
+                              void navigate('/map', {
+                                state: { focusSlug: meetup.slug },
+                              });
+                            }}
+                          >
+                            <FiMap />
+                            View on map
+                          </DropdownMenuItem>
+                        ) : null}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </DialogHeader>
                 <div className="flex flex-col gap-1 pb-4 font-semibold">
                   {paidTicketType != null ? (
@@ -457,49 +510,6 @@ export const MeetupModal = ({
                 <span />
               )}
               <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="More actions"
-                      aria-label="More actions"
-                    >
-                      <FiMoreHorizontal />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      className="gap-2"
-                      onClick={() => {
-                        void navigator.clipboard.writeText(
-                          `${window.location.origin}/meetup/${meetupId}`
-                        );
-                        toast.success('Link copied to clipboard');
-                      }}
-                    >
-                      <FiLink />
-                      Copy link
-                    </DropdownMenuItem>
-                    {showCalendarAction ? (
-                      <AddToCalendarSubMenu meetup={meetup} />
-                    ) : null}
-                    {!onMapPage ? (
-                      <DropdownMenuItem
-                        className="gap-2"
-                        onClick={() => {
-                          onClose();
-                          void navigate('/map', {
-                            state: { focusSlug: meetup.slug },
-                          });
-                        }}
-                      >
-                        <FiMap />
-                        View on map
-                      </DropdownMenuItem>
-                    ) : null}
-                  </DropdownMenuContent>
-                </DropdownMenu>
                 {isUserOrganizer && (
                   <Button
                     variant="outline"
