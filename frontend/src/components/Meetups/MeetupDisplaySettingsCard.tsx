@@ -47,9 +47,6 @@ interface IdleImage {
   url: string;
 }
 
-const gridClass =
-  'grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))]';
-
 const idleGridClass =
   'grid grid-cols-2 gap-4 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]';
 
@@ -272,47 +269,43 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): ReactNode => {
             </SortableContext>
           </DndContext>
 
-          <div className="flex flex-wrap justify-around gap-4">
+          <div className="flex flex-wrap items-end justify-around gap-4">
             <div className="flex-1">
               <h3 className="mt-4 mb-1 text-lg font-medium">
                 Raffle Winner Background
               </h3>
-              <div className={gridClass}>
-                <ImageUploadField
-                  previewUrl={raffleBackgroundUrl}
-                  editable={isEditable}
-                  aspectRatio={16 / 9}
-                  className="max-w-none py-0"
-                  previewWidth={360}
-                  useUploadMutation={useUploadMeetupImageMutation}
-                  onUploaded={(_imageKey, imageUrl) =>
-                    setRaffleBackgroundUrl(imageUrl)
-                  }
-                  onUploadingChange={onUploadingChange}
-                  onRemove={() => setRaffleBackgroundUrl('')}
-                />
-              </div>
+              <ImageUploadField
+                previewUrl={raffleBackgroundUrl}
+                editable={isEditable}
+                aspectRatio={16 / 9}
+                className="max-w-none py-0"
+                previewWidth={360}
+                useUploadMutation={useUploadMeetupImageMutation}
+                onUploaded={(_imageKey, imageUrl) =>
+                  setRaffleBackgroundUrl(imageUrl)
+                }
+                onUploadingChange={onUploadingChange}
+                onRemove={() => setRaffleBackgroundUrl('')}
+              />
             </div>
 
             <div className="flex-1">
               <h3 className="mt-4 mb-1 text-lg font-medium">
                 Raffle Winner Background (Batch)
               </h3>
-              <div className={gridClass}>
-                <ImageUploadField
-                  previewUrl={batchRaffleBackgroundUrl}
-                  editable={isEditable}
-                  aspectRatio={16 / 9}
-                  className="max-w-none py-0"
-                  previewWidth={360}
-                  useUploadMutation={useUploadMeetupImageMutation}
-                  onUploaded={(_imageKey, imageUrl) =>
-                    setBatchRaffleBackgroundUrl(imageUrl)
-                  }
-                  onUploadingChange={onUploadingChange}
-                  onRemove={() => setBatchRaffleBackgroundUrl('')}
-                />
-              </div>
+              <ImageUploadField
+                previewUrl={batchRaffleBackgroundUrl}
+                editable={isEditable}
+                aspectRatio={16 / 9}
+                className="max-w-none py-0"
+                previewWidth={360}
+                useUploadMutation={useUploadMeetupImageMutation}
+                onUploaded={(_imageKey, imageUrl) =>
+                  setBatchRaffleBackgroundUrl(imageUrl)
+                }
+                onUploadingChange={onUploadingChange}
+                onRemove={() => setBatchRaffleBackgroundUrl('')}
+              />
             </div>
           </div>
         </>
