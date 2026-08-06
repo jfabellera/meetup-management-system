@@ -23,6 +23,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { DEFAULT_DISPLAY_IDLE_INTERVAL_SECONDS } from '@keebmeet/shared';
 import {
   useEffect,
   useState,
@@ -36,6 +37,7 @@ import {
   useUploadMeetupImageMutation,
 } from '../../store/meetupSlice';
 import EditableFormCard from '../Forms/EditableFormCard';
+import EditableFormField from '../Forms/EditableFormField';
 import ImageUploadField from '../shared/ImageUploadField';
 
 interface Props {
@@ -135,6 +137,9 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): ReactNode => {
   const [raffleBackgroundUrl, setRaffleBackgroundUrl] = useState<string>('');
   const [batchRaffleBackgroundUrl, setBatchRaffleBackgroundUrl] =
     useState<string>('');
+  const [idleIntervalSeconds, setIdleIntervalSeconds] = useState<number>(
+    DEFAULT_DISPLAY_IDLE_INTERVAL_SECONDS
+  );
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -151,6 +156,10 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): ReactNode => {
     setRaffleBackgroundUrl(displayAssets?.raffleWinnerBackgroundImageUrl ?? '');
     setBatchRaffleBackgroundUrl(
       displayAssets?.batchRaffleWinnerBackgroundImageUrl ?? ''
+    );
+    setIdleIntervalSeconds(
+      displayAssets?.idleIntervalSeconds ??
+        DEFAULT_DISPLAY_IDLE_INTERVAL_SECONDS
     );
   }, [displayAssets]);
 
@@ -195,6 +204,7 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): ReactNode => {
             .filter((url) => url !== ''),
           display_raffle_background_url: raffleBackgroundUrl,
           display_batch_raffle_background_url: batchRaffleBackgroundUrl,
+          display_idle_interval_seconds: idleIntervalSeconds,
         },
       });
 
@@ -207,6 +217,10 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): ReactNode => {
   const onCancel = (): void => {
     if (displayAssets?.idleImageUrls != null)
       setIdleImages(toIdleImages(displayAssets.idleImageUrls));
+    setIdleIntervalSeconds(
+      displayAssets?.idleIntervalSeconds ??
+        DEFAULT_DISPLAY_IDLE_INTERVAL_SECONDS
+    );
 
     setIsEditable.off();
   };
@@ -216,6 +230,9 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): ReactNode => {
     ? idleImages
     : idleImages.filter((image) => image.url !== '');
 
+  const isIntervalValid =
+    Number.isInteger(idleIntervalSeconds) && idleIntervalSeconds >= 1;
+
   return (
     <EditableFormCard
       title={'Display Settings'}
@@ -224,7 +241,7 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): ReactNode => {
       onEditCancel={onCancel}
       onEditSubmit={onSubmit}
       isSubmitLoading={isSaving}
-      isFormInvalid={false}
+      isFormInvalid={!isIntervalValid}
       isSubmitDisabled={isUploading}
     >
       {isLoading ? (
@@ -233,6 +250,18 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): ReactNode => {
         </div>
       ) : (
         <>
+          <EditableFormField
+            name={'Idle Image Interval (seconds)'}
+            value={idleIntervalSeconds}
+            editable={isEditable}
+            id={'idleIntervalSeconds'}
+            type={'number'}
+            isInvalid={!isIntervalValid}
+            onChange={(event) =>
+              setIdleIntervalSeconds(Number(event.target.value))
+            }
+            errorMessage={'Must be at least 1 second.'}
+          />
           <h3 className="mb-1 text-lg font-medium">Idle Images</h3>
           {visibleIdleImages.length === 0 ? (
             <p className="text-muted-foreground text-sm">No images uploaded.</p>

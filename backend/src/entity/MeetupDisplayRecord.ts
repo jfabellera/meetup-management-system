@@ -1,3 +1,4 @@
+import { DEFAULT_DISPLAY_IDLE_INTERVAL_SECONDS } from '@keebmeet/shared';
 import {
   BaseEntity,
   Column,
@@ -25,4 +26,7 @@ export class MeetupDisplayRecord extends BaseEntity {
 
   @Column({ type: 'varchar', length: 1024, nullable: true })
   batch_raffle_background_url: string | null;
+
+  @Column({ type: 'integer', default: DEFAULT_DISPLAY_IDLE_INTERVAL_SECONDS })
+  idle_interval_seconds: number;
 }

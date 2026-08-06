@@ -14,9 +14,8 @@ export const ManageMeetupDisplayPage = (): ReactNode => {
   const { meetupId } = useParams();
   const { data: meetup } = useGetMeetupQuery(meetupId ?? '');
   const [copied, setCopied] = useState(false);
-  const [interval, setInterval] = useState<number>(15);
 
-  const displayUrl = `${window.location.origin}/meetup/${meetupId}/display?interval=${interval}`;
+  const displayUrl = `${window.location.origin}/meetup/${meetupId}/display`;
 
   const handleCopyClick = (): void => {
     navigator.clipboard.writeText(displayUrl);
@@ -28,16 +27,6 @@ export const ManageMeetupDisplayPage = (): ReactNode => {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4">
       <Card className="w-full p-4">
         <h1 className="text-2xl font-bold">Display</h1>
-        <Field>
-          <Label htmlFor="interval">Idle Image Interval (seconds)</Label>
-          <Input
-            id="interval"
-            type="number"
-            value={interval}
-            onChange={(e) => setInterval(Number(e.target.value))}
-          />
-        </Field>
-
         <Field>
           <Label>
             Copy the link below to share the display. This link can be used on

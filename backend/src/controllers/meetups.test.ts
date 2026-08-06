@@ -1622,6 +1622,35 @@ describe('updateMeetup', () => {
     expect(res.statusCode).toBe(201);
   });
 
+  it('saves the idle interval without touching display images', async () => {
+    const displayRecord = {
+      idle_image_urls: ['meetups/keep.png'],
+      raffle_background_url: null,
+      batch_raffle_background_url: null,
+      idle_interval_seconds: 15,
+      save: jest.fn().mockResolvedValue(undefined),
+    };
+    const meetup = fakeMeetupRow({
+      displayRecord,
+      save: jest.fn().mockResolvedValue(undefined),
+    });
+    mockedMeetup.findOne
+      .mockResolvedValueOnce(meetup)
+      .mockResolvedValueOnce(null);
+    const res = mockResponse();
+
+    await updateMeetup(
+      mockRequest({ display_idle_interval_seconds: 45 }, { meetup_id: '10' }),
+      res
+    );
+
+    expect(displayRecord.idle_interval_seconds).toBe(45);
+    expect(displayRecord.idle_image_urls).toEqual(['meetups/keep.png']);
+    expect(mockedDeleteObject).not.toHaveBeenCalled();
+    expect(displayRecord.save).toHaveBeenCalled();
+    expect(res.statusCode).toBe(201);
+  });
+
   it('clears and deletes a display background when emptied', async () => {
     const displayRecord = {
       idle_image_urls: [],
@@ -2143,6 +2172,7 @@ describe('getMeetupDisplayAssets', () => {
       idleImageUrls: null,
       raffleWinnerBackgroundImageUrl: null,
       batchRaffleWinnerBackgroundImageUrl: null,
+      idleIntervalSeconds: 15,
     });
   });
 
@@ -2153,6 +2183,7 @@ describe('getMeetupDisplayAssets', () => {
         idle_image_urls: ['meetups/a.png', 'https://external.com/b.png'],
         raffle_background_url: 'meetups/bg.png',
         batch_raffle_background_url: 'https://external.com/batch.png',
+        idle_interval_seconds: 30,
       },
     } as any);
     const res = mockResponse();
@@ -2166,6 +2197,7 @@ describe('getMeetupDisplayAssets', () => {
       ],
       raffleWinnerBackgroundImageUrl: 'https://cdn.test/meetups/bg.png',
       batchRaffleWinnerBackgroundImageUrl: 'https://external.com/batch.png',
+      idleIntervalSeconds: 30,
     });
   });
 });
