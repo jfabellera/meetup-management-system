@@ -97,7 +97,7 @@ export const MeetupGallery = ({
   return (
     <div className="pb-4">
       <p className="pb-2 font-semibold">Photos</p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2">
         {photos.map((photo) => (
           <GalleryTile
             key={photo.id}
