@@ -8,14 +8,13 @@ import { Separator } from '@/components/ui/separator';
 import { useGetMeetupQuery } from '@/store/meetupSlice';
 import { ReactNode, useState } from 'react';
 import { FiCheck, FiCopy } from 'react-icons/fi';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 export const ManageMeetupDisplayPage = (): ReactNode => {
   const { meetupId } = useParams();
   const { data: meetup } = useGetMeetupQuery(meetupId ?? '');
   const [copied, setCopied] = useState(false);
   const [interval, setInterval] = useState<number>(15);
-  const navigate = useNavigate();
 
   const displayUrl = `${window.location.origin}/meetup/${meetupId}/display?interval=${interval}`;
 
@@ -71,7 +70,7 @@ export const ManageMeetupDisplayPage = (): ReactNode => {
 
         <Button
           onClick={() =>
-            void navigate(`/meetup/${meetupId}/display?interval=${interval}`)
+            window.open(displayUrl, '_blank', 'noopener,noreferrer')
           }
         >
           Go to display
