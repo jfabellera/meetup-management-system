@@ -8,16 +8,14 @@ import { Separator } from '@/components/ui/separator';
 import { useGetMeetupQuery } from '@/store/meetupSlice';
 import { ReactNode, useState } from 'react';
 import { FiCheck, FiCopy } from 'react-icons/fi';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 export const ManageMeetupDisplayPage = (): ReactNode => {
   const { meetupId } = useParams();
   const { data: meetup } = useGetMeetupQuery(meetupId ?? '');
   const [copied, setCopied] = useState(false);
-  const [interval, setInterval] = useState<number>(15);
-  const navigate = useNavigate();
 
-  const displayUrl = `${window.location.origin}/meetup/${meetupId}/display?interval=${interval}`;
+  const displayUrl = `${window.location.origin}/meetup/${meetupId}/display`;
 
   const handleCopyClick = (): void => {
     navigator.clipboard.writeText(displayUrl);
@@ -29,16 +27,6 @@ export const ManageMeetupDisplayPage = (): ReactNode => {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4">
       <Card className="w-full p-4">
         <h1 className="text-2xl font-bold">Display</h1>
-        <Field>
-          <Label htmlFor="interval">Idle Image Interval (seconds)</Label>
-          <Input
-            id="interval"
-            type="number"
-            value={interval}
-            onChange={(e) => setInterval(Number(e.target.value))}
-          />
-        </Field>
-
         <Field>
           <Label>
             Copy the link below to share the display. This link can be used on
@@ -71,7 +59,7 @@ export const ManageMeetupDisplayPage = (): ReactNode => {
 
         <Button
           onClick={() =>
-            void navigate(`/meetup/${meetupId}/display?interval=${interval}`)
+            window.open(displayUrl, '_blank', 'noopener,noreferrer')
           }
         >
           Go to display

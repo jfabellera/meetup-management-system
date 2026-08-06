@@ -1,3 +1,4 @@
+import { DEFAULT_DISPLAY_IDLE_INTERVAL_SECONDS } from '@keebmeet/shared';
 import {
   AnimatePresence,
   animate,
@@ -27,13 +28,6 @@ const MeetupDisplayPage = (): ReactNode => {
   const { data: meetup } = useGetMeetupQuery(slug ?? '');
   const meetupId = meetup?.id ?? '';
   const [searchParams] = useSearchParams();
-
-  const parsedInterval = Number(searchParams.get('interval'));
-  const idleIntervalMs =
-    Number.isFinite(parsedInterval) && parsedInterval > 0
-      ? parsedInterval * 1000
-      : 15000;
-
   const [displayState, setDisplayState] = useState<'idle' | 'raffle winner'>(
     'idle'
   );
@@ -41,6 +35,15 @@ const MeetupDisplayPage = (): ReactNode => {
   const { data: displayAssets } = useGetMeetupDisplayAssetsQuery(meetupId, {
     skip: meetupId === '',
   });
+
+  const parsedInterval = Number(searchParams.get('interval'));
+  const idleIntervalSeconds =
+    Number.isFinite(parsedInterval) && parsedInterval > 0
+      ? parsedInterval
+      : (displayAssets?.idleIntervalSeconds ??
+        DEFAULT_DISPLAY_IDLE_INTERVAL_SECONDS);
+  const idleIntervalMs = idleIntervalSeconds * 1000;
+
   const [idleImageIndex, setIdleImageIndex] = useState<number>(0);
   const [winners, setWinners] = useState<string[] | null>(null);
   const [losers, setLosers] = useState<string[] | null>(null);

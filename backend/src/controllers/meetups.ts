@@ -2,6 +2,7 @@ import {
   createArchiveMeetupSchema,
   createMeetupFromEventbriteSchema,
   createMeetupSchema,
+  DEFAULT_DISPLAY_IDLE_INTERVAL_SECONDS,
   editMeetupSchema,
   SLUG_REGEX,
   TICKET_CURRENCY,
@@ -940,6 +941,9 @@ const syncDisplayRecord = async (
         ? null
         : await store(data.display_batch_raffle_background_url);
   }
+  if (data.display_idle_interval_seconds !== undefined) {
+    record.idle_interval_seconds = data.display_idle_interval_seconds;
+  }
 
   await record.save();
 
@@ -1081,7 +1085,8 @@ export const updateMeetup = async (
   if (
     result.data.display_idle_image_urls !== undefined ||
     result.data.display_raffle_background_url !== undefined ||
-    result.data.display_batch_raffle_background_url !== undefined
+    result.data.display_batch_raffle_background_url !== undefined ||
+    result.data.display_idle_interval_seconds !== undefined
   ) {
     try {
       await syncDisplayRecord(meetup, result.data);
@@ -1594,5 +1599,7 @@ export const getMeetupDisplayAssets = async (
       display?.batch_raffle_background_url != null
         ? publicUrl(display.batch_raffle_background_url)
         : null,
+    idleIntervalSeconds:
+      display?.idle_interval_seconds ?? DEFAULT_DISPLAY_IDLE_INTERVAL_SECONDS,
   } satisfies MeetupDisplayAssets);
 };

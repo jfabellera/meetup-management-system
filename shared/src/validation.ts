@@ -130,6 +130,7 @@ export const editMeetupSchema = z.object({
     .string()
     .transform((string) => (string === '' ? null : string))
     .optional(),
+  display_idle_interval_seconds: z.number().int().gte(1).optional(),
 });
 
 export type EditMeetupPayload = z.infer<typeof editMeetupSchema>;
