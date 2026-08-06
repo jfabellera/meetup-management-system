@@ -211,6 +211,11 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): ReactNode => {
     setIsEditable.off();
   };
 
+  // Read-only slots are only worth rendering once they hold an image.
+  const visibleIdleImages = isEditable
+    ? idleImages
+    : idleImages.filter((image) => image.url !== '');
+
   return (
     <EditableFormCard
       title={'Display Settings'}
@@ -229,83 +234,99 @@ const MeetupDisplaySettingsCard = ({ meetupId }: Props): ReactNode => {
       ) : (
         <>
           <h3 className="mb-1 text-lg font-medium">Idle Images</h3>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            // Without this a dragged card can overflow the settings card.
-            modifiers={[restrictToParentElement]}
-            onDragEnd={onDragEnd}
-          >
-            <SortableContext
-              items={idleImages.map((image) => image.id)}
-              strategy={rectSortingStrategy}
+          {visibleIdleImages.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No images uploaded.</p>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              // Without this a dragged card can overflow the settings card.
+              modifiers={[restrictToParentElement]}
+              onDragEnd={onDragEnd}
             >
-              <div className={idleGridClass}>
-                {idleImages.map((image) => (
-                  <SortableIdleImage
-                    key={image.id}
-                    image={image}
-                    editable={isEditable}
-                    onUploaded={(imageUrl) => setIdleUrl(image.id, imageUrl)}
-                    onUploadingChange={onUploadingChange}
-                    onRemove={() => onRemove(image.id)}
-                  />
-                ))}
-                {isEditable ? (
-                  <div>
-                    <AspectRatio ratio={16 / 9}>
-                      <Button
-                        variant="outline"
-                        aria-label="add"
-                        className="size-full"
-                        onClick={onAdd}
-                      >
-                        <FiPlus className="size-8" />
-                      </Button>
-                    </AspectRatio>
-                  </div>
-                ) : null}
-              </div>
-            </SortableContext>
-          </DndContext>
+              <SortableContext
+                items={visibleIdleImages.map((image) => image.id)}
+                strategy={rectSortingStrategy}
+              >
+                <div className={idleGridClass}>
+                  {visibleIdleImages.map((image) => (
+                    <SortableIdleImage
+                      key={image.id}
+                      image={image}
+                      editable={isEditable}
+                      onUploaded={(imageUrl) => setIdleUrl(image.id, imageUrl)}
+                      onUploadingChange={onUploadingChange}
+                      onRemove={() => onRemove(image.id)}
+                    />
+                  ))}
+                  {isEditable ? (
+                    <div>
+                      <AspectRatio ratio={16 / 9}>
+                        <Button
+                          variant="outline"
+                          aria-label="add"
+                          className="size-full"
+                          onClick={onAdd}
+                        >
+                          <FiPlus className="size-8" />
+                        </Button>
+                      </AspectRatio>
+                    </div>
+                  ) : null}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
 
           <div className="flex flex-wrap items-end justify-around gap-4">
             <div className="flex-1">
               <h3 className="mt-4 mb-1 text-lg font-medium">
                 Raffle Winner Background
               </h3>
-              <ImageUploadField
-                previewUrl={raffleBackgroundUrl}
-                editable={isEditable}
-                aspectRatio={16 / 9}
-                className="max-w-none py-0"
-                previewWidth={360}
-                useUploadMutation={useUploadMeetupImageMutation}
-                onUploaded={(_imageKey, imageUrl) =>
-                  setRaffleBackgroundUrl(imageUrl)
-                }
-                onUploadingChange={onUploadingChange}
-                onRemove={() => setRaffleBackgroundUrl('')}
-              />
+              {!isEditable && raffleBackgroundUrl === '' ? (
+                <p className="text-muted-foreground text-sm">
+                  No image uploaded.
+                </p>
+              ) : (
+                <ImageUploadField
+                  previewUrl={raffleBackgroundUrl}
+                  editable={isEditable}
+                  aspectRatio={16 / 9}
+                  className="max-w-none py-0"
+                  previewWidth={360}
+                  useUploadMutation={useUploadMeetupImageMutation}
+                  onUploaded={(_imageKey, imageUrl) =>
+                    setRaffleBackgroundUrl(imageUrl)
+                  }
+                  onUploadingChange={onUploadingChange}
+                  onRemove={() => setRaffleBackgroundUrl('')}
+                />
+              )}
             </div>
 
             <div className="flex-1">
               <h3 className="mt-4 mb-1 text-lg font-medium">
                 Raffle Winner Background (Batch)
               </h3>
-              <ImageUploadField
-                previewUrl={batchRaffleBackgroundUrl}
-                editable={isEditable}
-                aspectRatio={16 / 9}
-                className="max-w-none py-0"
-                previewWidth={360}
-                useUploadMutation={useUploadMeetupImageMutation}
-                onUploaded={(_imageKey, imageUrl) =>
-                  setBatchRaffleBackgroundUrl(imageUrl)
-                }
-                onUploadingChange={onUploadingChange}
-                onRemove={() => setBatchRaffleBackgroundUrl('')}
-              />
+              {!isEditable && batchRaffleBackgroundUrl === '' ? (
+                <p className="text-muted-foreground text-sm">
+                  No image uploaded.
+                </p>
+              ) : (
+                <ImageUploadField
+                  previewUrl={batchRaffleBackgroundUrl}
+                  editable={isEditable}
+                  aspectRatio={16 / 9}
+                  className="max-w-none py-0"
+                  previewWidth={360}
+                  useUploadMutation={useUploadMeetupImageMutation}
+                  onUploaded={(_imageKey, imageUrl) =>
+                    setBatchRaffleBackgroundUrl(imageUrl)
+                  }
+                  onUploadingChange={onUploadingChange}
+                  onRemove={() => setBatchRaffleBackgroundUrl('')}
+                />
+              )}
             </div>
           </div>
         </>
