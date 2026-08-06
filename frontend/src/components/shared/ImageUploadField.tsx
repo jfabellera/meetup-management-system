@@ -34,6 +34,8 @@ interface Props {
   onRemove?: () => void;
   /** When false, only the preview is shown (no file picker). Defaults to true. */
   editable?: boolean;
+  /** Hides the hover/edit overlay, e.g. while the field is being dragged. */
+  hideOverlay?: boolean;
   /** Field label. Omit to render no label (e.g. inside a grid with its own heading). */
   label?: string;
   /**
@@ -63,6 +65,7 @@ const ImageUploadField = ({
   onUploadingChange,
   onRemove,
   editable = true,
+  hideOverlay = false,
   label,
   footer,
   aspectRatio = 2,
@@ -171,13 +174,13 @@ const ImageUploadField = ({
               className="sr-only"
             />
           ) : null}
-          {editable && previewUrl !== '' ? (
+          {editable && previewUrl !== '' && !hideOverlay ? (
             <div
               className={cn(
                 'absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50 text-white opacity-0 transition-opacity',
                 'pointer-events-none',
                 'group-hover:pointer-events-auto group-hover:opacity-100',
-                'focus-within:pointer-events-auto focus-within:opacity-100',
+                'has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100',
                 rounded && 'rounded-full',
                 revealed && 'pointer-events-auto opacity-100'
               )}
