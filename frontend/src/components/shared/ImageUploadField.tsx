@@ -38,11 +38,6 @@ interface Props {
   hideOverlay?: boolean;
   /** Field label. Omit to render no label (e.g. inside a grid with its own heading). */
   label?: string;
-  /**
-   * Controls rendered in a row directly below the preview, e.g. reorder/remove
-   * buttons for a gallery item. Only shown while editable.
-   */
-  footer?: ReactNode;
   /** Preview aspect ratio (width/height). Defaults to 2 (meetup banner). */
   aspectRatio?: number;
   /** Render the preview as a circle (for avatars). */
@@ -67,7 +62,6 @@ const ImageUploadField = ({
   editable = true,
   hideOverlay = false,
   label,
-  footer,
   aspectRatio = 2,
   rounded = false,
   className,
@@ -246,11 +240,6 @@ const ImageUploadField = ({
           ) : null}
         </div>
       </AspectRatio>
-      {editable && footer != null ? (
-        <div className="mt-2 flex items-center justify-center gap-1">
-          {footer}
-        </div>
-      ) : null}
     </Field>
   );
 };

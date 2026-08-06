@@ -29,7 +29,7 @@ import {
   type KeyboardEventHandler,
   type ReactNode,
 } from 'react';
-import { FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiPlus } from 'react-icons/fi';
 import {
   useEditMeetupMutation,
   useGetMeetupDisplayAssetsQuery,
@@ -120,17 +120,7 @@ const SortableIdleImage = ({
         useUploadMutation={useUploadMeetupImageMutation}
         onUploaded={(_imageKey, imageUrl) => onUploaded(imageUrl)}
         onUploadingChange={onUploadingChange}
-        footer={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Remove"
-            onClick={onRemove}
-          >
-            <FiTrash2 />
-          </Button>
-        }
+        onRemove={onRemove}
       />
     </div>
   );
