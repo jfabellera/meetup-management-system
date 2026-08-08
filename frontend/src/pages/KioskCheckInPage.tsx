@@ -245,8 +245,8 @@ const KioskCheckInPage = (): ReactNode => {
     <div className="bg-muted flex h-svh flex-col overflow-hidden">
       <div className="mx-auto flex min-h-0 w-full max-w-2xl grow flex-col items-center justify-center gap-6 p-6 text-center">
         <div className="flex shrink-0 flex-col gap-1">
-          <h1 className="line-clamp-2 text-6xl font-bold">{meetup?.name}</h1>
-          <h2 className="text-muted-foreground text-xl">Self check-in</h2>
+          <h1 className="line-clamp-2 text-7xl font-bold">{meetup?.name}</h1>
+          <h2 className="text-muted-foreground text-4xl">Self check-in</h2>
         </div>
 
         <div className="flex h-48 shrink-0 flex-col items-center justify-center gap-3">
