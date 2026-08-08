@@ -335,7 +335,7 @@ const CheckInPage = (): ReactNode => {
           <Button
             variant="outline"
             size="sm"
-            className="absolute top-1/2 right-0 -translate-y-1/2"
+            className="absolute top-1/2 right-0 hidden -translate-y-1/2 md:inline-flex"
             onClick={onKioskConfirmOpen}
           >
             <FiLock />
