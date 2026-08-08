@@ -379,7 +379,7 @@ describe('getAllMeetups', () => {
     expect(mockedMeetup.find).toHaveBeenCalledTimes(1);
     expect(mockedTicket.createQueryBuilder).not.toHaveBeenCalled();
     expect((mockedMeetup.find.mock.calls[0][0] as any).where).toEqual([
-      { is_unlisted: false },
+      { is_unlisted: false, is_draft: false },
     ]);
   });
 
@@ -396,8 +396,9 @@ describe('getAllMeetups', () => {
 
     // The listing (second find) ORs public meetups with the requestor's own.
     expect((mockedMeetup.find.mock.calls[1][0] as any).where).toEqual([
-      { is_unlisted: false },
-      { id: In(['30', '40']) },
+      { is_unlisted: false, is_draft: false },
+      { is_draft: false, id: In(['30', '40']) },
+      { id: In(['40']) },
     ]);
   });
 
@@ -412,11 +413,13 @@ describe('getAllMeetups', () => {
     await getAllMeetups(mockRequest({}, {}, { by_organizer_id: '1' }), res);
 
     // Each organizer scope (organizer or lead) is crossed with each visibility
-    // branch (public, or one of the requestor's own meetups).
+    // branch (public, a visible unlisted meetup, or one the requestor runs).
     expect((mockedMeetup.find.mock.calls[1][0] as any).where).toEqual([
-      { organizers: { id: '1' }, is_unlisted: false },
+      { organizers: { id: '1' }, is_unlisted: false, is_draft: false },
+      { organizers: { id: '1' }, is_draft: false, id: In(['40']) },
       { organizers: { id: '1' }, id: In(['40']) },
-      { lead_organizer: { id: '1' }, is_unlisted: false },
+      { lead_organizer: { id: '1' }, is_unlisted: false, is_draft: false },
+      { lead_organizer: { id: '1' }, is_draft: false, id: In(['40']) },
       { lead_organizer: { id: '1' }, id: In(['40']) },
     ]);
   });
@@ -442,8 +445,8 @@ describe('getAllMeetups', () => {
     });
     // The group's meetup (50) becomes visible in the listing.
     expect((mockedMeetup.find.mock.calls[2][0] as any).where).toEqual([
-      { is_unlisted: false },
-      { id: In(['50']) },
+      { is_unlisted: false, is_draft: false },
+      { is_draft: false, id: In(['50']) },
     ]);
   });
 
@@ -461,7 +464,7 @@ describe('getAllMeetups', () => {
     // Only two finds: organized + listing (no group-meetups query).
     expect(mockedMeetup.find).toHaveBeenCalledTimes(2);
     expect((mockedMeetup.find.mock.calls[1][0] as any).where).toEqual([
-      { is_unlisted: false },
+      { is_unlisted: false, is_draft: false },
     ]);
   });
 
@@ -517,7 +520,7 @@ describe('getAllMeetups', () => {
       { tagCount: 2 }
     );
     expect((mockedMeetup.find.mock.calls[0][0] as any).where).toEqual([
-      { is_unlisted: false, id: In(['10', '20']) },
+      { is_unlisted: false, is_draft: false, id: In(['10', '20']) },
     ]);
   });
 
@@ -537,8 +540,11 @@ describe('getAllMeetups', () => {
     await getAllMeetups(mockRequest({}, {}, { by_tag_ids: '5' }), res);
 
     expect((mockedMeetup.find.mock.calls[1][0] as any).where).toEqual([
-      { is_unlisted: false, id: In(['20', '30']) },
-      { id: In(['30']) }, // only 30 is both visible-unlisted and tag-matched
+      { is_unlisted: false, is_draft: false, id: In(['20', '30']) },
+      // only 30 is both visible-unlisted and tag-matched
+      { is_draft: false, id: In(['30']) },
+      // the requestor organizes 40, which no requested tag matches
+      { id: In([]) },
     ]);
   });
 
@@ -550,7 +556,7 @@ describe('getAllMeetups', () => {
     await getAllMeetups(mockRequest({}, {}, { by_tag_ids: '99' }), res);
 
     expect((mockedMeetup.find.mock.calls[0][0] as any).where).toEqual([
-      { is_unlisted: false, id: In([]) },
+      { is_unlisted: false, is_draft: false, id: In([]) },
     ]);
     expect(res.body).toEqual([]);
   });
@@ -564,7 +570,7 @@ describe('getAllMeetups', () => {
     // No tag query runs, and the listing is unconstrained by tags.
     expect(organizerRelation.getRawMany).not.toHaveBeenCalled();
     expect((mockedMeetup.find.mock.calls[0][0] as any).where).toEqual([
-      { is_unlisted: false },
+      { is_unlisted: false, is_draft: false },
     ]);
   });
 
@@ -575,7 +581,7 @@ describe('getAllMeetups', () => {
     await getAllMeetups(mockRequest({}, {}, { by_name: 'mech' }), res);
 
     expect((mockedMeetup.find.mock.calls[0][0] as any).where).toEqual([
-      { name: ILike('%mech%'), is_unlisted: false },
+      { name: ILike('%mech%'), is_unlisted: false, is_draft: false },
     ]);
   });
 
@@ -586,7 +592,7 @@ describe('getAllMeetups', () => {
     await getAllMeetups(mockRequest({}, {}, { by_name: '50%_off' }), res);
 
     expect((mockedMeetup.find.mock.calls[0][0] as any).where).toEqual([
-      { name: ILike('%50\\%\\_off%'), is_unlisted: false },
+      { name: ILike('%50\\%\\_off%'), is_unlisted: false, is_draft: false },
     ]);
   });
 });
@@ -678,6 +684,36 @@ describe('getMeetup', () => {
     await getMeetup(mockRequest({}, { meetup_id: '10' }), res);
 
     expect((res.body as any).groups).toBeUndefined();
+  });
+
+  it('404s a draft for the public', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetupRow({ is_draft: true }));
+    const res = mockResponse();
+
+    await getMeetup(mockRequest({}, { meetup_id: '10' }), res);
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('404s a draft for a signed-in non-organizer', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetupRow({ is_draft: true }));
+    const res = mockResponse();
+    res.locals.requestor = { id: '99' };
+
+    await getMeetup(mockRequest({}, { meetup_id: '10' }), res);
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('serves a draft to an organizer of the meetup', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetupRow({ is_draft: true }));
+    mockedTicket.count.mockResolvedValue(0);
+    const res = mockResponse();
+    res.locals.requestor = { id: '1' }; // the lead organizer
+
+    await getMeetup(mockRequest({}, { meetup_id: '10' }), res);
+
+    expect((res.body as any).is_draft).toBe(true);
   });
 });
 
@@ -841,6 +877,35 @@ describe('createMeetup', () => {
 
     expect(mockedMeetup.create).toHaveBeenCalledWith(
       expect.objectContaining({ is_unlisted: false })
+    );
+  });
+
+  it('creates a draft when is_draft is set', async () => {
+    mockedMeetup.findOne.mockResolvedValue(null);
+    mockedGeocode.mockResolvedValue(geocodeResult);
+    mockedGetUtcOffset.mockResolvedValue(-5);
+    const res = mockResponse();
+    res.locals.requestor = { id: '1', nick_name: 'jane' };
+
+    await createMeetup(mockRequest(validCreateBody({ is_draft: true })), res);
+
+    expect(mockedMeetup.create).toHaveBeenCalledWith(
+      expect.objectContaining({ is_draft: true })
+    );
+    expect(res.statusCode).toBe(201);
+  });
+
+  it('defaults is_draft to false when omitted', async () => {
+    mockedMeetup.findOne.mockResolvedValue(null);
+    mockedGeocode.mockResolvedValue(geocodeResult);
+    mockedGetUtcOffset.mockResolvedValue(-5);
+    const res = mockResponse();
+    res.locals.requestor = { id: '1', nick_name: 'jane' };
+
+    await createMeetup(mockRequest(validCreateBody()), res);
+
+    expect(mockedMeetup.create).toHaveBeenCalledWith(
+      expect.objectContaining({ is_draft: false })
     );
   });
 
@@ -1168,6 +1233,40 @@ describe('updateMeetup', () => {
     );
 
     expect(meetup.is_unlisted).toBe(false);
+  });
+
+  it('publishes a draft', async () => {
+    const meetup = fakeMeetupRow({
+      is_draft: true,
+      save: jest.fn().mockResolvedValue(undefined),
+    });
+    mockedMeetup.findOne
+      .mockResolvedValueOnce(meetup) // target lookup
+      .mockResolvedValueOnce(null); // name-collision lookup
+    const res = mockResponse();
+
+    await updateMeetup(
+      mockRequest({ is_draft: false }, { meetup_id: '10' }),
+      res
+    );
+
+    expect(meetup.is_draft).toBe(false);
+    expect(res.statusCode).toBe(201);
+  });
+
+  it('refuses to turn a published meetup back into a draft', async () => {
+    const meetup = fakeMeetupRow({
+      is_draft: false,
+      save: jest.fn().mockResolvedValue(undefined),
+    });
+    mockedMeetup.findOne.mockResolvedValueOnce(meetup);
+    const res = mockResponse();
+
+    await updateMeetup(mockRequest({ is_draft: true }, { meetup_id: '10' }), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(meetup.is_draft).toBe(false);
+    expect(meetup.save).not.toHaveBeenCalled();
   });
 
   it('sets the co-organizer join table to match organizer_ids', async () => {

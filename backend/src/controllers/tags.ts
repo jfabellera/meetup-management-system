@@ -32,14 +32,15 @@ export const getTags = async (
     .addSelect('COUNT(*)', 'count')
     .from('meetups_tags', 'mt')
     .innerJoin('meetups', 'm', 'm.id = mt.meetup_id')
-    .groupBy('mt.tag_id');
+    .groupBy('mt.tag_id')
+    .where('m.is_draft = false');
   if (visibleUnlistedIds.length > 0) {
-    countQuery.where(
+    countQuery.andWhere(
       'm.is_unlisted = false OR m.id IN (:...visibleUnlistedIds)',
       { visibleUnlistedIds }
     );
   } else {
-    countQuery.where('m.is_unlisted = false');
+    countQuery.andWhere('m.is_unlisted = false');
   }
   const countRows = await countQuery.getRawMany<{
     tag_id: string;

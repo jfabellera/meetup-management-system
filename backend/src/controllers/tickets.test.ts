@@ -263,6 +263,17 @@ describe('createTicket', () => {
     expect(res.statusCode).toBe(404);
   });
 
+  it('returns 404 for a draft meetup', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetup({ is_draft: true }));
+    const res = mockResponse();
+    res.locals.requestor = fakeRequestor();
+
+    await createTicket(rsvpRequest(), res);
+
+    expect(res.statusCode).toBe(404);
+    expect(mockedTicket.create).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when a guest supplies no ticket holder details', async () => {
     mockedMeetup.findOne.mockResolvedValue(fakeMeetup());
     const res = mockResponse();

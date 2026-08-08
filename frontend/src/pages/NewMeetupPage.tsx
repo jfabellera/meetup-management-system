@@ -15,7 +15,13 @@ import { cn } from '@/lib/utils';
 import { useAppSelector } from '@/store/hooks';
 import { SLUG_REGEX, slugify } from '@keebmeet/shared';
 import { useFormik } from 'formik';
-import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import GroupCombobox from '../components/Meetups/GroupCombobox';
@@ -42,6 +48,8 @@ const NewMeetupPage = (): ReactNode => {
   const navigate = useNavigate();
   // Track whether the user edited the slug so name changes stop overwriting it.
   const [slugEdited, setSlugEdited] = useState(false);
+  // Submit intent rather than form data, so the two buttons share one submit.
+  const saveAsDraft = useRef(false);
   const formik = useFormik({
     initialValues: {
       name: '',
@@ -80,6 +88,7 @@ const NewMeetupPage = (): ReactNode => {
           ? formik.values.defaultRaffleEntries
           : formik.initialValues.defaultRaffleEntries,
         is_unlisted: formik.values.isUnlisted,
+        is_draft: saveAsDraft.current,
         organizer_ids: formik.values.organizerIds,
         group_ids: formik.values.groupIds,
         tag_ids: formik.values.tagIds,
@@ -123,6 +132,13 @@ const NewMeetupPage = (): ReactNode => {
       : slugTaken
         ? 'That URL is already taken'
         : undefined;
+
+  const submitDisabled =
+    !formik.isValid ||
+    isLoading ||
+    isUploading ||
+    slugError != null ||
+    formik.values.slug === '';
 
   const onDescriptionChange = (
     event: ChangeEvent<HTMLTextAreaElement>
@@ -375,20 +391,30 @@ const NewMeetupPage = (): ReactNode => {
                   value={formik.values.defaultRaffleEntries}
                 />
 
-                <Button
-                  type="submit"
-                  disabled={
-                    !formik.isValid ||
-                    isLoading ||
-                    isUploading ||
-                    slugError != null ||
-                    formik.values.slug === ''
-                  }
-                  size="lg"
-                >
-                  Create
-                  {isLoading && <Spinner />}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="submit"
+                    disabled={submitDisabled}
+                    size="lg"
+                    onClick={() => {
+                      saveAsDraft.current = false;
+                    }}
+                  >
+                    Create
+                    {isLoading && <Spinner />}
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    disabled={submitDisabled}
+                    size="lg"
+                    onClick={() => {
+                      saveAsDraft.current = true;
+                    }}
+                  >
+                    Save as draft
+                  </Button>
+                </div>
               </div>
             </form>
           </div>

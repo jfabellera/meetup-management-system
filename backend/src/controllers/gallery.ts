@@ -461,7 +461,8 @@ export const getUserGalleries = async (
   );
   const visible = records.filter(
     (record) =>
-      !record.meetup.is_unlisted || visibleUnlisted.has(record.meetup.id)
+      !record.meetup.is_draft &&
+      (!record.meetup.is_unlisted || visibleUnlisted.has(record.meetup.id))
   );
 
   const galleries = await Promise.all(

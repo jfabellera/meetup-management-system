@@ -109,6 +109,9 @@ export class Meetup extends BaseEntity {
   @Column({ type: 'boolean', default: false })
   is_unlisted: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  is_draft: boolean;
+
   @ManyToMany(() => Group)
   @JoinTable({
     name: 'meetups_groups',

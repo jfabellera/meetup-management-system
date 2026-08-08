@@ -8,7 +8,7 @@ import {
 import type { MeetupInfo } from '@keebmeet/shared';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { EyeOffIcon } from 'lucide-react';
+import { EyeOffIcon, PencilIcon } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { FiCheck, FiClock, FiImage } from 'react-icons/fi';
 import { hasMeetupEnded } from '../../util/timeUtil';
@@ -81,6 +81,16 @@ export const MeetupCard = ({
                 <TooltipContent>
                   Payment pending. If not paid in time, your spot will be
                   released to others.
+                </TooltipContent>
+              </Tooltip>
+            ) : null}
+            {meetup.is_draft === true ? (
+              <Tooltip>
+                <TooltipTrigger className="flex" aria-label="Draft">
+                  <PencilIcon className="size-4.5" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  This meetup is a draft. Only its organizers can see it.
                 </TooltipContent>
               </Tooltip>
             ) : null}

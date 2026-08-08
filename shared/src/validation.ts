@@ -59,6 +59,7 @@ export const createMeetupSchema = z.object({
   has_raffle: z.boolean().optional().default(true),
   default_raffle_entries: z.number().gte(0).optional().default(1),
   is_unlisted: z.boolean().optional().default(false),
+  is_draft: z.boolean().optional().default(false),
   ticket_type: ticketTypeSchema.optional(),
 });
 
@@ -120,6 +121,7 @@ export const editMeetupSchema = z.object({
   has_raffle: z.boolean().optional(),
   default_raffle_entries: z.number().gte(0).optional(),
   is_unlisted: z.boolean().optional(),
+  is_draft: z.boolean().optional(),
   ticket_type: ticketTypeSchema.nullable().optional(),
   display_idle_image_urls: z.string().array().optional(),
   display_raffle_background_url: z

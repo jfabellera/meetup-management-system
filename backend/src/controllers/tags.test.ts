@@ -23,6 +23,7 @@ const countQueryBuilder = {
   innerJoin: jest.fn().mockReturnThis(),
   groupBy: jest.fn().mockReturnThis(),
   where: jest.fn().mockReturnThis(),
+  andWhere: jest.fn().mockReturnThis(),
   getRawMany: jest.fn().mockResolvedValue([]),
 };
 
@@ -124,7 +125,10 @@ describe('getTags', () => {
 
     await getTags(mockRequest(), res);
 
-    expect(countQueryBuilder.where).toHaveBeenCalledWith('m.is_unlisted = false');
+    expect(countQueryBuilder.where).toHaveBeenCalledWith('m.is_draft = false');
+    expect(countQueryBuilder.andWhere).toHaveBeenCalledWith(
+      'm.is_unlisted = false'
+    );
   });
 
   it('also counts unlisted meetups the requestor may see', async () => {
@@ -141,7 +145,8 @@ describe('getTags', () => {
     await getTags(mockRequest(), res);
 
     expect(mockedGetVisibleUnlisted).toHaveBeenCalledWith({ id: '1' });
-    expect(countQueryBuilder.where).toHaveBeenCalledWith(
+    expect(countQueryBuilder.where).toHaveBeenCalledWith('m.is_draft = false');
+    expect(countQueryBuilder.andWhere).toHaveBeenCalledWith(
       'm.is_unlisted = false OR m.id IN (:...visibleUnlistedIds)',
       { visibleUnlistedIds: ['30', '40'] }
     );
