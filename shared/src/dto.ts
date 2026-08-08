@@ -38,6 +38,7 @@ export interface MeetupInfo {
   // Hidden from public listings; reachable only via direct link.
   is_unlisted?: boolean;
   unlisted_reason?: 'organizer' | 'attendee' | 'group';
+  is_draft?: boolean;
 }
 
 export interface TicketTypeInfo {

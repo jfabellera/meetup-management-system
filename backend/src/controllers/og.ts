@@ -27,7 +27,7 @@ export const getMeetupOgPage = async (
 
   const meetup = await Meetup.findOne({ where: { slug } });
 
-  if (meetup == null) {
+  if (meetup == null || meetup.is_draft) {
     return sendOg(
       res,
       renderOgHtml({
@@ -77,12 +77,17 @@ export const getUserOgPage = async (
   }
 
   const hostedCount = await Meetup.count({
-    where: { lead_organizer: { id: user.id }, is_unlisted: false },
+    where: {
+      lead_organizer: { id: user.id },
+      is_unlisted: false,
+      is_draft: false,
+    },
   });
   const galleryCount = await GalleryRecord.createQueryBuilder('gallery')
     .innerJoin('gallery.meetup', 'meetup')
     .where('gallery.user_id = :userId', { userId: user.id })
     .andWhere('meetup.is_unlisted = false')
+    .andWhere('meetup.is_draft = false')
     .getCount();
 
   const parts: string[] = [];

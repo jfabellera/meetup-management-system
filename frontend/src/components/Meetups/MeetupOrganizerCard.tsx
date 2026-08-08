@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { EyeOffIcon } from 'lucide-react';
+import { EyeOffIcon, PencilIcon } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { FiCalendar, FiClock, FiLink, FiUsers } from 'react-icons/fi';
 import { CopyButton } from '../CopyButton';
@@ -17,6 +17,7 @@ export interface MeetupOrganizerCardProps {
   ticketsAvailable: number;
   ticketsTotal: number;
   isUnlisted?: boolean;
+  isDraft?: boolean;
   onClick: () => void;
   onMouseEnter?: () => void;
 }
@@ -29,6 +30,7 @@ export const MeetupOrganizerCard = ({
   ticketsAvailable,
   ticketsTotal,
   isUnlisted,
+  isDraft,
   onClick,
   onMouseEnter,
 }: MeetupOrganizerCardProps): ReactNode => {
@@ -50,6 +52,12 @@ export const MeetupOrganizerCard = ({
           {/* Pad right so the title never runs under the copy-link button. */}
           <div className="flex items-center gap-2 pr-9">
             <h3 className="line-clamp-1 text-xl font-semibold">{name}</h3>
+            {isDraft === true ? (
+              <Badge variant="outline" className="shrink-0 gap-1">
+                <PencilIcon className="size-3" />
+                Draft
+              </Badge>
+            ) : null}
             {isUnlisted === true ? (
               <Badge variant="secondary" className="shrink-0 gap-1">
                 <EyeOffIcon className="size-3" />
@@ -77,13 +85,15 @@ export const MeetupOrganizerCard = ({
           </div>
         </div>
       </div>
-      <CopyButton
-        value={`${window.location.origin}/meetup/${slug}`}
-        icon={FiLink}
-        label="Copy link"
-        toastMessage="Link copied to clipboard"
-        className="absolute top-2 right-2"
-      />
+      {isDraft !== true ? (
+        <CopyButton
+          value={`${window.location.origin}/meetup/${slug}`}
+          icon={FiLink}
+          label="Copy link"
+          toastMessage="Link copied to clipboard"
+          className="absolute top-2 right-2"
+        />
+      ) : null}
     </div>
   );
 };

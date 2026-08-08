@@ -51,22 +51,32 @@ const OrganizerDashboard = (): ReactNode => {
     void navigate('/new-meetup');
   };
 
-  const currentMeetups = useMemo(
-    () => meetups?.filter((meetup) => isMeetupHappeningNow(meetup)),
+  const draftMeetups = useMemo(
+    () => meetups?.filter((meetup) => meetup.is_draft === true),
     [meetups]
   );
 
-  const futureMeetups = useMemo(
-    () => meetups?.filter((meetup) => !hasMeetupStarted(meetup)),
+  const publishedMeetups = useMemo(
+    () => meetups?.filter((meetup) => meetup.is_draft !== true),
     [meetups]
+  );
+
+  const currentMeetups = useMemo(
+    () => publishedMeetups?.filter((meetup) => isMeetupHappeningNow(meetup)),
+    [publishedMeetups]
+  );
+
+  const futureMeetups = useMemo(
+    () => publishedMeetups?.filter((meetup) => !hasMeetupStarted(meetup)),
+    [publishedMeetups]
   );
 
   const pastMeetups = useMemo(
     () =>
-      meetups
+      publishedMeetups
         ?.filter((meetup) => hasMeetupEnded(meetup))
         .sort((a, b) => (dayjs(a.date).isBefore(b.date) ? 1 : -1)),
-    [meetups]
+    [publishedMeetups]
   );
 
   const mapMeetupToCard = (meetup: MeetupInfo): ReactNode => {
@@ -80,6 +90,7 @@ const OrganizerDashboard = (): ReactNode => {
         ticketsAvailable={meetup.tickets?.available ?? NaN}
         ticketsTotal={meetup.tickets?.total ?? NaN}
         isUnlisted={meetup.is_unlisted}
+        isDraft={meetup.is_draft}
         onClick={() => {
           void navigate(`/meetup/${meetup.slug}/manage`);
         }}
@@ -91,6 +102,9 @@ const OrganizerDashboard = (): ReactNode => {
   };
 
   const sections: { title: string; meetups: MeetupInfo[] }[] = [];
+  if (draftMeetups != null && draftMeetups.length > 0) {
+    sections.push({ title: 'Drafts', meetups: draftMeetups });
+  }
   if (currentMeetups != null && currentMeetups.length > 0) {
     sections.push({ title: 'Happening now', meetups: currentMeetups });
   }

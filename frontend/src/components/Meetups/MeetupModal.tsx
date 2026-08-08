@@ -23,7 +23,13 @@ import { type SimpleTicketInfo } from '@keebmeet/shared';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArchiveIcon, EyeOffIcon, Settings, Ticket } from 'lucide-react';
+import {
+  ArchiveIcon,
+  EyeOffIcon,
+  PencilIcon,
+  Settings,
+  Ticket,
+} from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   FiCalendar,
@@ -171,8 +177,9 @@ export const MeetupModal = ({
 
   const isHappeningNow = isMeetupHappeningNow(meetup);
   const hasEnded = hasMeetupEnded(meetup);
-  // A meetup can be RSVP'd to (or cancelled) right up until it ends.
-  const isRsvpable = !hasEnded;
+  // A meetup can be RSVP'd to (or cancelled) right up until it ends. Drafts are
+  // organizer-only and the server rejects RSVPs to them.
+  const isRsvpable = !hasEnded && meetup.is_draft !== true;
   const isRsvpDisabled = meetup.tickets?.available === 0;
   const goToRsvp = (): void => void navigate('/meetup/' + meetupId + '/rsvp');
   const goToEditMeetup = (): void =>
@@ -201,7 +208,8 @@ export const MeetupModal = ({
     isHappeningNow ||
     hasEnded ||
     meetup.is_archive ||
-    meetup.is_unlisted === true;
+    meetup.is_unlisted === true ||
+    meetup.is_draft === true;
 
   const linkedOrganizers =
     meetup.organizers != null
@@ -371,6 +379,20 @@ export const MeetupModal = ({
                           </TooltipTrigger>
                           <TooltipContent>
                             This is an archived meetup
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : null}
+                      {meetup.is_draft === true ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge variant="outline">
+                              <PencilIcon className="size-3.5" />
+                              Draft
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            This meetup is a draft. Only its organizers can see
+                            it.
                           </TooltipContent>
                         </Tooltip>
                       ) : null}

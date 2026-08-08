@@ -35,7 +35,7 @@ export const handleDiscordRsvp = async (
 
   const meetup = await Meetup.findOneBy({ id: meetupId });
 
-  if (meetup == null) {
+  if (meetup == null || meetup.is_draft) {
     return res.status(404).json({ message: 'Invalid meetup ID.' });
   }
 

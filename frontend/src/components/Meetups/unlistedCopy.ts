@@ -3,3 +3,6 @@ export const UNLISTED_SLUG_NOTE =
 
 export const UNLISTED_GROUPS_DESCRIPTION =
   "Members of the selected groups can find this meetup even though it's unlisted. Use this as a way to share it with a community without making it public.";
+
+export const DRAFT_PUBLISH_NOTE =
+  "Only you and your co-organizers can see this meetup. Nobody can RSVP to it yet. Publishing is permanent — you can't turn it back into a draft.";

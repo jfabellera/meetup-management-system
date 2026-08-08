@@ -59,6 +59,12 @@ export const createMeetupDiscordMessage = async (
     return res.status(404).json({ message: 'Invalid meetup ID.' });
   }
 
+  if (meetup.is_draft) {
+    return res
+      .status(409)
+      .json({ message: 'Publish this meetup before announcing it.' });
+  }
+
   if (meetup.discordMessage != null) {
     return res
       .status(409)

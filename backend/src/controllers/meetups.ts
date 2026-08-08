@@ -104,6 +104,7 @@ const mapMeetupInfo = async (
     image_url: publicUrl(meetup.image_key),
     is_archive: meetup.is_archive,
     is_unlisted: meetup.is_unlisted,
+    is_draft: meetup.is_draft,
   };
 
   // Display-only credit for an archive's organizer, surfaced on cards/detail.
@@ -232,6 +233,7 @@ const getMeetupIdsWithTags = async (tagIds: string[]): Promise<string[]> => {
 const createMeetupsFilter = (
   query: ParsedQs,
   visibleUnlistedIds: string[],
+  organizedIds: string[],
   tagMatchedIds: string[] | null
 ): FindOptionsWhere<Meetup>[] => {
   const base: FindOptionsWhere<Meetup> = {};
@@ -260,28 +262,37 @@ const createMeetupsFilter = (
         ]
       : [{}];
 
-  // Public meetups, plus any unlisted meetup the requestor may see.
-  const visibilityScopes: FindOptionsWhere<Meetup>[] = [{ is_unlisted: false }];
+  // Published public meetups, plus any published unlisted meetup the requestor
+  // may see, plus the requestor's own meetups (drafts included).
+  const visibilityScopes: {
+    scope: FindOptionsWhere<Meetup>;
+    ids: string[] | null;
+  }[] = [{ scope: { is_unlisted: false, is_draft: false }, ids: null }];
   if (visibleUnlistedIds.length > 0) {
-    visibilityScopes.push({ id: In(visibleUnlistedIds) });
+    visibilityScopes.push({
+      scope: { is_draft: false },
+      ids: visibleUnlistedIds,
+    });
+  }
+  if (organizedIds.length > 0) {
+    visibilityScopes.push({ scope: {}, ids: organizedIds });
   }
 
   const tagMatchedSet = tagMatchedIds != null ? new Set(tagMatchedIds) : null;
 
   // Cartesian product: find() ORs the array, and each entry ANDs its keys.
   return organizerScopes.flatMap((organizerScope) =>
-    visibilityScopes.map((visibilityScope) => {
+    visibilityScopes.flatMap(({ scope: visibilityScope, ids }) => {
+      const scopedIds =
+        tagMatchedSet == null
+          ? ids
+          : (ids ?? [...tagMatchedSet]).filter((id) => tagMatchedSet.has(id));
       const scope: FindOptionsWhere<Meetup> = {
         ...base,
         ...organizerScope,
         ...visibilityScope,
       };
-      if (tagMatchedSet != null) {
-        scope.id =
-          visibilityScope.id != null
-            ? In(visibleUnlistedIds.filter((id) => tagMatchedSet.has(id)))
-            : In([...tagMatchedSet]);
-      }
+      if (scopedIds != null) scope.id = In(scopedIds);
       return scope;
     })
   );
@@ -337,6 +348,7 @@ export const getAllMeetups = async (
   const findOptionsWhere = createMeetupsFilter(
     req.query,
     visibleUnlistedIds,
+    [...organizedIds],
     tagMatchedIds
   );
   const findOptionsOrder = createMeetupsSorting(req.query);
@@ -426,6 +438,10 @@ export const getMeetup = async (
     (meetup.lead_organizer?.id === requestor.id ||
       meetup.organizers.some((organizer) => organizer.id === requestor.id));
 
+  if (meetup.is_draft && !isOrganizer) {
+    return res.status(404).json({ message: 'Meetup not found.' });
+  }
+
   const meetupInfo = await mapMeetupInfo(
     meetup,
     detailLevel,
@@ -445,7 +461,7 @@ export const getMeetupCalendar = async (
 
   const meetup = await Meetup.findOne({ where: { slug } });
 
-  if (meetup == null) {
+  if (meetup == null || meetup.is_draft) {
     return res.status(404).json({ message: 'Meetup not found.' });
   }
 
@@ -536,6 +552,7 @@ export const createMeetup = async (
     has_raffle: result.data.has_raffle,
     default_raffle_entries: result.data.default_raffle_entries,
     is_unlisted: result.data.is_unlisted,
+    is_draft: result.data.is_draft,
   });
 
   const requestor = res.locals.requestor as User;
@@ -1001,6 +1018,14 @@ export const updateMeetup = async (
     });
   }
 
+  // Publishing is one-way: un-publishing would strand anyone who already RSVP'd
+  // and silently break links that have been shared.
+  if (result.data.is_draft === true && !meetup.is_draft) {
+    return res.status(400).json({
+      message: 'A published meetup cannot be turned back into a draft.',
+    });
+  }
+
   // A paid ticket type needs the lead organizer's payouts wired up
   if (
     result.data.ticket_type != null &&
@@ -1044,6 +1069,7 @@ export const updateMeetup = async (
   meetup.default_raffle_entries =
     req.body.default_raffle_entries ?? meetup.default_raffle_entries;
   meetup.is_unlisted = req.body.is_unlisted ?? meetup.is_unlisted;
+  meetup.is_draft = req.body.is_draft ?? meetup.is_draft;
 
   // Archive-only credit for who ran the meetup. An empty string clears it back
   // to the submitter (who is always the lead organizer).
@@ -1583,7 +1609,7 @@ export const getMeetupDisplayAssets = async (
     },
   });
 
-  if (meetup == null) {
+  if (meetup == null || meetup.is_draft) {
     return res.status(404).json({ message: 'Invalid meetupID.' });
   }
 
