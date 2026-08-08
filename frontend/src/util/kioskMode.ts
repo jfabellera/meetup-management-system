@@ -5,6 +5,7 @@ export type KioskScanner = 'camera' | 'device';
 export interface KioskConfig {
   meetup: string;
   scanner: KioskScanner;
+  allowNameEntry: boolean;
 }
 
 const KEY = 'keebmeet.kiosk';
@@ -28,6 +29,7 @@ const parse = (raw: string | null): KioskConfig | null => {
     return {
       meetup: parsed.meetup,
       scanner: parsed.scanner === 'device' ? 'device' : 'camera',
+      allowNameEntry: parsed.allowNameEntry === true,
     };
   } catch {
     return null;

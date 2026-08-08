@@ -1,5 +1,14 @@
+import { AttendeeSearchInput } from '@/components/shared/AttendeeSearchInput';
 import QrScanner from '@/components/shared/QrScanner';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import { useDisclosure } from '@/hooks/useDisclosure';
 import { type TicketInfo } from '@keebmeet/shared';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
@@ -41,7 +50,13 @@ const KioskCheckInPage = (): ReactNode => {
 
   const [status, setStatus] = useState<KioskStatus | null>(null);
   const [deviceBuffer, setDeviceBuffer] = useState<string>('');
+  const [manualSearch, setManualSearch] = useState<string>('');
   const deviceInputRef = useRef<HTMLInputElement>(null);
+  const {
+    isOpen: isManualOpen,
+    onOpen: onManualOpen,
+    onClose: onManualClose,
+  } = useDisclosure();
 
   useEffect(() => {
     const held = new Set<string>();
@@ -77,7 +92,7 @@ const KioskCheckInPage = (): ReactNode => {
   // Barcode scanners emit keystrokes, so keep the hidden input focused to
   // receive them.
   useEffect(() => {
-    if (kioskConfig?.scanner !== 'device') return;
+    if (kioskConfig?.scanner !== 'device' || isManualOpen) return;
 
     const focusInput = (): void => {
       deviceInputRef.current?.focus();
@@ -88,7 +103,7 @@ const KioskCheckInPage = (): ReactNode => {
     return () => {
       document.removeEventListener('keydown', focusInput);
     };
-  }, [kioskConfig?.scanner]);
+  }, [kioskConfig?.scanner, isManualOpen]);
 
   useEffect(() => {
     if (status == null) return;
@@ -113,20 +128,11 @@ const KioskCheckInPage = (): ReactNode => {
   const findAttendee = (value: string): TicketInfo | undefined =>
     attendees?.find((attendee) => attendee.qr_code_value === value);
 
-  const handleScan = (raw: string): void => {
-    const value = raw.trim();
-    if (value === '' || isCheckingIn) return;
+  const isEligible = (attendee: TicketInfo): boolean =>
+    attendee.payment_status !== 'refunded' &&
+    attendee.payment_status !== 'pending';
 
-    const attendee = findAttendee(value);
-    if (
-      attendee == null ||
-      attendee.payment_status === 'refunded' ||
-      attendee.payment_status === 'pending'
-    ) {
-      setStatus({ kind: 'unrecognized' });
-      return;
-    }
-
+  const processAttendee = (attendee: TicketInfo): void => {
     if (attendee.is_checked_in) {
       setStatus({
         kind: 'already',
@@ -145,6 +151,19 @@ const KioskCheckInPage = (): ReactNode => {
     })();
   };
 
+  const handleScan = (raw: string): void => {
+    const value = raw.trim();
+    if (value === '' || isCheckingIn) return;
+
+    const attendee = findAttendee(value);
+    if (attendee == null || !isEligible(attendee)) {
+      setStatus({ kind: 'unrecognized' });
+      return;
+    }
+
+    processAttendee(attendee);
+  };
+
   const handleDeviceInput = (value: string): void => {
     if (findAttendee(value.trim()) != null) {
       handleScan(value);
@@ -153,6 +172,13 @@ const KioskCheckInPage = (): ReactNode => {
       setDeviceBuffer(value);
     }
   };
+
+  const closeManualDialog = (): void => {
+    onManualClose();
+    setManualSearch('');
+  };
+
+  const eligibleAttendees = (attendees ?? []).filter(isEligible);
 
   if (kioskConfig != null && meetupId !== kioskConfig.meetup) {
     return (
@@ -216,14 +242,14 @@ const KioskCheckInPage = (): ReactNode => {
   };
 
   return (
-    <div className="bg-muted flex h-svh flex-col overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-2xl grow flex-col items-center justify-center gap-8 p-6 text-center">
-        <div className="flex flex-col gap-1">
+    <div className="bg-muted flex h-svh flex-col overflow-hidden">
+      <div className="mx-auto flex min-h-0 w-full max-w-2xl grow flex-col items-center justify-center gap-6 p-6 text-center">
+        <div className="flex shrink-0 flex-col gap-1">
           <h1 className="line-clamp-2 text-3xl font-bold">{meetup?.name}</h1>
           <h2 className="text-muted-foreground text-xl">Self check-in</h2>
         </div>
 
-        <div className="flex min-h-40 flex-col items-center justify-center gap-3">
+        <div className="flex min-h-32 shrink-0 flex-col items-center justify-center gap-3">
           {renderStatus()}
         </div>
 
@@ -247,12 +273,56 @@ const KioskCheckInPage = (): ReactNode => {
             />
           </>
         ) : (
-          <QrScanner onScan={handleScan} />
+          // The scanner is square, so capping its width by the viewport height
+          // keeps the whole page from ever scrolling.
+          <div className="w-full max-w-[min(26rem,40svh)]">
+            <QrScanner onScan={handleScan} />
+          </div>
         )}
+
+        {kioskConfig?.allowNameEntry ? (
+          <Button
+            variant="link"
+            className="text-muted-foreground"
+            onClick={onManualOpen}
+          >
+            Not working? Check in manually
+          </Button>
+        ) : null}
       </div>
       <footer className="text-primary shrink-0 pb-6 text-center text-xl font-bold tracking-tight">
         KeebMeet
       </footer>
+
+      <Dialog
+        open={isManualOpen}
+        onOpenChange={(open) => {
+          if (!open) closeManualDialog();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manual check-in</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <AttendeeSearchInput
+              autoFocus
+              attendees={eligibleAttendees}
+              value={manualSearch}
+              placeholder="Start typing your display name…"
+              disabled={isCheckingIn}
+              onChange={setManualSearch}
+              onSelect={(attendee) => {
+                closeManualDialog();
+                processAttendee(attendee);
+              }}
+            />
+            <p className="text-muted-foreground text-sm">
+              Can&apos;t find your name? Please see an organizer.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

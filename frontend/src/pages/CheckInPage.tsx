@@ -1,5 +1,6 @@
 import QrScanner from '@/components/shared/QrScanner';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -79,6 +80,8 @@ const CheckInPage = (): ReactNode => {
   } = useDisclosure();
   const isKioskMode = useKioskConfig() != null;
   const [kioskScanner, setKioskScanner] = useState<KioskScanner>('camera');
+  const [kioskAllowNameEntry, setKioskAllowNameEntry] =
+    useState<boolean>(false);
   const [editingAttendee, setEditingAttendee] = useState<TicketInfo | null>(
     null
   );
@@ -599,8 +602,8 @@ const CheckInPage = (): ReactNode => {
           <div className="flex flex-col gap-3 text-left text-sm">
             <p>
               Kiosk mode turns this device into a self-service check-in station
-              that you can leave out for attendees. It shows no attendee details
-              — tickets can only be checked in by scanning.
+              that you can leave out for attendees. It never lists attendee
+              details.
             </p>
             <p>
               While it&apos;s active you will be locked out of all other
@@ -633,6 +636,22 @@ const CheckInPage = (): ReactNode => {
                   : 'A USB or Bluetooth barcode scanner connected to this device.'}
               </p>
             </div>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="kiosk-allow-name-entry"
+                checked={kioskAllowNameEntry}
+                onCheckedChange={(checked) => {
+                  setKioskAllowNameEntry(checked === true);
+                }}
+              />
+              <label htmlFor="kiosk-allow-name-entry" className="leading-snug">
+                Also allow manual check-in by display name
+                <span className="text-muted-foreground block">
+                  Attendees whose scan fails can search their display name.
+                  Names only appear once they start typing.
+                </span>
+              </label>
+            </div>
             <p>
               To exit kiosk mode, press{' '}
               <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">
@@ -651,7 +670,11 @@ const CheckInPage = (): ReactNode => {
             <Button
               onClick={() => {
                 if (slugParam != null) {
-                  enterKioskMode({ meetup: slugParam, scanner: kioskScanner });
+                  enterKioskMode({
+                    meetup: slugParam,
+                    scanner: kioskScanner,
+                    allowNameEntry: kioskAllowNameEntry,
+                  });
                 }
                 onKioskConfirmClose();
               }}
