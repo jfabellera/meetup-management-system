@@ -1,5 +1,6 @@
 import QrScanner from '@/components/shared/QrScanner';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -27,12 +28,17 @@ import { cn } from '@/lib/utils';
 import { type TicketInfo } from '@keebmeet/shared';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { FiCheck, FiSearch, FiX } from 'react-icons/fi';
+import { FiCamera, FiCheck, FiLock, FiSearch, FiX } from 'react-icons/fi';
 import { MdQrCodeScanner } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AttendeeDetailsDialog } from '../components/AttendeeDetailsDialog';
 import { ExpandableCard } from '../components/ExpandableCard';
+import {
+  enterKioskMode,
+  useKioskConfig,
+  type KioskScanner,
+} from '../util/kioskMode';
 import { useGetMeetupQuery } from '../store/meetupSlice';
 import {
   useCheckInAttendeeMutation,
@@ -67,6 +73,15 @@ const CheckInPage = (): ReactNode => {
     onOpen: onEditOpen,
     onClose: onEditClose,
   } = useDisclosure();
+  const {
+    isOpen: isKioskConfirmOpen,
+    onOpen: onKioskConfirmOpen,
+    onClose: onKioskConfirmClose,
+  } = useDisclosure();
+  const isKioskMode = useKioskConfig() != null;
+  const [kioskScanner, setKioskScanner] = useState<KioskScanner>('camera');
+  const [kioskAllowNameEntry, setKioskAllowNameEntry] =
+    useState<boolean>(false);
   const [editingAttendee, setEditingAttendee] = useState<TicketInfo | null>(
     null
   );
@@ -245,6 +260,8 @@ const CheckInPage = (): ReactNode => {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
+      if (isKioskConfirmOpen) return;
+
       if (isOpen) {
         if (event.key === 'Enter') {
           event.preventDefault();
@@ -295,6 +312,7 @@ const CheckInPage = (): ReactNode => {
   }, [
     focusedIndex,
     isOpen,
+    isKioskConfirmOpen,
     searchValue,
     filteredAttendees,
     action,
@@ -319,7 +337,20 @@ const CheckInPage = (): ReactNode => {
 
   return (
     <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-2 p-4 text-center">
-      <h2 className="mb-2 text-center text-2xl font-medium">Check-in</h2>
+      <div className="relative mb-2">
+        <h2 className="text-center text-2xl font-medium">Check-in</h2>
+        {!isKioskMode && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="absolute top-1/2 right-0 hidden -translate-y-1/2 md:inline-flex"
+            onClick={onKioskConfirmOpen}
+          >
+            <FiLock />
+            Kiosk mode
+          </Button>
+        )}
+      </div>
 
       {useCamera && (
         <div className="flex flex-col items-center justify-center gap-2">
@@ -553,6 +584,103 @@ const CheckInPage = (): ReactNode => {
             >
               Confirm
               {(isCheckingIn || isUncheckingIn) && <Spinner />}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isKioskConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open) onKioskConfirmClose();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter kiosk mode?</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 text-left text-sm">
+            <p>
+              Kiosk mode turns this device into a self-service check-in station
+              that you can leave out for attendees. It never lists attendee
+              details.
+            </p>
+            <p>
+              While it&apos;s active you will be locked out of all other
+              organizer pages and navigation — only the kiosk screen is
+              accessible, even after a refresh.
+            </p>
+            <div className="flex flex-col gap-2">
+              <p className="font-medium">
+                How will attendees scan their tickets?
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={kioskScanner === 'camera' ? 'default' : 'outline'}
+                  onClick={() => setKioskScanner('camera')}
+                >
+                  <FiCamera />
+                  Webcam
+                </Button>
+                <Button
+                  variant={kioskScanner === 'device' ? 'default' : 'outline'}
+                  onClick={() => setKioskScanner('device')}
+                >
+                  <MdQrCodeScanner />
+                  Scanner device
+                </Button>
+              </div>
+              <p className="text-muted-foreground">
+                {kioskScanner === 'camera'
+                  ? "Attendees hold their QR code up to this device's camera."
+                  : 'A USB or Bluetooth barcode scanner connected to this device.'}
+              </p>
+            </div>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="kiosk-allow-name-entry"
+                checked={kioskAllowNameEntry}
+                onCheckedChange={(checked) => {
+                  setKioskAllowNameEntry(checked === true);
+                }}
+              />
+              <label htmlFor="kiosk-allow-name-entry" className="leading-snug">
+                Also allow manual check-in by display name
+                <span className="text-muted-foreground block">
+                  Attendees whose scan fails can search their display name.
+                  Names only appear once they start typing.
+                </span>
+              </label>
+            </div>
+            <p>
+              To exit kiosk mode, press{' '}
+              <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">
+                [
+              </kbd>{' '}
+              <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">
+                ]
+              </kbd>{' '}
+              <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">
+                \
+              </kbd>{' '}
+              simultaneously.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                if (slugParam != null) {
+                  enterKioskMode({
+                    meetup: slugParam,
+                    scanner: kioskScanner,
+                    allowNameEntry: kioskAllowNameEntry,
+                  });
+                }
+                onKioskConfirmClose();
+              }}
+            >
+              <FiLock />
+              Enter kiosk mode
             </Button>
           </DialogFooter>
         </DialogContent>

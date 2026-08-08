@@ -1,5 +1,7 @@
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { MdFlipCameraAndroid } from 'react-icons/md';
 import BarcodeScanner from 'react-qr-barcode-scanner';
 
 const SCAN_COOLDOWN_MS = 1000;
@@ -17,6 +19,7 @@ interface QrScannerProps {
 
 const QrScanner = ({ onScan }: QrScannerProps): ReactNode => {
   const [isCoolingDown, setIsCoolingDown] = useState<boolean>(false);
+  const [mirrored, setMirrored] = useState<boolean>(false);
   const cooldownRef = useRef<boolean>(false);
   const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -46,7 +49,7 @@ const QrScanner = ({ onScan }: QrScannerProps): ReactNode => {
       <div className="absolute inset-0 flex items-center justify-center">
         <p className="text-muted-foreground text-sm">Loading camera...</p>
       </div>
-      <div className="absolute inset-0 z-10">
+      <div className={cn('absolute inset-0 z-10', mirrored && '-scale-x-100')}>
         <BarcodeScanner
           width="100%"
           height="100%"
@@ -65,19 +68,30 @@ const QrScanner = ({ onScan }: QrScannerProps): ReactNode => {
             facingMode: 'environment',
           }}
         />
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <div className="relative aspect-square w-2/3">
-            {CORNER_CLASSES.map((corner) => (
-              <div
-                key={corner}
-                className={cn(
-                  'absolute h-8 w-8 transition-colors',
-                  corner,
-                  isCoolingDown ? 'border-green-500' : 'border-secondary'
-                )}
-              />
-            ))}
-          </div>
+      </div>
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        aria-label="Mirror camera"
+        className="absolute top-2 right-2 z-30 rounded-full bg-black/30 text-white/70 hover:bg-black/50 hover:text-white dark:hover:bg-black/50"
+        onClick={() => {
+          setMirrored(!mirrored);
+        }}
+      >
+        <MdFlipCameraAndroid />
+      </Button>
+      <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+        <div className="relative aspect-square w-2/3">
+          {CORNER_CLASSES.map((corner) => (
+            <div
+              key={corner}
+              className={cn(
+                'absolute h-8 w-8 transition-colors',
+                corner,
+                isCoolingDown ? 'border-green-500' : 'border-secondary'
+              )}
+            />
+          ))}
         </div>
       </div>
     </div>
