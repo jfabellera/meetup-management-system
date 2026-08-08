@@ -27,12 +27,13 @@ import { cn } from '@/lib/utils';
 import { type TicketInfo } from '@keebmeet/shared';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { FiCheck, FiSearch, FiX } from 'react-icons/fi';
+import { FiCheck, FiLock, FiSearch, FiX } from 'react-icons/fi';
 import { MdQrCodeScanner } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AttendeeDetailsDialog } from '../components/AttendeeDetailsDialog';
 import { ExpandableCard } from '../components/ExpandableCard';
+import { enterKioskMode, useKioskMeetup } from '../util/kioskMode';
 import { useGetMeetupQuery } from '../store/meetupSlice';
 import {
   useCheckInAttendeeMutation,
@@ -67,6 +68,12 @@ const CheckInPage = (): ReactNode => {
     onOpen: onEditOpen,
     onClose: onEditClose,
   } = useDisclosure();
+  const {
+    isOpen: isKioskConfirmOpen,
+    onOpen: onKioskConfirmOpen,
+    onClose: onKioskConfirmClose,
+  } = useDisclosure();
+  const isKioskMode = useKioskMeetup() != null;
   const [editingAttendee, setEditingAttendee] = useState<TicketInfo | null>(
     null
   );
@@ -245,6 +252,8 @@ const CheckInPage = (): ReactNode => {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
+      if (isKioskConfirmOpen) return;
+
       if (isOpen) {
         if (event.key === 'Enter') {
           event.preventDefault();
@@ -295,6 +304,7 @@ const CheckInPage = (): ReactNode => {
   }, [
     focusedIndex,
     isOpen,
+    isKioskConfirmOpen,
     searchValue,
     filteredAttendees,
     action,
@@ -319,7 +329,20 @@ const CheckInPage = (): ReactNode => {
 
   return (
     <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-2 p-4 text-center">
-      <h2 className="mb-2 text-center text-2xl font-medium">Check-in</h2>
+      <div className="relative mb-2">
+        <h2 className="text-center text-2xl font-medium">Check-in</h2>
+        {!isKioskMode && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="absolute top-1/2 right-0 -translate-y-1/2"
+            onClick={onKioskConfirmOpen}
+          >
+            <FiLock />
+            Kiosk mode
+          </Button>
+        )}
+      </div>
 
       {useCamera && (
         <div className="flex flex-col items-center justify-center gap-2">
@@ -553,6 +576,54 @@ const CheckInPage = (): ReactNode => {
             >
               Confirm
               {(isCheckingIn || isUncheckingIn) && <Spinner />}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isKioskConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open) onKioskConfirmClose();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter kiosk mode?</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 text-left text-sm">
+            <p>
+              Kiosk mode turns this device into a self-service check-in station
+              that you can leave out for attendees.
+            </p>
+            <p>
+              While it&apos;s active you will be locked out of all other
+              organizer pages and navigation — only this check-in page is
+              accessible, even after a refresh.
+            </p>
+            <p>
+              To exit kiosk mode, press{' '}
+              <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">
+                [
+              </kbd>{' '}
+              <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">
+                ]
+              </kbd>{' '}
+              <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">
+                \
+              </kbd>{' '}
+              simultaneously.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                if (slugParam != null) enterKioskMode(slugParam);
+                onKioskConfirmClose();
+              }}
+            >
+              <FiLock />
+              Enter kiosk mode
             </Button>
           </DialogFooter>
         </DialogContent>

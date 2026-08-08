@@ -4,10 +4,8 @@ import { IoTicketOutline } from 'react-icons/io5';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Page from '../components/Page/Page';
 import { type SidebarItem } from '../components/Sidebar/Sidebar';
-import { socket } from '../socket';
-import { useAppDispatch } from '../store/hooks';
-import { meetupSlice, useGetMeetupQuery } from '../store/meetupSlice';
-import { organizerSlice } from '../store/organizerSlice';
+import { useMeetupLiveUpdates } from '../hooks/useMeetupLiveUpdates';
+import { useGetMeetupQuery } from '../store/meetupSlice';
 
 interface ManageMeetupPageProps {
   children: ReactNode;
@@ -17,50 +15,10 @@ const ManageMeetupPage = ({ children }: ManageMeetupPageProps): ReactNode => {
   const { meetupId } = useParams();
   const { data: meetup } = useGetMeetupQuery(meetupId ?? '');
   const location = useLocation();
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const isArchive = meetup?.is_archive === true;
 
-  /**
-   * Subscribe user to updates for the selected meetup. This will invalidate the
-   * cache for the fetched meetup and attendees whenever a meetup is updated.
-   */
-  useEffect(() => {
-    if (meetup == null) return;
-
-    // Socket rooms and the attendee/raffle caches are keyed by the numeric id;
-    // the getMeetup cache tag by slug.
-    const invalidate = (): void => {
-      dispatch(
-        meetupSlice.util.invalidateTags([{ type: 'Meetup', id: meetup.slug }])
-      );
-      dispatch(
-        organizerSlice.util.invalidateTags([
-          { type: 'Attendees', id: meetup.id },
-        ])
-      );
-      dispatch(
-        organizerSlice.util.invalidateTags([
-          'Raffle',
-          { type: 'Raffles', id: meetup.id },
-        ])
-      );
-    };
-
-    socket.emit('meetup:subscribe', { meetupId: meetup.id });
-
-    socket.on('meetup:update', () => {
-      invalidate();
-    });
-
-    // Resubscribe and force update on reconnection after losing connection
-    socket.on('connect', () => {
-      socket.emit('meetup:subscribe', { meetupId: meetup.id });
-      invalidate();
-    });
-
-    // Stay subscribed to updates in case user comes back to page
-  }, [meetup]);
+  useMeetupLiveUpdates(meetup);
 
   const allSidebarItems: SidebarItem[] = [
     {

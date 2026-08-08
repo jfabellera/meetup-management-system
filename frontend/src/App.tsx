@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import {
+  Navigate,
   Outlet,
   Route,
   BrowserRouter as Router,
@@ -49,12 +50,42 @@ import OrganizerPaymentTermsPage from './pages/OrganizerPaymentTermsPage';
 import RsvpReturnPage from './pages/RsvpReturnPage';
 import StripeRefreshPage from './pages/StripeRefreshPage';
 import StripeReturnPage from './pages/StripeReturnPage';
+import KioskCheckInPage from './pages/KioskCheckInPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import { store } from './store/store';
+import { useKioskMeetup } from './util/kioskMode';
 
 const MapPage = lazy(async () => import('./pages/MapPage'));
 
 const App = (): ReactNode => {
+  const kioskMeetup = useKioskMeetup();
+
+  if (kioskMeetup != null) {
+    return (
+      <TooltipProvider>
+        <Provider store={store}>
+          <Router>
+            <Routes>
+              <Route
+                path="/meetup/:meetupId/manage/checkin"
+                element={<KioskCheckInPage />}
+              />
+              <Route
+                path="*"
+                element={
+                  <Navigate
+                    to={`/meetup/${kioskMeetup}/manage/checkin`}
+                    replace
+                  />
+                }
+              />
+            </Routes>
+          </Router>
+        </Provider>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider>
       <Provider store={store}>
