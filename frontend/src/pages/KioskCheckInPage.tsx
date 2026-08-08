@@ -249,7 +249,7 @@ const KioskCheckInPage = (): ReactNode => {
           <h2 className="text-muted-foreground text-xl">Self check-in</h2>
         </div>
 
-        <div className="flex min-h-32 shrink-0 flex-col items-center justify-center gap-3">
+        <div className="flex h-48 shrink-0 flex-col items-center justify-center gap-3">
           {renderStatus()}
         </div>
 
