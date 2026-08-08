@@ -27,13 +27,17 @@ import { cn } from '@/lib/utils';
 import { type TicketInfo } from '@keebmeet/shared';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { FiCheck, FiLock, FiSearch, FiX } from 'react-icons/fi';
+import { FiCamera, FiCheck, FiLock, FiSearch, FiX } from 'react-icons/fi';
 import { MdQrCodeScanner } from 'react-icons/md';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AttendeeDetailsDialog } from '../components/AttendeeDetailsDialog';
 import { ExpandableCard } from '../components/ExpandableCard';
-import { enterKioskMode, useKioskMeetup } from '../util/kioskMode';
+import {
+  enterKioskMode,
+  useKioskConfig,
+  type KioskScanner,
+} from '../util/kioskMode';
 import { useGetMeetupQuery } from '../store/meetupSlice';
 import {
   useCheckInAttendeeMutation,
@@ -73,7 +77,8 @@ const CheckInPage = (): ReactNode => {
     onOpen: onKioskConfirmOpen,
     onClose: onKioskConfirmClose,
   } = useDisclosure();
-  const isKioskMode = useKioskMeetup() != null;
+  const isKioskMode = useKioskConfig() != null;
+  const [kioskScanner, setKioskScanner] = useState<KioskScanner>('camera');
   const [editingAttendee, setEditingAttendee] = useState<TicketInfo | null>(
     null
   );
@@ -594,13 +599,40 @@ const CheckInPage = (): ReactNode => {
           <div className="flex flex-col gap-3 text-left text-sm">
             <p>
               Kiosk mode turns this device into a self-service check-in station
-              that you can leave out for attendees.
+              that you can leave out for attendees. It shows no attendee details
+              — tickets can only be checked in by scanning.
             </p>
             <p>
               While it&apos;s active you will be locked out of all other
-              organizer pages and navigation — only this check-in page is
+              organizer pages and navigation — only the kiosk screen is
               accessible, even after a refresh.
             </p>
+            <div className="flex flex-col gap-2">
+              <p className="font-medium">
+                How will attendees scan their tickets?
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={kioskScanner === 'camera' ? 'default' : 'outline'}
+                  onClick={() => setKioskScanner('camera')}
+                >
+                  <FiCamera />
+                  Webcam
+                </Button>
+                <Button
+                  variant={kioskScanner === 'device' ? 'default' : 'outline'}
+                  onClick={() => setKioskScanner('device')}
+                >
+                  <MdQrCodeScanner />
+                  Scanner device
+                </Button>
+              </div>
+              <p className="text-muted-foreground">
+                {kioskScanner === 'camera'
+                  ? "Attendees hold their QR code up to this device's camera."
+                  : 'A USB or Bluetooth barcode scanner connected to this device.'}
+              </p>
+            </div>
             <p>
               To exit kiosk mode, press{' '}
               <kbd className="bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">
@@ -618,7 +650,9 @@ const CheckInPage = (): ReactNode => {
           <DialogFooter>
             <Button
               onClick={() => {
-                if (slugParam != null) enterKioskMode(slugParam);
+                if (slugParam != null) {
+                  enterKioskMode({ meetup: slugParam, scanner: kioskScanner });
+                }
                 onKioskConfirmClose();
               }}
             >

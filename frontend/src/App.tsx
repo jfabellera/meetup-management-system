@@ -53,14 +53,14 @@ import StripeReturnPage from './pages/StripeReturnPage';
 import KioskCheckInPage from './pages/KioskCheckInPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import { store } from './store/store';
-import { useKioskMeetup } from './util/kioskMode';
+import { useKioskConfig } from './util/kioskMode';
 
 const MapPage = lazy(async () => import('./pages/MapPage'));
 
 const App = (): ReactNode => {
-  const kioskMeetup = useKioskMeetup();
+  const kioskConfig = useKioskConfig();
 
-  if (kioskMeetup != null) {
+  if (kioskConfig != null) {
     return (
       <TooltipProvider>
         <Provider store={store}>
@@ -74,7 +74,7 @@ const App = (): ReactNode => {
                 path="*"
                 element={
                   <Navigate
-                    to={`/meetup/${kioskMeetup}/manage/checkin`}
+                    to={`/meetup/${kioskConfig.meetup}/manage/checkin`}
                     replace
                   />
                 }
