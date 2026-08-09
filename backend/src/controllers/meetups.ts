@@ -234,7 +234,8 @@ const createMeetupsFilter = (
   query: ParsedQs,
   visibleUnlistedIds: string[],
   organizedIds: string[],
-  tagMatchedIds: string[] | null
+  tagMatchedIds: string[] | null,
+  seesAllMeetups = false
 ): FindOptionsWhere<Meetup>[] => {
   const base: FindOptionsWhere<Meetup> = {};
 
@@ -263,19 +264,28 @@ const createMeetupsFilter = (
       : [{}];
 
   // Published public meetups, plus any published unlisted meetup the requestor
-  // may see, plus the requestor's own meetups (drafts included).
+  // may see, plus the requestor's own meetups (drafts included). Admins see
+  // everything.
   const visibilityScopes: {
     scope: FindOptionsWhere<Meetup>;
     ids: string[] | null;
-  }[] = [{ scope: { is_unlisted: false, is_draft: false }, ids: null }];
-  if (visibleUnlistedIds.length > 0) {
+  }[] = [];
+  if (seesAllMeetups) {
+    visibilityScopes.push({ scope: {}, ids: null });
+  } else {
     visibilityScopes.push({
-      scope: { is_draft: false },
-      ids: visibleUnlistedIds,
+      scope: { is_unlisted: false, is_draft: false },
+      ids: null,
     });
-  }
-  if (organizedIds.length > 0) {
-    visibilityScopes.push({ scope: {}, ids: organizedIds });
+    if (visibleUnlistedIds.length > 0) {
+      visibilityScopes.push({
+        scope: { is_draft: false },
+        ids: visibleUnlistedIds,
+      });
+    }
+    if (organizedIds.length > 0) {
+      visibilityScopes.push({ scope: {}, ids: organizedIds });
+    }
   }
 
   const tagMatchedSet = tagMatchedIds != null ? new Set(tagMatchedIds) : null;
@@ -344,12 +354,16 @@ export const getAllMeetups = async (
   const tagMatchedIds =
     tagIds.length > 0 ? await getMeetupIdsWithTags(tagIds) : null;
 
+  const isAdmin =
+    requestor != null && (requestor.is_admin || requestor.is_owner);
+
   // Build filters and sorting
   const findOptionsWhere = createMeetupsFilter(
     req.query,
     visibleUnlistedIds,
     [...organizedIds],
-    tagMatchedIds
+    tagMatchedIds,
+    isAdmin
   );
   const findOptionsOrder = createMeetupsSorting(req.query);
 
@@ -438,7 +452,10 @@ export const getMeetup = async (
     (meetup.lead_organizer?.id === requestor.id ||
       meetup.organizers.some((organizer) => organizer.id === requestor.id));
 
-  if (meetup.is_draft && !isOrganizer) {
+  const isAdmin =
+    requestor != null && (requestor.is_admin || requestor.is_owner);
+
+  if (meetup.is_draft && !isOrganizer && !isAdmin) {
     return res.status(404).json({ message: 'Meetup not found.' });
   }
 

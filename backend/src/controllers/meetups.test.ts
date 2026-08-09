@@ -424,6 +424,35 @@ describe('getAllMeetups', () => {
     ]);
   });
 
+  it('drops all visibility scoping for an admin requestor', async () => {
+    ticketQueryBuilder.getRawMany.mockResolvedValue([]);
+    mockedMeetup.find
+      .mockResolvedValueOnce([] as never) // organized lookup
+      .mockResolvedValueOnce([fakeMeetupRow({ is_draft: true })]);
+    const res = mockResponse();
+    res.locals.requestor = { id: '1', is_admin: true };
+
+    await getAllMeetups(mockRequest(), res);
+
+    expect((mockedMeetup.find.mock.calls[1][0] as any).where).toEqual([{}]);
+    expect((res.body as any[])[0].is_draft).toBe(true);
+  });
+
+  it('keeps other filters when the admin scope is unrestricted', async () => {
+    ticketQueryBuilder.getRawMany.mockResolvedValue([]);
+    mockedMeetup.find
+      .mockResolvedValueOnce([] as never) // organized lookup
+      .mockResolvedValueOnce([fakeMeetupRow()]);
+    const res = mockResponse();
+    res.locals.requestor = { id: '1', is_owner: true };
+
+    await getAllMeetups(mockRequest({}, {}, { by_city: 'Austin' }), res);
+
+    expect((mockedMeetup.find.mock.calls[1][0] as any).where).toEqual([
+      { city: ILike('Austin') },
+    ]);
+  });
+
   it('includes unlisted meetups assigned to the requestor\'s groups', async () => {
     // No attended/organized meetups; the requestor is only in group g1, which
     // is assigned to (unlisted) meetup 50.
@@ -715,7 +744,19 @@ describe('getMeetup', () => {
 
     expect((res.body as any).is_draft).toBe(true);
   });
+
+  it('serves a draft to an admin who is not an organizer', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetupRow({ is_draft: true }));
+    mockedTicket.count.mockResolvedValue(0);
+    const res = mockResponse();
+    res.locals.requestor = { id: '99', is_admin: true };
+
+    await getMeetup(mockRequest({}, { meetup_id: '10' }), res);
+
+    expect((res.body as any).is_draft).toBe(true);
+  });
 });
+
 
 // ---- createMeetup ----------------------------------------------------------
 
