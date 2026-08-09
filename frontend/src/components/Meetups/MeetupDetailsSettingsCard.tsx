@@ -35,6 +35,7 @@ import EditableFormCard from '../Forms/EditableFormCard';
 import EditableFormField from '../Forms/EditableFormField';
 import AddressCombobox from './AddressCombobox';
 import GroupCombobox from './GroupCombobox';
+import VenueNameLabel from './VenueNameLabel';
 import MeetupImageField from './MeetupImageField';
 import OrganizerCombobox from './OrganizerCombobox';
 import TagCombobox from './TagCombobox';
@@ -550,8 +551,8 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
             )}
           </Field>
           <Field className="max-w-none min-w-0 py-0">
-            <FieldLabel htmlFor="venueName" className="line-clamp-1">
-              Venue Name
+            <FieldLabel htmlFor="venueName">
+              <VenueNameLabel />
             </FieldLabel>
             {isEditable ? (
               <Input

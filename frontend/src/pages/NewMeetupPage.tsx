@@ -26,6 +26,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import AddressCombobox from '../components/Meetups/AddressCombobox';
 import GroupCombobox from '../components/Meetups/GroupCombobox';
+import VenueNameLabel from '../components/Meetups/VenueNameLabel';
 import MeetupImageField from '../components/Meetups/MeetupImageField';
 import OrganizerCombobox from '../components/Meetups/OrganizerCombobox';
 import TagCombobox from '../components/Meetups/TagCombobox';
@@ -375,7 +376,7 @@ const NewMeetupPage = (): ReactNode => {
                 <FormField
                   formik={formik}
                   name="venueName"
-                  label="Venue Name (optional)"
+                  label={<VenueNameLabel />}
                 />
 
                 <MeetupImageField
