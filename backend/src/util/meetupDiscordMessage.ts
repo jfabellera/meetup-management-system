@@ -134,6 +134,15 @@ const buildOrganizersFooter = (
   return { text: `Organized by ${list}` };
 };
 
+const buildLocationValue = (meetup: Meetup): string => {
+  const location = [meetup.venue_name, meetup.address]
+    .filter((part) => part != null && part !== '')
+    .join(', ');
+  return `[${location}](https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    location
+  )})`;
+};
+
 const buildDateValue = (meetup: Meetup): string => {
   const start = Math.floor(Date.parse(meetup.date) / 1000);
   const end = start + Math.round((meetup.duration_hours ?? 0) * 3600);
@@ -160,9 +169,7 @@ export const buildMeetupEmbed = (
     },
     {
       name: 'Location',
-      value: `[${meetup.address}](https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        meetup.address
-      )})`,
+      value: buildLocationValue(meetup),
     },
     {
       name: `Attendees (${attendeeNames.length}/${meetup.capacity})`,
