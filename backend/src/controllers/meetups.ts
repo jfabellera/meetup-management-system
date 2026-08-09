@@ -49,7 +49,11 @@ import {
   getEventbriteVenue,
 } from '../util/eventbriteApi';
 import {
+  autocompletePlaces,
+  findVenueAtPlace,
+  findVenueName,
   geocode,
+  getPlaceDetails,
   getUtcOffset,
   type GeocodeResults,
 } from '../util/externalApis';
@@ -98,6 +102,7 @@ const mapMeetupInfo = async (
     location: {
       // Public via the detail endpoint anyway; the map geocodes from the list.
       full_address: meetup.address,
+      venue_name: meetup.venue_name ?? undefined,
       city: meetup.city,
       state: meetup.state,
       country: meetup.country,
@@ -537,6 +542,49 @@ export const slugAvailable = async (
   return res.json({ available: existing == null || existing.id === excludeId });
 };
 
+export const addressAutocomplete = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const query = String(req.query.q ?? '').trim();
+  const session = String(req.query.session ?? '');
+
+  if (query.length < 3 || session === '') {
+    return res.json({ suggestions: [] });
+  }
+
+  return res.json({ suggestions: await autocompletePlaces(query, session) });
+};
+
+export const placeDetails = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { place_id } = req.params as Record<string, string>;
+  const session = String(req.query.session ?? '');
+
+  const details = await getPlaceDetails(place_id, session);
+  if (details == null) {
+    return res.status(404).json({ message: 'Place not found.' });
+  }
+
+  return res.json(details);
+};
+
+export const venueAtPlace = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { place_id } = req.params as Record<string, string>;
+
+  const venue = await findVenueAtPlace(place_id);
+  if (venue == null) {
+    return res.status(404).json({ message: 'No venue found.' });
+  }
+
+  return res.json(venue);
+};
+
 /**
  * Accepts a single multipart image file, stores it in R2, and returns the
  * object key plus a browser-loadable URL. Organizers upload here first, then
@@ -660,6 +708,10 @@ export const createMeetup = async (
     newMeetup.city = geocodeResult.city;
     if (geocodeResult.state != null) newMeetup.state = geocodeResult.state;
     newMeetup.country = geocodeResult.country;
+    newMeetup.venue_name =
+      result.data.venue_name != null && result.data.venue_name !== ''
+        ? result.data.venue_name
+        : await findVenueName(geocodeResult.latitude, geocodeResult.longitude);
 
     newMeetup.utc_offset = await getUtcOffset(
       geocodeResult.latitude,
@@ -768,6 +820,10 @@ export const createArchiveMeetup = async (
     newMeetup.city = geocodeResult.city;
     if (geocodeResult.state != null) newMeetup.state = geocodeResult.state;
     newMeetup.country = geocodeResult.country;
+    newMeetup.venue_name = await findVenueName(
+      geocodeResult.latitude,
+      geocodeResult.longitude
+    );
 
     newMeetup.utc_offset = await getUtcOffset(
       geocodeResult.latitude,
@@ -890,6 +946,7 @@ export const createMeetupFromEventbrite = async (
         name: ebEvent.name,
         date: ebEvent.startTime,
         address: geocodeResult.fullAddress,
+        venue_name: ebVenue.name,
         city: geocodeResult.city,
         state: geocodeResult.state,
         country: geocodeResult.country,
@@ -1119,6 +1176,11 @@ export const updateMeetup = async (
   meetup.is_unlisted = req.body.is_unlisted ?? meetup.is_unlisted;
   meetup.is_draft = req.body.is_draft ?? meetup.is_draft;
 
+  if (result.data.venue_name !== undefined) {
+    meetup.venue_name =
+      result.data.venue_name === '' ? null : result.data.venue_name;
+  }
+
   // Archive-only credit for who ran the meetup. An empty string clears it back
   // to the submitter (who is always the lead organizer).
   if (meetup.is_archive && req.body.organizer_name !== undefined) {
@@ -1138,6 +1200,12 @@ export const updateMeetup = async (
       meetup.city = geocodeResult.city;
       if (geocodeResult.state != null) meetup.state = geocodeResult.state;
       meetup.country = geocodeResult.country;
+      if (req.body.address != null && result.data.venue_name === undefined) {
+        meetup.venue_name = await findVenueName(
+          geocodeResult.latitude,
+          geocodeResult.longitude
+        );
+      }
 
       meetup.utc_offset = await getUtcOffset(
         geocodeResult.latitude,

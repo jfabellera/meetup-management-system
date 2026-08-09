@@ -17,6 +17,7 @@ import {
   updateMeetupDiscordMessage,
 } from '../controllers/meetupDiscord';
 import {
+  addressAutocomplete,
   createArchiveMeetup,
   createMeetup,
   createMeetupFromEventbrite,
@@ -26,12 +27,14 @@ import {
   getMeetupAttendees,
   getMeetupCalendar,
   getMeetupDisplayAssets,
+  placeDetails,
   slugAvailable,
   syncEventbriteAttendees,
   transferMeetup,
   updateMeetup,
   updateMeetupTags,
   uploadMeetupImage,
+  venueAtPlace,
 } from '../controllers/meetups';
 import { getRaffleRecords, rollRaffleWinner } from '../controllers/raffles';
 import { releaseGuestHold } from '../controllers/ticketPayments';
@@ -57,6 +60,24 @@ router.get(
   '/slug-available',
   authChecker([Rule.requireOrganizer]) as RequestHandler,
   slugAvailable as RequestHandler
+);
+
+router.get(
+  '/places/autocomplete',
+  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  addressAutocomplete as RequestHandler
+);
+
+router.get(
+  '/places/:place_id/venue',
+  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  venueAtPlace as RequestHandler
+);
+
+router.get(
+  '/places/:place_id',
+  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  placeDetails as RequestHandler
 );
 
 router.get(

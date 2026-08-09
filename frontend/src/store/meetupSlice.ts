@@ -6,6 +6,8 @@ import {
   type EditMeetupPayload,
   type MeetupDiscordMessageInfo,
   type MeetupDisplayAssets,
+  type PlaceDetailsInfo,
+  type PlaceSuggestionInfo,
   type TransferMeetupPayload,
 } from '@keebmeet/shared';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
@@ -74,6 +76,29 @@ export const meetupSlice = createApi({
       query: ({ slug, excludeId }) => ({
         url: `meetups/slug-available`,
         params: { slug, exclude_id: excludeId },
+      }),
+    }),
+    addressAutocomplete: builder.query<
+      { suggestions: PlaceSuggestionInfo[] },
+      { q: string; session: string }
+    >({
+      query: ({ q, session }) => ({
+        url: `meetups/places/autocomplete`,
+        params: { q, session },
+      }),
+    }),
+    placeDetails: builder.query<
+      PlaceDetailsInfo,
+      { placeId: string; session: string }
+    >({
+      query: ({ placeId, session }) => ({
+        url: `meetups/places/${placeId}`,
+        params: { session },
+      }),
+    }),
+    venueAtPlace: builder.query<PlaceDetailsInfo, { placeId: string }>({
+      query: ({ placeId }) => ({
+        url: `meetups/places/${placeId}/venue`,
       }),
     }),
     createMeetup: builder.mutation<void, CreateMeetupPayload>({
@@ -228,6 +253,9 @@ export const {
   useGetMeetupsQuery,
   useGetMeetupQuery,
   useCheckSlugAvailableQuery,
+  useAddressAutocompleteQuery,
+  useLazyPlaceDetailsQuery,
+  useVenueAtPlaceQuery,
   useCreateMeetupMutation,
   useCreateArchiveMeetupMutation,
   useUploadMeetupImageMutation,

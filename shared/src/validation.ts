@@ -49,6 +49,7 @@ export const createMeetupSchema = z.object({
     message: 'Datetime must be in the format of YYYY-MM-DDT:HH:mm:ssZ',
   }),
   address: z.string(),
+  venue_name: z.string().max(255).optional(),
   duration_hours: z.number().gt(0),
   capacity: z.number().gt(0),
   image_key: z.string(),
@@ -110,6 +111,7 @@ export const editMeetupSchema = z.object({
     })
     .optional(),
   address: z.string().optional(),
+  venue_name: z.string().max(255).optional(),
   duration_hours: z.number().gt(0).optional(),
   capacity: z.number().gt(0).optional(),
   image_key: z.string().optional(),

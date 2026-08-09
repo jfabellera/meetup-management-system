@@ -485,12 +485,22 @@ export const MeetupModal = ({
                     <p>
                       <a
                         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                          meetup.location.full_address ?? ''
+                          [
+                            meetup.location.venue_name,
+                            meetup.location.full_address,
+                          ]
+                            .filter((part) => part != null)
+                            .join(', ')
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:underline"
                       >
+                        {meetup.location.venue_name != null ? (
+                          <span className="block font-medium">
+                            {meetup.location.venue_name}
+                          </span>
+                        ) : null}
                         {meetup.location.full_address}
                       </a>
                     </p>

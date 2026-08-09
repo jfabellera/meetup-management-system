@@ -49,7 +49,11 @@ jest.mock('../util/eventbriteApi', () => ({
   getEventbriteVenue: jest.fn(),
 }));
 jest.mock('../util/externalApis', () => ({
+  autocompletePlaces: jest.fn().mockResolvedValue([]),
+  findVenueAtPlace: jest.fn().mockResolvedValue(null),
+  findVenueName: jest.fn().mockResolvedValue(null),
   geocode: jest.fn(),
+  getPlaceDetails: jest.fn().mockResolvedValue(null),
   getUtcOffset: jest.fn(),
 }));
 jest.mock('../util/security', () => ({

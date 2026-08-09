@@ -10,6 +10,7 @@ export interface MeetupInfo {
   date: string;
   location: {
     full_address?: string;
+    venue_name?: string;
     address_line_1?: string;
     address_line_2?: string;
     city: string;
@@ -40,6 +41,18 @@ export interface MeetupInfo {
   unlisted_reason?: 'organizer' | 'attendee' | 'group';
   is_draft?: boolean;
   admin_only_visible?: boolean;
+}
+
+export interface PlaceSuggestionInfo {
+  place_id: string;
+  main_text: string;
+  secondary_text: string;
+  is_establishment: boolean;
+}
+
+export interface PlaceDetailsInfo {
+  venue_name: string | null;
+  address: string;
 }
 
 export interface TicketTypeInfo {

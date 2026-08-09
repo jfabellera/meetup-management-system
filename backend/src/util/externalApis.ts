@@ -1,3 +1,7 @@
+import {
+  type PlaceDetailsInfo,
+  type PlaceSuggestionInfo,
+} from '@keebmeet/shared';
 import axios from 'axios';
 import config from '../config';
 
@@ -81,6 +85,146 @@ export const geocode = async (address: string): Promise<GeocodeResults> => {
   } catch (error: any) {
     console.error('Error geocoding address: ', error.message);
     throw new Error('Invalid address');
+  }
+};
+
+const nearestEstablishment = async (
+  latitude: number,
+  longitude: number
+): Promise<any | null> => {
+  const response = await axios.post(
+    'https://places.googleapis.com/v1/places:searchNearby',
+    {
+      locationRestriction: {
+        circle: { center: { latitude, longitude }, radius: 50 },
+      },
+      rankPreference: 'DISTANCE',
+      maxResultCount: 1,
+    },
+    {
+      headers: {
+        'X-Goog-Api-Key': config.gcpApiKey,
+        'X-Goog-FieldMask':
+          'places.displayName,places.formattedAddress,places.types',
+      },
+    }
+  );
+
+  const place = response.data.places?.[0];
+  const types: string[] = place?.types ?? [];
+
+  if (!types.includes('establishment')) return null;
+
+  return place;
+};
+
+export const findVenueName = async (
+  latitude: number,
+  longitude: number
+): Promise<string | null> => {
+  try {
+    const place = await nearestEstablishment(latitude, longitude);
+    return place?.displayName?.text ?? null;
+  } catch (error: any) {
+    console.error('Error finding venue name: ', error.message);
+    return null;
+  }
+};
+
+export const findVenueAtPlace = async (
+  placeId: string
+): Promise<PlaceDetailsInfo | null> => {
+  try {
+    const response = await axios.get(
+      `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
+      {
+        headers: {
+          'X-Goog-Api-Key': config.gcpApiKey,
+          'X-Goog-FieldMask': 'location',
+        },
+      }
+    );
+
+    const location = response.data?.location;
+    if (location == null) return null;
+
+    const place = await nearestEstablishment(
+      location.latitude,
+      location.longitude
+    );
+    if (place?.displayName?.text == null || place.formattedAddress == null) {
+      return null;
+    }
+
+    return {
+      venue_name: place.displayName.text,
+      address: place.formattedAddress,
+    };
+  } catch (error: any) {
+    console.error('Error finding venue at place: ', error.message);
+    return null;
+  }
+};
+
+export const autocompletePlaces = async (
+  query: string,
+  sessionToken: string
+): Promise<PlaceSuggestionInfo[]> => {
+  try {
+    const response = await axios.post(
+      'https://places.googleapis.com/v1/places:autocomplete',
+      { input: query, sessionToken },
+      {
+        headers: {
+          'X-Goog-Api-Key': config.gcpApiKey,
+        },
+      }
+    );
+
+    const suggestions = response.data.suggestions ?? [];
+    return suggestions
+      .map((suggestion: any) => suggestion.placePrediction)
+      .filter((prediction: any) => prediction != null)
+      .map((prediction: any) => ({
+        place_id: prediction.placeId,
+        main_text: prediction.structuredFormat?.mainText?.text ?? '',
+        secondary_text: prediction.structuredFormat?.secondaryText?.text ?? '',
+        is_establishment: (prediction.types ?? []).includes('establishment'),
+      }));
+  } catch (error: any) {
+    console.error('Error autocompleting places: ', error.message);
+    return [];
+  }
+};
+
+export const getPlaceDetails = async (
+  placeId: string,
+  sessionToken: string
+): Promise<PlaceDetailsInfo | null> => {
+  try {
+    const response = await axios.get(
+      `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
+      {
+        params: { sessionToken },
+        headers: {
+          'X-Goog-Api-Key': config.gcpApiKey,
+          'X-Goog-FieldMask': 'displayName,formattedAddress,types',
+        },
+      }
+    );
+
+    const place = response.data;
+    if (place?.formattedAddress == null) return null;
+
+    return {
+      venue_name: (place.types ?? []).includes('establishment')
+        ? (place.displayName?.text ?? null)
+        : null,
+      address: place.formattedAddress,
+    };
+  } catch (error: any) {
+    console.error('Error getting place details: ', error.message);
+    return null;
   }
 };
 

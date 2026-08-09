@@ -1,7 +1,12 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -28,6 +33,7 @@ import {
 } from '../../store/meetupSlice';
 import EditableFormCard from '../Forms/EditableFormCard';
 import EditableFormField from '../Forms/EditableFormField';
+import AddressCombobox from './AddressCombobox';
 import GroupCombobox from './GroupCombobox';
 import MeetupImageField from './MeetupImageField';
 import OrganizerCombobox from './OrganizerCombobox';
@@ -77,6 +83,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
       date: '',
       startTime: '',
       address: '',
+      venueName: '',
       duration: 0,
       capacity: 0,
       isPaid: false,
@@ -104,6 +111,12 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         ).toISOString();
       if (formik.initialValues.address !== values.address)
         payload.address = values.address;
+      if (
+        formik.initialValues.venueName !== values.venueName &&
+        (values.venueName !== '' ||
+          formik.initialValues.address === values.address)
+      )
+        payload.venue_name = values.venueName;
       if (formik.initialValues.duration !== values.duration)
         payload.duration_hours = values.duration;
       if (formik.initialValues.capacity !== values.capacity)
@@ -190,6 +203,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         date: dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format('YYYY-MM-DD'),
         startTime: dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format('hh:mm'),
         address: meetup?.location.full_address ?? '',
+        venueName: meetup?.location.venue_name ?? '',
         duration: meetup?.duration_hours ?? 0,
         capacity: meetup?.tickets?.total ?? 0,
         isPaid: meetup?.ticket_types?.[0] != null,
@@ -494,18 +508,66 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               errorMessage={formik.errors.startTime}
             />
           ) : null}
-          <EditableFormField
-            name={'Address'}
-            className="max-w-none py-0"
-            value={meetup?.location.full_address}
-            editable={isEditable}
-            id={'address'}
-            type={'text'}
-            isInvalid={formik.errors.address != null && formik.touched.address}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            errorMessage={formik.errors.address}
-          />
+          <Field
+            data-invalid={
+              formik.errors.address != null && formik.touched.address
+            }
+            className="max-w-none min-w-0 py-0"
+          >
+            <FieldLabel htmlFor="address" className="line-clamp-1">
+              Address
+            </FieldLabel>
+            {isEditable ? (
+              <>
+                <AddressCombobox
+                  id="address"
+                  address={formik.values.address}
+                  onAddressChange={(address) => {
+                    void formik.setFieldValue('address', address);
+                    void formik.setFieldValue('venueName', '');
+                  }}
+                  onPlaceSelect={({ address, venueName }) => {
+                    void formik.setFieldValue('address', address);
+                    void formik.setFieldValue('venueName', venueName);
+                  }}
+                  onBlur={() => {
+                    void formik.setFieldTouched('address', true);
+                  }}
+                  invalid={
+                    formik.errors.address != null &&
+                    formik.touched.address === true
+                  }
+                />
+                {formik.errors.address != null &&
+                formik.touched.address === true ? (
+                  <FieldError>{formik.errors.address}</FieldError>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-foreground/70">
+                {meetup?.location.full_address ?? 'N/A'}
+              </p>
+            )}
+          </Field>
+          <Field className="max-w-none min-w-0 py-0">
+            <FieldLabel htmlFor="venueName" className="line-clamp-1">
+              Venue Name
+            </FieldLabel>
+            {isEditable ? (
+              <Input
+                id="venueName"
+                name="venueName"
+                type="text"
+                value={formik.values.venueName}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+              />
+            ) : (
+              <p className="text-foreground/70">
+                {meetup?.location.venue_name ?? 'N/A'}
+              </p>
+            )}
+          </Field>
           {!isArchive ? (
             <EditableFormField
               name={'Duration (hours)'}
