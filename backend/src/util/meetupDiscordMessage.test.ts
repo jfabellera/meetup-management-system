@@ -142,6 +142,18 @@ describe('buildMeetupEmbed', () => {
     );
   });
 
+  it('includes the venue name in the location when set', () => {
+    const embed = buildMeetupEmbed(
+      fakeMeetup({ address: '123 St', venue_name: 'Parks Coffee' }),
+      []
+    );
+    const field = fieldNamed(embed, 'Location');
+
+    expect(field.value).toBe(
+      '[Parks Coffee, 123 St](https://www.google.com/maps/search/?api=1&query=Parks%20Coffee%2C%20123%20St)'
+    );
+  });
+
   it('shows a placeholder when there are no attendees', () => {
     const embed = buildMeetupEmbed(fakeMeetup(), []);
     const field = attendeesField(embed);

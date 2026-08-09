@@ -54,6 +54,9 @@ export class Meetup extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   address: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  venue_name?: string | null;
+
   @Column({ type: 'varchar', length: 100 })
   city: string;
 

@@ -24,7 +24,9 @@ import {
 } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import AddressCombobox from '../components/Meetups/AddressCombobox';
 import GroupCombobox from '../components/Meetups/GroupCombobox';
+import VenueNameLabel from '../components/Meetups/VenueNameLabel';
 import MeetupImageField from '../components/Meetups/MeetupImageField';
 import OrganizerCombobox from '../components/Meetups/OrganizerCombobox';
 import TagCombobox from '../components/Meetups/TagCombobox';
@@ -57,6 +59,7 @@ const NewMeetupPage = (): ReactNode => {
       date: '',
       startTime: '',
       address: '',
+      venueName: '',
       duration: 0,
       capacity: 0,
       isPaid: false,
@@ -79,6 +82,8 @@ const NewMeetupPage = (): ReactNode => {
           `${formik.values.date}T${formik.values.startTime}Z`
         ).toISOString(),
         address: formik.values.address,
+        venue_name:
+          formik.values.venueName !== '' ? formik.values.venueName : undefined,
         duration_hours: formik.values.duration,
         capacity: formik.values.capacity,
         image_key: formik.values.imageKey,
@@ -335,7 +340,44 @@ const NewMeetupPage = (): ReactNode => {
                   disabled={!formik.values.isPaid}
                 />
 
-                <FormField formik={formik} name="address" label="Address" />
+                <Field
+                  data-invalid={
+                    formik.errors.address != null &&
+                    formik.touched.address === true
+                  }
+                  className="gap-1.5"
+                >
+                  <FieldLabel htmlFor="address">Address</FieldLabel>
+                  <AddressCombobox
+                    id="address"
+                    address={formik.values.address}
+                    onAddressChange={(address) => {
+                      void formik.setFieldValue('address', address);
+                      void formik.setFieldValue('venueName', '');
+                    }}
+                    onPlaceSelect={({ address, venueName }) => {
+                      void formik.setFieldValue('address', address);
+                      void formik.setFieldValue('venueName', venueName);
+                    }}
+                    onBlur={() => {
+                      void formik.setFieldTouched('address', true);
+                    }}
+                    invalid={
+                      formik.errors.address != null &&
+                      formik.touched.address === true
+                    }
+                  />
+                  {formik.errors.address != null &&
+                  formik.touched.address === true ? (
+                    <FieldError>{formik.errors.address}</FieldError>
+                  ) : null}
+                </Field>
+
+                <FormField
+                  formik={formik}
+                  name="venueName"
+                  label={<VenueNameLabel />}
+                />
 
                 <MeetupImageField
                   previewUrl={formik.values.imageUrl}

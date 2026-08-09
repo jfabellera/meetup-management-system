@@ -7,7 +7,7 @@ import { Input } from './input';
 interface FormFieldProps<Values> {
   formik: FormikProps<Values>;
   name: keyof Values & string;
-  label: string;
+  label: ReactNode;
   type?: string;
   disabled?: boolean;
   /** Override the controlled value (defaults to the formik value). */
