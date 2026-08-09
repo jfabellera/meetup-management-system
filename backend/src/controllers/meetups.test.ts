@@ -151,6 +151,7 @@ import {
   syncEventbriteAttendees,
   transferMeetup,
   updateMeetup,
+  updateMeetupTags,
   uploadMeetupImage,
 } from './meetups';
 import { socket } from '../Server';
@@ -783,6 +784,52 @@ describe('getMeetup', () => {
   });
 });
 
+
+// ---- updateMeetupTags --------------------------------------------------------
+
+describe('updateMeetupTags', () => {
+  it('returns 400 for an invalid body', async () => {
+    const res = mockResponse();
+    res.locals.meetup = { id: '10' };
+
+    await updateMeetupTags(mockRequest({ tag_ids: 'not-an-array' }), res);
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('diffs against the current tags and applies adds and removals', async () => {
+    mockedTag.findBy.mockResolvedValue([{ id: '1' }, { id: '2' }] as never);
+    mockedMeetup.findOne.mockResolvedValue({
+      id: '10',
+      tags: [{ id: '2' }, { id: '3' }],
+    } as never);
+    const res = mockResponse();
+    res.locals.meetup = { id: '10' };
+
+    await updateMeetupTags(mockRequest({ tag_ids: ['1', '2'] }), res);
+
+    expect(res.statusCode).toBe(204);
+    expect(organizerRelation.addAndRemove).toHaveBeenCalledWith(['1'], ['3']);
+    expect(mockedSocket.emit).toHaveBeenCalledWith('meetup:update', {
+      meetupId: '10',
+    });
+  });
+
+  it('skips the relation update when nothing changed', async () => {
+    mockedTag.findBy.mockResolvedValue([{ id: '2' }] as never);
+    mockedMeetup.findOne.mockResolvedValue({
+      id: '10',
+      tags: [{ id: '2' }],
+    } as never);
+    const res = mockResponse();
+    res.locals.meetup = { id: '10' };
+
+    await updateMeetupTags(mockRequest({ tag_ids: ['2'] }), res);
+
+    expect(res.statusCode).toBe(204);
+    expect(organizerRelation.addAndRemove).not.toHaveBeenCalled();
+  });
+});
 
 // ---- createMeetup ----------------------------------------------------------
 

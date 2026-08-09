@@ -13,6 +13,7 @@ export enum Rule {
   overrideAdmin,
   overrideMeetupOrganizer, // Organizer of meetup
   ignoreMeetupOrganizer,
+  adminAsMeetupOrganizer,
 }
 
 interface TokenInterface {
@@ -206,8 +207,14 @@ export const authChecker =
         // Pass meetup to next function
         res.locals.meetup = meetup;
 
+        const adminSatisfiesOrganizer =
+          rules != null &&
+          rules.includes(Rule.adminAsMeetupOrganizer) &&
+          (user.is_admin || user.is_owner);
+
         if (
           (rules == null || !rules.includes(Rule.ignoreMeetupOrganizer)) &&
+          !adminSatisfiesOrganizer &&
           meetup.lead_organizer?.id !== user.id &&
           meetup.organizers.find((organizer) => organizer.id === user.id) ==
             null

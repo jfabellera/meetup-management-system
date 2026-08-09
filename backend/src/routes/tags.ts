@@ -8,17 +8,17 @@ router.get('/', optionalAuth() as RequestHandler, getTags as RequestHandler);
 
 router.post(
   '/',
-  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  authChecker([Rule.requireOrganizer, Rule.overrideAdmin]) as RequestHandler,
   createTag as RequestHandler
 );
 router.put(
   '/:tag_id',
-  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  authChecker([Rule.requireOrganizer, Rule.overrideAdmin]) as RequestHandler,
   editTag as RequestHandler
 );
 router.delete(
   '/:tag_id',
-  authChecker([Rule.requireOrganizer]) as RequestHandler,
+  authChecker([Rule.requireOrganizer, Rule.overrideAdmin]) as RequestHandler,
   deleteTag as RequestHandler
 );
 

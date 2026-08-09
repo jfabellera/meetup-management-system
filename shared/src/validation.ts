@@ -137,6 +137,12 @@ export const editMeetupSchema = z.object({
 
 export type EditMeetupPayload = z.infer<typeof editMeetupSchema>;
 
+export const updateMeetupTagsSchema = z.object({
+  tag_ids: z.array(z.string()),
+});
+
+export type UpdateMeetupTagsPayload = z.infer<typeof updateMeetupTagsSchema>;
+
 export const transferMeetupSchema = z.object({
   new_lead_organizer_id: z.string(),
 });

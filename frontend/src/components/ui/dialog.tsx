@@ -62,11 +62,14 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
-        // Toasts sit above the overlay; interacting with them shouldn't dismiss the dialog.
+        // Toasts sit above the overlay; interacting with them shouldn't dismiss
+        // the dialog. Ditto Base UI combobox popups, which portal outside the
+        // Radix layer stack.
         onInteractOutside={(event) => {
           if (
             event.target instanceof Element &&
-            event.target.closest('[data-sonner-toaster]')
+            (event.target.closest('[data-sonner-toaster]') != null ||
+              event.target.closest('[data-slot="combobox-content"]') != null)
           ) {
             event.preventDefault();
           }

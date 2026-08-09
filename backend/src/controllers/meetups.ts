@@ -7,6 +7,7 @@ import {
   SLUG_REGEX,
   TICKET_CURRENCY,
   transferMeetupSchema,
+  updateMeetupTagsSchema,
   type EditMeetupPayload,
   type MeetupDisplayAssets,
   type MeetupInfo,
@@ -201,6 +202,28 @@ const resolveOwnedGroups = async (
 const resolveTags = async (tagIds: string[]): Promise<Tag[]> => {
   if (tagIds.length === 0) return [];
   return Tag.findBy({ id: In(tagIds) });
+};
+
+// Diffs against the current assignment and applies via the relation builder.
+const syncMeetupTags = async (
+  meetupId: string,
+  tagIds: string[]
+): Promise<void> => {
+  const desiredTags = await resolveTags(Array.from(new Set(tagIds)));
+  const desiredIds = new Set(desiredTags.map((tag) => tag.id));
+  const withTags = await Meetup.findOne({
+    relations: { tags: true },
+    where: { id: meetupId },
+  });
+  const currentIds = (withTags?.tags ?? []).map((tag) => tag.id);
+  const toAdd = [...desiredIds].filter((id) => !currentIds.includes(id));
+  const toRemove = currentIds.filter((id) => !desiredIds.has(id));
+  if (toAdd.length > 0 || toRemove.length > 0) {
+    await AppDataSource.createQueryBuilder()
+      .relation(Meetup, 'tags')
+      .of(meetupId)
+      .addAndRemove(toAdd, toRemove);
+  }
 };
 
 const WEBHOOK_CREATION_ERROR = 'Failed to create Eventbrite webhook.';
@@ -1234,25 +1257,8 @@ export const updateMeetup = async (
   }
 
   // Any organizer may edit tags (unlike groups/organizers, which are lead-only).
-  // Updated via the relation builder, as with organizers/groups above.
   if (result.data.tag_ids != null) {
-    const desiredTags = await resolveTags(
-      Array.from(new Set(result.data.tag_ids))
-    );
-    const desiredIds = new Set(desiredTags.map((tag) => tag.id));
-    const withTags = await Meetup.findOne({
-      relations: { tags: true },
-      where: { id: meetup.id },
-    });
-    const currentIds = (withTags?.tags ?? []).map((tag) => tag.id);
-    const toAddTags = [...desiredIds].filter((id) => !currentIds.includes(id));
-    const toRemoveTags = currentIds.filter((id) => !desiredIds.has(id));
-    if (toAddTags.length > 0 || toRemoveTags.length > 0) {
-      await AppDataSource.createQueryBuilder()
-        .relation(Meetup, 'tags')
-        .of(meetup.id)
-        .addAndRemove(toAddTags, toRemoveTags);
-    }
+    await syncMeetupTags(meetup.id, result.data.tag_ids);
   }
 
   // TODO: When we support multiple ticket types, this will need to be updated
@@ -1291,6 +1297,26 @@ export const updateMeetup = async (
   socket.emit('meetup:update', { meetupId: meetup.id });
   await refreshMeetupDiscordMessage(meetup.id);
   return res.status(201).json(meetup);
+};
+
+// Narrow tag-assignment update, separate from the full meetup edit so admins
+// can curate tags (via Rule.adminAsMeetupOrganizer) without meetup-wide powers.
+export const updateMeetupTags = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const meetup = res.locals.meetup as Meetup;
+
+  const result = updateMeetupTagsSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
+
+  await syncMeetupTags(meetup.id, result.data.tag_ids);
+
+  socket.emit('meetup:update', { meetupId: meetup.id });
+
+  return res.status(204).end();
 };
 
 export const transferMeetup = async (

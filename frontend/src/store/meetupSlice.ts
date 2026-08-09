@@ -140,6 +140,17 @@ export const meetupSlice = createApi({
         { type: 'Meetup', id: arg },
       ],
     }),
+    updateMeetupTags: builder.mutation<
+      void,
+      { meetupId: string; tag_ids: string[] }
+    >({
+      query: ({ meetupId, tag_ids }) => ({
+        url: `meetups/${meetupId}/tags`,
+        method: 'PUT',
+        body: { tag_ids },
+      }),
+      invalidatesTags: ['Meetup', 'Meetups'],
+    }),
     transferMeetup: builder.mutation<void, TransferMeetupOptions>({
       query: ({ meetupId, payload }) => ({
         url: `meetups/${meetupId}/transfer`,
@@ -222,6 +233,7 @@ export const {
   useUploadMeetupImageMutation,
   useCreateMeetupFromEventbriteMutation,
   useEditMeetupMutation,
+  useUpdateMeetupTagsMutation,
   useDeleteMeetupMutation,
   useTransferMeetupMutation,
   useGetMeetupDisplayAssetsQuery,
