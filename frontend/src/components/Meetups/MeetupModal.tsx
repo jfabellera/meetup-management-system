@@ -14,6 +14,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
@@ -55,6 +57,7 @@ import { hasMeetupEnded, isMeetupHappeningNow } from '../../util/timeUtil';
 import { isNotFoundError } from '../Guards/Guards';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { AddToCalendarSubMenu } from './AddToCalendarSubMenu';
+import { EditMeetupTagsDialog } from './EditMeetupTagsDialog';
 import { HoldCountdown } from './HoldCountdown';
 import { MeetupCapacityStatus } from './MeetupCapacityStatus';
 import { UNLISTED_REASON_TEXT } from './MeetupCard';
@@ -121,6 +124,8 @@ export const MeetupModal = ({
   const holdCountdown = useHoldCountdown(displayTicket?.hold_expires_at);
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user.user);
+  const isAdmin = user != null && (user.isAdmin || user.isOwner);
+  const [editTagsOpen, setEditTagsOpen] = useState(false);
   const navigate = useNavigate();
   const onMapPage = useLocation().pathname === '/map';
   const isWide = useIsWide();
@@ -356,8 +361,28 @@ export const MeetupModal = ({
                             View on map
                           </DropdownMenuItem>
                         ) : null}
+                        {isAdmin ? (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel>Admin</DropdownMenuLabel>
+                            <DropdownMenuItem
+                              className="gap-2"
+                              onClick={() => {
+                                setEditTagsOpen(true);
+                              }}
+                            >
+                              <FiTag />
+                              Edit tags
+                            </DropdownMenuItem>
+                          </>
+                        ) : null}
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    <EditMeetupTagsDialog
+                      meetup={meetup}
+                      open={editTagsOpen}
+                      onOpenChange={setEditTagsOpen}
+                    />
                   </div>
                   {showBadges ? (
                     <div className="flex flex-wrap items-center gap-2 pb-2">

@@ -7,6 +7,7 @@ import {
   SLUG_REGEX,
   TICKET_CURRENCY,
   transferMeetupSchema,
+  updateMeetupTagsSchema,
   type EditMeetupPayload,
   type MeetupDisplayAssets,
   type MeetupInfo,
@@ -203,6 +204,28 @@ const resolveTags = async (tagIds: string[]): Promise<Tag[]> => {
   return Tag.findBy({ id: In(tagIds) });
 };
 
+// Diffs against the current assignment and applies via the relation builder.
+const syncMeetupTags = async (
+  meetupId: string,
+  tagIds: string[]
+): Promise<void> => {
+  const desiredTags = await resolveTags(Array.from(new Set(tagIds)));
+  const desiredIds = new Set(desiredTags.map((tag) => tag.id));
+  const withTags = await Meetup.findOne({
+    relations: { tags: true },
+    where: { id: meetupId },
+  });
+  const currentIds = (withTags?.tags ?? []).map((tag) => tag.id);
+  const toAdd = [...desiredIds].filter((id) => !currentIds.includes(id));
+  const toRemove = currentIds.filter((id) => !desiredIds.has(id));
+  if (toAdd.length > 0 || toRemove.length > 0) {
+    await AppDataSource.createQueryBuilder()
+      .relation(Meetup, 'tags')
+      .of(meetupId)
+      .addAndRemove(toAdd, toRemove);
+  }
+};
+
 const WEBHOOK_CREATION_ERROR = 'Failed to create Eventbrite webhook.';
 
 const parseTagIds = (raw: ParsedQs[string]): string[] => {
@@ -234,7 +257,8 @@ const createMeetupsFilter = (
   query: ParsedQs,
   visibleUnlistedIds: string[],
   organizedIds: string[],
-  tagMatchedIds: string[] | null
+  tagMatchedIds: string[] | null,
+  seesAllMeetups = false
 ): FindOptionsWhere<Meetup>[] => {
   const base: FindOptionsWhere<Meetup> = {};
 
@@ -263,19 +287,28 @@ const createMeetupsFilter = (
       : [{}];
 
   // Published public meetups, plus any published unlisted meetup the requestor
-  // may see, plus the requestor's own meetups (drafts included).
+  // may see, plus the requestor's own meetups (drafts included). Admins see
+  // everything.
   const visibilityScopes: {
     scope: FindOptionsWhere<Meetup>;
     ids: string[] | null;
-  }[] = [{ scope: { is_unlisted: false, is_draft: false }, ids: null }];
-  if (visibleUnlistedIds.length > 0) {
+  }[] = [];
+  if (seesAllMeetups) {
+    visibilityScopes.push({ scope: {}, ids: null });
+  } else {
     visibilityScopes.push({
-      scope: { is_draft: false },
-      ids: visibleUnlistedIds,
+      scope: { is_unlisted: false, is_draft: false },
+      ids: null,
     });
-  }
-  if (organizedIds.length > 0) {
-    visibilityScopes.push({ scope: {}, ids: organizedIds });
+    if (visibleUnlistedIds.length > 0) {
+      visibilityScopes.push({
+        scope: { is_draft: false },
+        ids: visibleUnlistedIds,
+      });
+    }
+    if (organizedIds.length > 0) {
+      visibilityScopes.push({ scope: {}, ids: organizedIds });
+    }
   }
 
   const tagMatchedSet = tagMatchedIds != null ? new Set(tagMatchedIds) : null;
@@ -344,12 +377,17 @@ export const getAllMeetups = async (
   const tagMatchedIds =
     tagIds.length > 0 ? await getMeetupIdsWithTags(tagIds) : null;
 
+  const isAdmin =
+    requestor != null && (requestor.is_admin || requestor.is_owner);
+  const visibleUnlistedSet = new Set(visibleUnlistedIds);
+
   // Build filters and sorting
   const findOptionsWhere = createMeetupsFilter(
     req.query,
     visibleUnlistedIds,
     [...organizedIds],
-    tagMatchedIds
+    tagMatchedIds,
+    isAdmin
   );
   const findOptionsOrder = createMeetupsSorting(req.query);
 
@@ -392,6 +430,13 @@ export const getAllMeetups = async (
         if (organizedIds.has(meetup.id)) info.unlisted_reason = 'organizer';
         else if (attendedIds.has(meetup.id)) info.unlisted_reason = 'attendee';
         else if (groupMeetupIds.has(meetup.id)) info.unlisted_reason = 'group';
+      }
+      if (isAdmin) {
+        const visibleWithoutAdmin =
+          (info.is_unlisted !== true && info.is_draft !== true) ||
+          organizedIds.has(meetup.id) ||
+          (info.is_draft !== true && visibleUnlistedSet.has(meetup.id));
+        if (!visibleWithoutAdmin) info.admin_only_visible = true;
       }
       return info;
     }
@@ -438,7 +483,10 @@ export const getMeetup = async (
     (meetup.lead_organizer?.id === requestor.id ||
       meetup.organizers.some((organizer) => organizer.id === requestor.id));
 
-  if (meetup.is_draft && !isOrganizer) {
+  const isAdmin =
+    requestor != null && (requestor.is_admin || requestor.is_owner);
+
+  if (meetup.is_draft && !isOrganizer && !isAdmin) {
     return res.status(404).json({ message: 'Meetup not found.' });
   }
 
@@ -1209,25 +1257,8 @@ export const updateMeetup = async (
   }
 
   // Any organizer may edit tags (unlike groups/organizers, which are lead-only).
-  // Updated via the relation builder, as with organizers/groups above.
   if (result.data.tag_ids != null) {
-    const desiredTags = await resolveTags(
-      Array.from(new Set(result.data.tag_ids))
-    );
-    const desiredIds = new Set(desiredTags.map((tag) => tag.id));
-    const withTags = await Meetup.findOne({
-      relations: { tags: true },
-      where: { id: meetup.id },
-    });
-    const currentIds = (withTags?.tags ?? []).map((tag) => tag.id);
-    const toAddTags = [...desiredIds].filter((id) => !currentIds.includes(id));
-    const toRemoveTags = currentIds.filter((id) => !desiredIds.has(id));
-    if (toAddTags.length > 0 || toRemoveTags.length > 0) {
-      await AppDataSource.createQueryBuilder()
-        .relation(Meetup, 'tags')
-        .of(meetup.id)
-        .addAndRemove(toAddTags, toRemoveTags);
-    }
+    await syncMeetupTags(meetup.id, result.data.tag_ids);
   }
 
   // TODO: When we support multiple ticket types, this will need to be updated
@@ -1266,6 +1297,26 @@ export const updateMeetup = async (
   socket.emit('meetup:update', { meetupId: meetup.id });
   await refreshMeetupDiscordMessage(meetup.id);
   return res.status(201).json(meetup);
+};
+
+// Narrow tag-assignment update, separate from the full meetup edit so admins
+// can curate tags (via Rule.adminAsMeetupOrganizer) without meetup-wide powers.
+export const updateMeetupTags = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const meetup = res.locals.meetup as Meetup;
+
+  const result = updateMeetupTagsSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json(result.error);
+  }
+
+  await syncMeetupTags(meetup.id, result.data.tag_ids);
+
+  socket.emit('meetup:update', { meetupId: meetup.id });
+
+  return res.status(204).end();
 };
 
 export const transferMeetup = async (

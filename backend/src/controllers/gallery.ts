@@ -30,6 +30,10 @@ const isMeetupOrganizer = (meetup: Meetup, user: User): boolean =>
   meetup.lead_organizer?.id === user.id ||
   (meetup.organizers?.some((organizer) => organizer.id === user.id) ?? false);
 
+// Admins moderate galleries with the same powers as the meetup's organizers.
+const hasOrganizerPowers = (meetup: Meetup, user: User): boolean =>
+  user.is_admin || user.is_owner || isMeetupOrganizer(meetup, user);
+
 const toGalleryInfo = (record: GalleryRecord): GalleryInfo => ({
   id: record.id,
   user_id: record.user_id ?? null,
@@ -64,7 +68,7 @@ export const createGallery = async (
     return res.status(400).json(result.error);
   }
 
-  const isOrganizer = isMeetupOrganizer(meetup, user);
+  const isOrganizer = hasOrganizerPowers(meetup, user);
   const contributorName = result.data.contributor_name?.trim();
 
   // Photos only exist once a live meetup is under way; archives are already past.
@@ -157,7 +161,7 @@ export const editGallery = async (
   }
 
   const isOwner = record.user_id != null && record.user_id === user.id;
-  if (!isOwner && !isMeetupOrganizer(meetup, user)) {
+  if (!isOwner && !hasOrganizerPowers(meetup, user)) {
     return res
       .status(403)
       .json({ message: 'Not allowed to edit this gallery.' });

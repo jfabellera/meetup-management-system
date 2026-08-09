@@ -30,6 +30,7 @@ import {
   syncEventbriteAttendees,
   transferMeetup,
   updateMeetup,
+  updateMeetupTags,
   uploadMeetupImage,
 } from '../controllers/meetups';
 import { getRaffleRecords, rollRaffleWinner } from '../controllers/raffles';
@@ -101,6 +102,12 @@ router.delete(
   '/:meetup_id',
   authChecker([Rule.requireOrganizer]) as RequestHandler,
   deleteMeetup as RequestHandler
+);
+
+router.put(
+  '/:meetup_id/tags',
+  authChecker([Rule.adminAsMeetupOrganizer]) as RequestHandler,
+  updateMeetupTags as RequestHandler
 );
 
 router.post(
@@ -201,7 +208,7 @@ router.put(
 
 router.post(
   '/:meetup_id/galleries/:gallery_id/transfer',
-  authChecker() as RequestHandler,
+  authChecker([Rule.adminAsMeetupOrganizer]) as RequestHandler,
   transferGallery as RequestHandler
 );
 
@@ -213,13 +220,13 @@ router.delete(
 
 router.delete(
   '/:meetup_id/gallery/:target_user_id',
-  authChecker() as RequestHandler,
+  authChecker([Rule.adminAsMeetupOrganizer]) as RequestHandler,
   deleteGalleryForUser as RequestHandler
 );
 
 router.delete(
   '/:meetup_id/galleries/:gallery_id',
-  authChecker() as RequestHandler,
+  authChecker([Rule.adminAsMeetupOrganizer]) as RequestHandler,
   deleteGalleryById as RequestHandler
 );
 

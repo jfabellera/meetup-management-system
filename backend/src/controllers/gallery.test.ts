@@ -366,6 +366,20 @@ describe('createGallery', () => {
     expect(res.statusCode).toBe(403);
     expect(mockedGalleryRecord.create).not.toHaveBeenCalled();
   });
+
+  it('lets an admin credit a contributor on a meetup they do not organize', async () => {
+    const res = mockResponse();
+    res.locals.meetup = meetupWithoutUser(); // organizers 98/99
+    res.locals.requestor = { id: '1', nick_name: 'jane', is_admin: true };
+
+    await createGallery(
+      mockRequest({ gallery: VALID_LINK, contributor_name: 'Photog' }),
+      res
+    );
+
+    expect(res.statusCode).toBe(201);
+    expect((res.body as any).display_name).toBe('Photog');
+  });
 });
 
 // ---- deleteGallery (self-service) ----------------------------------------
@@ -724,6 +738,22 @@ describe('editGallery', () => {
     const res = mockResponse();
     res.locals.meetup = { id: '10', lead_organizer: { id: '1' }, organizers: [] };
     res.locals.requestor = { id: '1' }; // organizer, not owner
+
+    await editGallery(
+      mockRequest({ gallery: VALID_LINK }, { gallery_id: 'p1' }),
+      res
+    );
+
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('lets an admin edit a link on a meetup they do not organize', async () => {
+    const record = editable();
+    record.user_id = '2';
+    mockedGalleryRecord.findOne.mockResolvedValue(record);
+    const res = mockResponse();
+    res.locals.meetup = meetupWithoutUser(); // organizers 98/99
+    res.locals.requestor = { id: '1', is_admin: true };
 
     await editGallery(
       mockRequest({ gallery: VALID_LINK }, { gallery_id: 'p1' }),

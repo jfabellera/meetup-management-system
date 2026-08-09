@@ -513,4 +513,56 @@ describe('authChecker: meetup_id ownership', () => {
     expect(res.locals.meetup).toBeDefined();
     expect(next).toHaveBeenCalled();
   });
+
+  it('allows a non-organizer admin via adminAsMeetupOrganizer, keeping the meetup in locals', async () => {
+    mockedUser.findOneBy.mockResolvedValue(
+      fakeUser({ id: '1', is_admin: true })
+    );
+    mockedMeetup.findOne.mockResolvedValue({ id: '10', organizers: [] } as any);
+    const res = mockResponse();
+    const next = jest.fn();
+
+    await authChecker([Rule.adminAsMeetupOrganizer])(
+      mockRequest(signToken({ id: '1', is_admin: true }), { meetup_id: '10' }),
+      res,
+      next
+    );
+
+    expect(res.locals.meetup).toBeDefined();
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('still rejects a non-admin non-organizer when adminAsMeetupOrganizer is set', async () => {
+    mockedUser.findOneBy.mockResolvedValue(fakeUser({ id: '1' }));
+    mockedMeetup.findOne.mockResolvedValue({ id: '10', organizers: [] } as any);
+    const res = mockResponse();
+    const next = jest.fn();
+
+    await authChecker([Rule.adminAsMeetupOrganizer])(
+      mockRequest(signToken({ id: '1' }), { meetup_id: '10' }),
+      res,
+      next
+    );
+
+    expect(res.statusCode).toBe(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('does not let an admin through the meetup check without the rule', async () => {
+    mockedUser.findOneBy.mockResolvedValue(
+      fakeUser({ id: '1', is_admin: true })
+    );
+    mockedMeetup.findOne.mockResolvedValue({ id: '10', organizers: [] } as any);
+    const res = mockResponse();
+    const next = jest.fn();
+
+    await authChecker()(
+      mockRequest(signToken({ id: '1', is_admin: true }), { meetup_id: '10' }),
+      res,
+      next
+    );
+
+    expect(res.statusCode).toBe(401);
+    expect(next).not.toHaveBeenCalled();
+  });
 });

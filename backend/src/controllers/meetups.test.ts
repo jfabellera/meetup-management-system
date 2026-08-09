@@ -151,6 +151,7 @@ import {
   syncEventbriteAttendees,
   transferMeetup,
   updateMeetup,
+  updateMeetupTags,
   uploadMeetupImage,
 } from './meetups';
 import { socket } from '../Server';
@@ -421,6 +422,61 @@ describe('getAllMeetups', () => {
       { lead_organizer: { id: '1' }, is_unlisted: false, is_draft: false },
       { lead_organizer: { id: '1' }, is_draft: false, id: In(['40']) },
       { lead_organizer: { id: '1' }, id: In(['40']) },
+    ]);
+  });
+
+  it('drops all visibility scoping for an admin requestor', async () => {
+    ticketQueryBuilder.getRawMany.mockResolvedValue([]);
+    mockedMeetup.find
+      .mockResolvedValueOnce([] as never) // organized lookup
+      .mockResolvedValueOnce([fakeMeetupRow({ is_draft: true })]);
+    const res = mockResponse();
+    res.locals.requestor = { id: '1', is_admin: true };
+
+    await getAllMeetups(mockRequest(), res);
+
+    expect((mockedMeetup.find.mock.calls[1][0] as any).where).toEqual([{}]);
+    expect((res.body as any[])[0].is_draft).toBe(true);
+  });
+
+  it('flags meetups only an admin can see', async () => {
+    // The admin attends unlisted meetup 30 and organizes draft 40.
+    ticketQueryBuilder.getRawMany.mockResolvedValue([{ meetup_id: '30' }]);
+    mockedMeetup.find
+      .mockResolvedValueOnce([{ id: '40' }] as never) // organized lookup
+      .mockResolvedValueOnce([
+        fakeMeetupRow({ id: '10' }),
+        fakeMeetupRow({ id: '20', is_draft: true }),
+        fakeMeetupRow({ id: '30', is_unlisted: true }),
+        fakeMeetupRow({ id: '40', is_draft: true }),
+        fakeMeetupRow({ id: '50', is_unlisted: true }),
+      ]);
+    const res = mockResponse();
+    res.locals.requestor = { id: '1', is_admin: true };
+
+    await getAllMeetups(mockRequest(), res);
+
+    const flagged = (id: string): boolean | undefined =>
+      (res.body as any[]).find((m) => m.id === id).admin_only_visible;
+    expect(flagged('10')).toBeUndefined(); // public
+    expect(flagged('20')).toBe(true); // someone else's draft
+    expect(flagged('30')).toBeUndefined(); // unlisted, but attending
+    expect(flagged('40')).toBeUndefined(); // own draft
+    expect(flagged('50')).toBe(true); // unrelated unlisted
+  });
+
+  it('keeps other filters when the admin scope is unrestricted', async () => {
+    ticketQueryBuilder.getRawMany.mockResolvedValue([]);
+    mockedMeetup.find
+      .mockResolvedValueOnce([] as never) // organized lookup
+      .mockResolvedValueOnce([fakeMeetupRow()]);
+    const res = mockResponse();
+    res.locals.requestor = { id: '1', is_owner: true };
+
+    await getAllMeetups(mockRequest({}, {}, { by_city: 'Austin' }), res);
+
+    expect((mockedMeetup.find.mock.calls[1][0] as any).where).toEqual([
+      { city: ILike('Austin') },
     ]);
   });
 
@@ -714,6 +770,64 @@ describe('getMeetup', () => {
     await getMeetup(mockRequest({}, { meetup_id: '10' }), res);
 
     expect((res.body as any).is_draft).toBe(true);
+  });
+
+  it('serves a draft to an admin who is not an organizer', async () => {
+    mockedMeetup.findOne.mockResolvedValue(fakeMeetupRow({ is_draft: true }));
+    mockedTicket.count.mockResolvedValue(0);
+    const res = mockResponse();
+    res.locals.requestor = { id: '99', is_admin: true };
+
+    await getMeetup(mockRequest({}, { meetup_id: '10' }), res);
+
+    expect((res.body as any).is_draft).toBe(true);
+  });
+});
+
+
+// ---- updateMeetupTags --------------------------------------------------------
+
+describe('updateMeetupTags', () => {
+  it('returns 400 for an invalid body', async () => {
+    const res = mockResponse();
+    res.locals.meetup = { id: '10' };
+
+    await updateMeetupTags(mockRequest({ tag_ids: 'not-an-array' }), res);
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('diffs against the current tags and applies adds and removals', async () => {
+    mockedTag.findBy.mockResolvedValue([{ id: '1' }, { id: '2' }] as never);
+    mockedMeetup.findOne.mockResolvedValue({
+      id: '10',
+      tags: [{ id: '2' }, { id: '3' }],
+    } as never);
+    const res = mockResponse();
+    res.locals.meetup = { id: '10' };
+
+    await updateMeetupTags(mockRequest({ tag_ids: ['1', '2'] }), res);
+
+    expect(res.statusCode).toBe(204);
+    expect(organizerRelation.addAndRemove).toHaveBeenCalledWith(['1'], ['3']);
+    expect(mockedSocket.emit).toHaveBeenCalledWith('meetup:update', {
+      meetupId: '10',
+    });
+  });
+
+  it('skips the relation update when nothing changed', async () => {
+    mockedTag.findBy.mockResolvedValue([{ id: '2' }] as never);
+    mockedMeetup.findOne.mockResolvedValue({
+      id: '10',
+      tags: [{ id: '2' }],
+    } as never);
+    const res = mockResponse();
+    res.locals.meetup = { id: '10' };
+
+    await updateMeetupTags(mockRequest({ tag_ids: ['2'] }), res);
+
+    expect(res.statusCode).toBe(204);
+    expect(organizerRelation.addAndRemove).not.toHaveBeenCalled();
   });
 });
 

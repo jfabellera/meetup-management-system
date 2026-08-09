@@ -56,7 +56,8 @@ export const MeetupGallery = ({
   meetup,
   isAttendee,
 }: MeetupGalleryProps): ReactNode => {
-  const currentUserId = useAppSelector((state) => state.user.user?.id);
+  const currentUser = useAppSelector((state) => state.user.user);
+  const currentUserId = currentUser?.id;
   const { data: photos = [] } = useGetMeetupGalleryQuery(meetup.id, {
     skip: meetup.id === '',
   });
@@ -69,12 +70,17 @@ export const MeetupGallery = ({
   const isArchive = meetup.is_archive;
 
   // Organizers can add photos to their own meetup even without a ticket, matching
-  // the backend's attendee-or-organizer gate.
+  // the backend's attendee-or-organizer gate. Admins hold the same powers.
+  const isAdmin =
+    currentUser != null && (currentUser.isAdmin || currentUser.isOwner);
   const isOrganizer =
-    currentUserId != null &&
-    (meetup.lead_organizer?.id === currentUserId ||
-      (meetup.organizers?.some((organizer) => organizer.id === currentUserId) ??
-        false));
+    isAdmin ||
+    (currentUserId != null &&
+      (meetup.lead_organizer?.id === currentUserId ||
+        (meetup.organizers?.some(
+          (organizer) => organizer.id === currentUserId
+        ) ??
+          false)));
 
   // Archives: only the organizer curates, with no per-person limit. Otherwise
   // adding needs an attendee/organizer and a meetup that's under way (the
