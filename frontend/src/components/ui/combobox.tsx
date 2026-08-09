@@ -111,6 +111,18 @@ function ComboboxContent({
         alignOffset={alignOffset}
         anchor={anchor}
         className="pointer-events-auto isolate z-50"
+        ref={(node) => {
+          if (node == null) return
+          const stop = (event: Event) => {
+            event.stopPropagation()
+          }
+          node.addEventListener("wheel", stop)
+          node.addEventListener("touchmove", stop)
+          return () => {
+            node.removeEventListener("wheel", stop)
+            node.removeEventListener("touchmove", stop)
+          }
+        }}
       >
         <ComboboxPrimitive.Popup
           data-slot="combobox-content"
