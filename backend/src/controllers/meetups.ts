@@ -356,6 +356,7 @@ export const getAllMeetups = async (
 
   const isAdmin =
     requestor != null && (requestor.is_admin || requestor.is_owner);
+  const visibleUnlistedSet = new Set(visibleUnlistedIds);
 
   // Build filters and sorting
   const findOptionsWhere = createMeetupsFilter(
@@ -406,6 +407,13 @@ export const getAllMeetups = async (
         if (organizedIds.has(meetup.id)) info.unlisted_reason = 'organizer';
         else if (attendedIds.has(meetup.id)) info.unlisted_reason = 'attendee';
         else if (groupMeetupIds.has(meetup.id)) info.unlisted_reason = 'group';
+      }
+      if (isAdmin) {
+        const visibleWithoutAdmin =
+          (info.is_unlisted !== true && info.is_draft !== true) ||
+          organizedIds.has(meetup.id) ||
+          (info.is_draft !== true && visibleUnlistedSet.has(meetup.id));
+        if (!visibleWithoutAdmin) info.admin_only_visible = true;
       }
       return info;
     }

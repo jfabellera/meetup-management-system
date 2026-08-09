@@ -39,6 +39,7 @@ export interface MeetupInfo {
   is_unlisted?: boolean;
   unlisted_reason?: 'organizer' | 'attendee' | 'group';
   is_draft?: boolean;
+  admin_only_visible?: boolean;
 }
 
 export interface TicketTypeInfo {

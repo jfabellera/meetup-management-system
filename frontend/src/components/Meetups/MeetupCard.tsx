@@ -43,7 +43,13 @@ export const MeetupCard = ({
     : "You're attending!";
 
   return (
-    <div className="bg-card text-card-foreground relative h-full cursor-pointer overflow-hidden rounded-md border shadow-sm transition duration-200 ease-out hover:-translate-y-1 hover:shadow-lg active:scale-[0.97] active:shadow-md active:duration-100">
+    <div
+      className={`bg-card text-card-foreground relative h-full cursor-pointer overflow-hidden rounded-md border shadow-sm transition duration-200 ease-out hover:-translate-y-1 hover:shadow-lg active:scale-[0.97] active:shadow-md active:duration-100 ${
+        meetup.admin_only_visible === true
+          ? 'border-muted-foreground border-3 border-dashed'
+          : ''
+      }`}
+    >
       {imageOverlay != null ? (
         <div className="absolute top-2 left-2 z-10">{imageOverlay}</div>
       ) : null}

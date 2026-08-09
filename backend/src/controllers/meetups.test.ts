@@ -438,6 +438,32 @@ describe('getAllMeetups', () => {
     expect((res.body as any[])[0].is_draft).toBe(true);
   });
 
+  it('flags meetups only an admin can see', async () => {
+    // The admin attends unlisted meetup 30 and organizes draft 40.
+    ticketQueryBuilder.getRawMany.mockResolvedValue([{ meetup_id: '30' }]);
+    mockedMeetup.find
+      .mockResolvedValueOnce([{ id: '40' }] as never) // organized lookup
+      .mockResolvedValueOnce([
+        fakeMeetupRow({ id: '10' }),
+        fakeMeetupRow({ id: '20', is_draft: true }),
+        fakeMeetupRow({ id: '30', is_unlisted: true }),
+        fakeMeetupRow({ id: '40', is_draft: true }),
+        fakeMeetupRow({ id: '50', is_unlisted: true }),
+      ]);
+    const res = mockResponse();
+    res.locals.requestor = { id: '1', is_admin: true };
+
+    await getAllMeetups(mockRequest(), res);
+
+    const flagged = (id: string): boolean | undefined =>
+      (res.body as any[]).find((m) => m.id === id).admin_only_visible;
+    expect(flagged('10')).toBeUndefined(); // public
+    expect(flagged('20')).toBe(true); // someone else's draft
+    expect(flagged('30')).toBeUndefined(); // unlisted, but attending
+    expect(flagged('40')).toBeUndefined(); // own draft
+    expect(flagged('50')).toBe(true); // unrelated unlisted
+  });
+
   it('keeps other filters when the admin scope is unrestricted', async () => {
     ticketQueryBuilder.getRawMany.mockResolvedValue([]);
     mockedMeetup.find
