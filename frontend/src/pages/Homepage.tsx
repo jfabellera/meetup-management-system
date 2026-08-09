@@ -1,8 +1,15 @@
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { Toggle } from '@/components/ui/toggle';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { type MeetupInfo, type SimpleTicketInfo } from '@keebmeet/shared';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { FiShield } from 'react-icons/fi';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { MeetupCard } from '../components/Meetups/MeetupCard';
 import { MeetupModal } from '../components/Meetups/MeetupModal';
@@ -75,10 +82,21 @@ const Homepage = (): ReactNode => {
     byName,
   } = useMeetupSearch();
 
-  const { data: meetups, isLoading } = useGetMeetupsQuery({
+  const isAdmin = user != null && (user.isAdmin || user.isOwner);
+  const [adminMode, setAdminMode] = useState(false);
+
+  const { data: allMeetups, isLoading } = useGetMeetupsQuery({
     by_tag_ids: selectedTagIds.length > 0 ? selectedTagIds : undefined,
     by_name: byName,
   });
+
+  const meetups = useMemo(
+    () =>
+      isAdmin && !adminMode
+        ? allMeetups?.filter((meetup) => meetup.admin_only_visible !== true)
+        : allMeetups,
+    [allMeetups, isAdmin, adminMode]
+  );
 
   const toggleTag = (tagId: string): void => {
     setSelectedTagIds((current) =>
@@ -90,7 +108,7 @@ const Homepage = (): ReactNode => {
   // Tickets and modal lookups are keyed by the numeric id; resolve it from the
   // loaded list via the URL slug.
   const selectedMeetupId =
-    meetups?.find((meetup) => meetup.slug === slug)?.id ?? '';
+    allMeetups?.find((meetup) => meetup.slug === slug)?.id ?? '';
   // TODO(jan): figure out how to remove this ugly ternary without getting linting errors
   const { data: tickets } = useGetTicketsQuery(user != null ? user.id : '', {
     skip: user == null,
@@ -235,6 +253,25 @@ const Homepage = (): ReactNode => {
 
   const controls = (
     <div className="flex shrink-0 items-center gap-1">
+      {isAdmin ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Toggle
+              pressed={adminMode}
+              onPressedChange={setAdminMode}
+              aria-label="Admin mode"
+              className="aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/90 aria-pressed:hover:text-primary-foreground"
+            >
+              <FiShield className="size-4.5" />
+            </Toggle>
+          </TooltipTrigger>
+          <TooltipContent>
+            {adminMode
+              ? 'Admin mode is on: showing meetups only admins can see.'
+              : 'Admin mode is off: viewing as a regular user.'}
+          </TooltipContent>
+        </Tooltip>
+      ) : null}
       <MeetupSearchInput
         value={searchInput}
         onChange={setSearchInput}
