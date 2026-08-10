@@ -26,7 +26,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import AddressCombobox from '../components/Meetups/AddressCombobox';
 import GroupCombobox from '../components/Meetups/GroupCombobox';
-import VenueNameLabel from '../components/Meetups/VenueNameLabel';
 import MeetupImageField from '../components/Meetups/MeetupImageField';
 import OrganizerCombobox from '../components/Meetups/OrganizerCombobox';
 import TagCombobox from '../components/Meetups/TagCombobox';
@@ -34,6 +33,7 @@ import {
   UNLISTED_GROUPS_DESCRIPTION,
   UNLISTED_SLUG_NOTE,
 } from '../components/Meetups/unlistedCopy';
+import VenueNameLabel from '../components/Meetups/VenueNameLabel';
 import Page from '../components/Page/Page';
 import BackButton from '../components/shared/BackButton';
 import { usePendingUploads } from '../hooks/usePendingUploads';
@@ -433,18 +433,7 @@ const NewMeetupPage = (): ReactNode => {
                   value={formik.values.defaultRaffleEntries}
                 />
 
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="submit"
-                    disabled={submitDisabled}
-                    size="lg"
-                    onClick={() => {
-                      saveAsDraft.current = false;
-                    }}
-                  >
-                    Create
-                    {isLoading && <Spinner />}
-                  </Button>
+                <div className="flex flex-wrap justify-end gap-2">
                   <Button
                     type="submit"
                     variant="outline"
@@ -455,6 +444,17 @@ const NewMeetupPage = (): ReactNode => {
                     }}
                   >
                     Save as draft
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={submitDisabled}
+                    size="lg"
+                    onClick={() => {
+                      saveAsDraft.current = false;
+                    }}
+                  >
+                    Create
+                    {isLoading && <Spinner />}
                   </Button>
                 </div>
               </div>
