@@ -1,5 +1,4 @@
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Field,
@@ -40,7 +39,6 @@ import MeetupImageField from './MeetupImageField';
 import OrganizerCombobox from './OrganizerCombobox';
 import TagCombobox from './TagCombobox';
 import {
-  DRAFT_PUBLISH_NOTE,
   UNLISTED_GROUPS_DESCRIPTION,
   UNLISTED_SLUG_NOTE,
 } from './unlistedCopy';
@@ -236,20 +234,6 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
     setIsEditable.off();
   };
 
-  const onPublish = async (): Promise<void> => {
-    const result = await editMeetup({
-      meetupId: meetup?.id ?? '',
-      payload: { is_draft: false },
-    });
-
-    if ('error' in result && result.error != null && 'data' in result.error) {
-      const data: any = result.error.data;
-      toast.error('Error publishing meetup', { description: data.message });
-    } else {
-      toast.success('Meetup published');
-    }
-  };
-
   return (
     <EditableFormCard
       title={'Meetup Details'}
@@ -397,27 +381,6 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
                 )}
               </div>
             )}
-          </Field>
-          <Field className="min-w-0">
-            <FieldLabel>Status</FieldLabel>
-            {meetup?.is_draft === true ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <Badge variant="secondary">Draft</Badge>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={isSaving}
-                  onClick={() => void onPublish()}
-                >
-                  Publish
-                </Button>
-              </div>
-            ) : (
-              <p className="text-foreground/70">Published</p>
-            )}
-            {meetup?.is_draft === true ? (
-              <FieldDescription>{DRAFT_PUBLISH_NOTE}</FieldDescription>
-            ) : null}
           </Field>
           <Field className="min-w-0">
             <FieldLabel htmlFor="isUnlisted">Visibility</FieldLabel>

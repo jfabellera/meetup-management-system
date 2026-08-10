@@ -1,6 +1,7 @@
 import { DangerZoneCard } from '@/components/Meetups/DangerZoneCard';
 import { MeetupDiscordCard } from '@/components/Meetups/MeetupDiscordCard';
 import { MeetupEventbriteCard } from '@/components/Meetups/MeetupEventbriteCard';
+import { MeetupDraftBanner } from '@/components/Meetups/MeetupDraftBanner';
 import { Spinner } from '@/components/ui/spinner';
 import { useAppSelector } from '@/store/hooks';
 import { useGetMeetupQuery } from '@/store/meetupSlice';
@@ -23,6 +24,7 @@ const ManageMeetupSettingsPage = (): ReactNode => {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-4">
+      <MeetupDraftBanner meetupId={meetupId ?? ''} />
       <MeetupDetailsSettingsCard meetupId={meetupId ?? ''} />
       <MeetupEventbriteCard meetupId={meetupId ?? ''} />
       <MeetupDiscordCard meetupId={meetupId ?? ''} />
