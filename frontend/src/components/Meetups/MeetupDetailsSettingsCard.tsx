@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Field,
   FieldDescription,
@@ -35,12 +35,12 @@ import EditableFormCard from '../Forms/EditableFormCard';
 import EditableFormField from '../Forms/EditableFormField';
 import AddressCombobox from './AddressCombobox';
 import GroupCombobox from './GroupCombobox';
+import MeetupFormSection from './MeetupFormSection';
 import VenueNameLabel from './VenueNameLabel';
 import MeetupImageField from './MeetupImageField';
 import OrganizerCombobox from './OrganizerCombobox';
 import TagCombobox from './TagCombobox';
 import {
-  DRAFT_PUBLISH_NOTE,
   UNLISTED_GROUPS_DESCRIPTION,
   UNLISTED_SLUG_NOTE,
 } from './unlistedCopy';
@@ -50,23 +50,6 @@ dayjs.extend(customParseFormat);
 interface Props {
   meetupId: string;
 }
-
-const SettingsSection = ({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}): ReactNode => (
-  <section className="border-t pt-4 first:border-t-0 first:pt-0">
-    <h3 className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
-      {title}
-    </h3>
-    <div className="grid grid-cols-1 items-start gap-x-8 gap-y-4 sm:grid-cols-2">
-      {children}
-    </div>
-  </section>
-);
 
 const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
   const { data: meetup } = useGetMeetupQuery(meetupId);
@@ -202,7 +185,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         name: meetup?.name ?? '',
         slug: meetup?.slug ?? '',
         date: dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format('YYYY-MM-DD'),
-        startTime: dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format('hh:mm'),
+        startTime: dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format('HH:mm'),
         address: meetup?.location.full_address ?? '',
         venueName: meetup?.location.venue_name ?? '',
         duration: meetup?.duration_hours ?? 0,
@@ -236,20 +219,6 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
     setIsEditable.off();
   };
 
-  const onPublish = async (): Promise<void> => {
-    const result = await editMeetup({
-      meetupId: meetup?.id ?? '',
-      payload: { is_draft: false },
-    });
-
-    if ('error' in result && result.error != null && 'data' in result.error) {
-      const data: any = result.error.data;
-      toast.error('Error publishing meetup', { description: data.message });
-    } else {
-      toast.success('Meetup published');
-    }
-  };
-
   return (
     <EditableFormCard
       title={'Meetup Details'}
@@ -266,7 +235,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         noValidate
         className="flex flex-col gap-5 pt-2"
       >
-        <SettingsSection title="Basics">
+        <MeetupFormSection title="Basics">
           <EditableFormField
             name={'Meetup Name'}
             className="max-w-none py-0"
@@ -399,27 +368,6 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
             )}
           </Field>
           <Field className="min-w-0">
-            <FieldLabel>Status</FieldLabel>
-            {meetup?.is_draft === true ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <Badge variant="secondary">Draft</Badge>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={isSaving}
-                  onClick={() => void onPublish()}
-                >
-                  Publish
-                </Button>
-              </div>
-            ) : (
-              <p className="text-foreground/70">Published</p>
-            )}
-            {meetup?.is_draft === true ? (
-              <FieldDescription>{DRAFT_PUBLISH_NOTE}</FieldDescription>
-            ) : null}
-          </Field>
-          <Field className="min-w-0">
             <FieldLabel htmlFor="isUnlisted">Visibility</FieldLabel>
             {isEditable ? (
               <div className="flex items-center gap-2">
@@ -476,22 +424,40 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               {UNLISTED_SLUG_NOTE}
             </p>
           ) : null}
-        </SettingsSection>
-        <SettingsSection title="Schedule & location">
-          <EditableFormField
-            name={'Date'}
-            className="max-w-none py-0"
-            value={dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format(
-              'YYYY-MM-DD'
+        </MeetupFormSection>
+        <MeetupFormSection title="Schedule & location">
+          <Field
+            data-invalid={formik.errors.date != null && formik.touched.date}
+            className="max-w-none min-w-0 py-0"
+          >
+            <FieldLabel htmlFor="date" className="line-clamp-1">
+              Date
+            </FieldLabel>
+            {isEditable ? (
+              <>
+                <DatePicker
+                  id="date"
+                  value={formik.values.date}
+                  invalid={
+                    formik.errors.date != null && formik.touched.date === true
+                  }
+                  onChange={(date) => void formik.setFieldValue('date', date)}
+                  onBlur={() =>
+                    void formik.setFieldTouched('date', true, false)
+                  }
+                />
+                {formik.errors.date != null && formik.touched.date === true ? (
+                  <FieldError>{formik.errors.date}</FieldError>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-foreground/70">
+                {dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format(
+                  'YYYY-MM-DD'
+                )}
+              </p>
             )}
-            editable={isEditable}
-            id={'date'}
-            type={'date'}
-            isInvalid={formik.errors.date != null && formik.touched.date}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            errorMessage={formik.errors.date}
-          />
+          </Field>
           {/* Archives capture the day only — no start time. */}
           {!isArchive ? (
             <EditableFormField
@@ -585,10 +551,10 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               errorMessage={formik.errors.duration}
             />
           ) : null}
-        </SettingsSection>
+        </MeetupFormSection>
         {/* Archives have no live sign-ups. */}
         {!isArchive ? (
-          <SettingsSection title="Tickets">
+          <MeetupFormSection title="Tickets">
             {isEditable ? (
               <div className="flex items-center gap-2 sm:col-span-2">
                 <Checkbox
@@ -643,9 +609,9 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               </Link>
               .
             </p>
-          </SettingsSection>
+          </MeetupFormSection>
         ) : null}
-        <SettingsSection title="Image & description">
+        <MeetupFormSection title="Image & description">
           <MeetupImageField
             className="max-w-none py-0"
             previewUrl={formik.values.imageUrl}
@@ -675,7 +641,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
             onBlur={formik.handleBlur}
             errorMessage={formik.errors.description}
           />
-        </SettingsSection>
+        </MeetupFormSection>
       </form>
     </EditableFormCard>
   );

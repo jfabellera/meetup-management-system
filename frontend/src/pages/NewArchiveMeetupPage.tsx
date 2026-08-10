@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Field,
   FieldDescription,
@@ -24,9 +25,11 @@ import { useFormik } from 'formik';
 import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import AddressCombobox from '../components/Meetups/AddressCombobox';
 import GroupCombobox from '../components/Meetups/GroupCombobox';
-import TagCombobox from '../components/Meetups/TagCombobox';
 import MeetupImageField from '../components/Meetups/MeetupImageField';
+import TagCombobox from '../components/Meetups/TagCombobox';
+import VenueNameLabel from '../components/Meetups/VenueNameLabel';
 import {
   UNLISTED_GROUPS_DESCRIPTION,
   UNLISTED_SLUG_NOTE,
@@ -51,6 +54,7 @@ const NewArchiveMeetupPage = (): ReactNode => {
       slug: '',
       date: '',
       address: '',
+      venueName: '',
       imageUrl: '',
       imageKey: '',
       description: '',
@@ -70,6 +74,7 @@ const NewArchiveMeetupPage = (): ReactNode => {
         // can't roll to an adjacent day across the UTC offset.
         date: new Date(`${values.date}T12:00Z`).toISOString(),
         address: values.address,
+        venue_name: values.venueName !== '' ? values.venueName : undefined,
         image_key: values.imageKey,
         description: values.description,
         // The submitter always owns the archive. The credit is either
@@ -87,7 +92,7 @@ const NewArchiveMeetupPage = (): ReactNode => {
           description: data.message,
         });
       } else {
-        void navigate('/organizer');
+        void navigate(`/meetup/${values.slug}`);
       }
     },
     validationSchema: ArchiveMeetupFormSchema,
@@ -244,14 +249,66 @@ const NewArchiveMeetupPage = (): ReactNode => {
                   />
                 </Field>
 
+                <Field
+                  data-invalid={
+                    formik.errors.date != null && formik.touched.date === true
+                  }
+                  className="gap-1.5"
+                >
+                  <FieldLabel htmlFor="date">Date</FieldLabel>
+                  <DatePicker
+                    id="date"
+                    value={formik.values.date}
+                    invalid={
+                      formik.errors.date != null && formik.touched.date === true
+                    }
+                    onChange={(date) => void formik.setFieldValue('date', date)}
+                    onBlur={() =>
+                      void formik.setFieldTouched('date', true, false)
+                    }
+                  />
+                  {formik.errors.date != null &&
+                  formik.touched.date === true ? (
+                    <FieldError>{formik.errors.date}</FieldError>
+                  ) : null}
+                </Field>
+
+                <Field
+                  data-invalid={
+                    formik.errors.address != null &&
+                    formik.touched.address === true
+                  }
+                  className="gap-1.5"
+                >
+                  <FieldLabel htmlFor="address">Address</FieldLabel>
+                  <AddressCombobox
+                    id="address"
+                    address={formik.values.address}
+                    onAddressChange={(address) => {
+                      void formik.setFieldValue('address', address);
+                      void formik.setFieldValue('venueName', '');
+                    }}
+                    onPlaceSelect={({ address, venueName }) => {
+                      void formik.setFieldValue('address', address);
+                      void formik.setFieldValue('venueName', venueName);
+                    }}
+                    onBlur={() => void formik.setFieldTouched('address', true)}
+                    invalid={
+                      formik.errors.address != null &&
+                      formik.touched.address === true
+                    }
+                  />
+                  {formik.errors.address != null &&
+                  formik.touched.address === true ? (
+                    <FieldError>{formik.errors.address}</FieldError>
+                  ) : null}
+                </Field>
+
                 <FormField
                   formik={formik}
-                  name="date"
-                  label="Date"
-                  type="date"
+                  name="venueName"
+                  label={<VenueNameLabel />}
                 />
-
-                <FormField formik={formik} name="address" label="Address" />
 
                 <MeetupImageField
                   previewUrl={formik.values.imageUrl}
