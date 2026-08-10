@@ -34,6 +34,7 @@ import EditableFormCard from '../Forms/EditableFormCard';
 import EditableFormField from '../Forms/EditableFormField';
 import AddressCombobox from './AddressCombobox';
 import GroupCombobox from './GroupCombobox';
+import MeetupFormSection from './MeetupFormSection';
 import VenueNameLabel from './VenueNameLabel';
 import MeetupImageField from './MeetupImageField';
 import OrganizerCombobox from './OrganizerCombobox';
@@ -48,23 +49,6 @@ dayjs.extend(customParseFormat);
 interface Props {
   meetupId: string;
 }
-
-const SettingsSection = ({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}): ReactNode => (
-  <section className="border-t pt-4 first:border-t-0 first:pt-0">
-    <h3 className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
-      {title}
-    </h3>
-    <div className="grid grid-cols-1 items-start gap-x-8 gap-y-4 sm:grid-cols-2">
-      {children}
-    </div>
-  </section>
-);
 
 const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
   const { data: meetup } = useGetMeetupQuery(meetupId);
@@ -250,7 +234,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         noValidate
         className="flex flex-col gap-5 pt-2"
       >
-        <SettingsSection title="Basics">
+        <MeetupFormSection title="Basics">
           <EditableFormField
             name={'Meetup Name'}
             className="max-w-none py-0"
@@ -439,8 +423,8 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               {UNLISTED_SLUG_NOTE}
             </p>
           ) : null}
-        </SettingsSection>
-        <SettingsSection title="Schedule & location">
+        </MeetupFormSection>
+        <MeetupFormSection title="Schedule & location">
           <EditableFormField
             name={'Date'}
             className="max-w-none py-0"
@@ -548,10 +532,10 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               errorMessage={formik.errors.duration}
             />
           ) : null}
-        </SettingsSection>
+        </MeetupFormSection>
         {/* Archives have no live sign-ups. */}
         {!isArchive ? (
-          <SettingsSection title="Tickets">
+          <MeetupFormSection title="Tickets">
             {isEditable ? (
               <div className="flex items-center gap-2 sm:col-span-2">
                 <Checkbox
@@ -606,9 +590,9 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
               </Link>
               .
             </p>
-          </SettingsSection>
+          </MeetupFormSection>
         ) : null}
-        <SettingsSection title="Image & description">
+        <MeetupFormSection title="Image & description">
           <MeetupImageField
             className="max-w-none py-0"
             previewUrl={formik.values.imageUrl}
@@ -638,7 +622,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
             onBlur={formik.handleBlur}
             errorMessage={formik.errors.description}
           />
-        </SettingsSection>
+        </MeetupFormSection>
       </form>
     </EditableFormCard>
   );
