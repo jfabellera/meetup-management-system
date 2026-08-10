@@ -22,7 +22,6 @@ interface DatePickerProps {
   /** 'YYYY-MM-DD', or '' when unset. */
   value: string;
   onChange: (value: string) => void;
-  /** Fires when the popover closes, e.g. to mark a formik field touched. */
   onBlur?: () => void;
   disabled?: boolean;
   invalid?: boolean;
@@ -45,12 +44,17 @@ export const DatePicker = ({
   const [open, setOpen] = useState(false);
   const date = parseValue(value);
 
+  const close = (): void => {
+    setOpen(false);
+    onBlur?.();
+  };
+
   return (
     <Popover
       open={open}
       onOpenChange={(nextOpen) => {
-        setOpen(nextOpen);
-        if (!nextOpen) onBlur?.();
+        if (nextOpen) setOpen(true);
+        else close();
       }}
     >
       <PopoverTrigger asChild>
@@ -79,7 +83,7 @@ export const DatePicker = ({
           defaultMonth={date}
           onSelect={(selected) => {
             onChange(selected != null ? format(selected, 'yyyy-MM-dd') : '');
-            setOpen(false);
+            close();
           }}
         />
       </PopoverContent>

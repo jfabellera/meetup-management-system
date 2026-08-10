@@ -442,7 +442,9 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
                     formik.errors.date != null && formik.touched.date === true
                   }
                   onChange={(date) => void formik.setFieldValue('date', date)}
-                  onBlur={() => void formik.setFieldTouched('date', true)}
+                  onBlur={() =>
+                    void formik.setFieldTouched('date', true, false)
+                  }
                 />
                 {formik.errors.date != null && formik.touched.date === true ? (
                   <FieldError>{formik.errors.date}</FieldError>
