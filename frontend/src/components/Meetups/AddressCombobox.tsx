@@ -6,6 +6,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '@/components/ui/combobox';
+import { randomUUID } from '@/lib/utils';
 import { type PlaceSuggestionInfo } from '@keebmeet/shared';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
@@ -39,7 +40,7 @@ const AddressCombobox = ({
 }: Props): ReactNode => {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [session, setSession] = useState(() => crypto.randomUUID());
+  const [session, setSession] = useState(() => randomUUID());
   const [fetchPlaceDetails] = useLazyPlaceDetailsQuery();
 
   useEffect(() => {
@@ -86,7 +87,7 @@ const AddressCombobox = ({
       onPlaceSelect(suggestion.resolved);
       return;
     }
-    setSession(crypto.randomUUID());
+    setSession(randomUUID());
     const details = await fetchPlaceDetails({
       placeId: suggestion.place_id,
       session,
