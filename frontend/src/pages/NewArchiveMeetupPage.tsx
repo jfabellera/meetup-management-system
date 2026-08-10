@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Field,
   FieldDescription,
@@ -244,12 +245,27 @@ const NewArchiveMeetupPage = (): ReactNode => {
                   />
                 </Field>
 
-                <FormField
-                  formik={formik}
-                  name="date"
-                  label="Date"
-                  type="date"
-                />
+                <Field
+                  data-invalid={
+                    formik.errors.date != null && formik.touched.date === true
+                  }
+                  className="gap-1.5"
+                >
+                  <FieldLabel htmlFor="date">Date</FieldLabel>
+                  <DatePicker
+                    id="date"
+                    value={formik.values.date}
+                    invalid={
+                      formik.errors.date != null && formik.touched.date === true
+                    }
+                    onChange={(date) => void formik.setFieldValue('date', date)}
+                    onBlur={() => void formik.setFieldTouched('date', true)}
+                  />
+                  {formik.errors.date != null &&
+                  formik.touched.date === true ? (
+                    <FieldError>{formik.errors.date}</FieldError>
+                  ) : null}
+                </Field>
 
                 <FormField formik={formik} name="address" label="Address" />
 

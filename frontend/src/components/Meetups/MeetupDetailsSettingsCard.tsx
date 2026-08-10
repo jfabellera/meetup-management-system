@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Field,
   FieldDescription,
@@ -184,7 +185,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         name: meetup?.name ?? '',
         slug: meetup?.slug ?? '',
         date: dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format('YYYY-MM-DD'),
-        startTime: dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format('hh:mm'),
+        startTime: dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format('HH:mm'),
         address: meetup?.location.full_address ?? '',
         venueName: meetup?.location.venue_name ?? '',
         duration: meetup?.duration_hours ?? 0,
@@ -425,20 +426,36 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
           ) : null}
         </MeetupFormSection>
         <MeetupFormSection title="Schedule & location">
-          <EditableFormField
-            name={'Date'}
-            className="max-w-none py-0"
-            value={dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format(
-              'YYYY-MM-DD'
+          <Field
+            data-invalid={formik.errors.date != null && formik.touched.date}
+            className="max-w-none min-w-0 py-0"
+          >
+            <FieldLabel htmlFor="date" className="line-clamp-1">
+              Date
+            </FieldLabel>
+            {isEditable ? (
+              <>
+                <DatePicker
+                  id="date"
+                  value={formik.values.date}
+                  invalid={
+                    formik.errors.date != null && formik.touched.date === true
+                  }
+                  onChange={(date) => void formik.setFieldValue('date', date)}
+                  onBlur={() => void formik.setFieldTouched('date', true)}
+                />
+                {formik.errors.date != null && formik.touched.date === true ? (
+                  <FieldError>{formik.errors.date}</FieldError>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-foreground/70">
+                {dayjs(meetup?.date, 'YYYY-MM-DDTHH:mm:ss').format(
+                  'YYYY-MM-DD'
+                )}
+              </p>
             )}
-            editable={isEditable}
-            id={'date'}
-            type={'date'}
-            isInvalid={formik.errors.date != null && formik.touched.date}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            errorMessage={formik.errors.date}
-          />
+          </Field>
           {/* Archives capture the day only — no start time. */}
           {!isArchive ? (
             <EditableFormField

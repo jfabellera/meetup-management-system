@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Field,
   FieldDescription,
@@ -59,7 +60,9 @@ const NewMeetupPage = (): ReactNode => {
       name: '',
       slug: '',
       date: '',
-      startTime: '',
+      // Real default rather than '': Safari renders an empty time input with
+      // filled-looking segments, so users can't tell it still needs input.
+      startTime: '12:00',
       address: '',
       venueName: '',
       duration: 0,
@@ -270,13 +273,26 @@ const NewMeetupPage = (): ReactNode => {
               ) : null}
             </MeetupFormSection>
             <MeetupFormSection title="Schedule & location">
-              <FormField
-                formik={formik}
-                name="date"
-                label="Date"
-                type="date"
-                className="min-w-0"
-              />
+              <Field
+                data-invalid={
+                  formik.errors.date != null && formik.touched.date === true
+                }
+                className="min-w-0 gap-1.5"
+              >
+                <FieldLabel htmlFor="date">Date</FieldLabel>
+                <DatePicker
+                  id="date"
+                  value={formik.values.date}
+                  invalid={
+                    formik.errors.date != null && formik.touched.date === true
+                  }
+                  onChange={(date) => void formik.setFieldValue('date', date)}
+                  onBlur={() => void formik.setFieldTouched('date', true)}
+                />
+                {formik.errors.date != null && formik.touched.date === true ? (
+                  <FieldError>{formik.errors.date}</FieldError>
+                ) : null}
+              </Field>
               <FormField
                 formik={formik}
                 name="startTime"
