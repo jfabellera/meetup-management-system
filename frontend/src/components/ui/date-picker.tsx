@@ -61,6 +61,7 @@ export const DatePicker = ({
           disabled={disabled}
           aria-invalid={invalid}
           data-empty={date == null}
+          tabIndex={0}
           className={cn(
             'border-input hover:text-foreground bg-transparent hover:bg-transparent',
             'data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal',
