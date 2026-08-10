@@ -74,6 +74,7 @@ export const createArchiveMeetupSchema = z.object({
     message: 'Datetime must be in the format of YYYY-MM-DDT:HH:mm:ssZ',
   }),
   address: z.string(),
+  venue_name: z.string().max(255).optional(),
   image_key: z.string(),
   description: z.string().optional(),
   // Display-only credit for who ran the meetup. The submitter is always the

@@ -820,10 +820,10 @@ export const createArchiveMeetup = async (
     newMeetup.city = geocodeResult.city;
     if (geocodeResult.state != null) newMeetup.state = geocodeResult.state;
     newMeetup.country = geocodeResult.country;
-    newMeetup.venue_name = await findVenueName(
-      geocodeResult.latitude,
-      geocodeResult.longitude
-    );
+    newMeetup.venue_name =
+      result.data.venue_name != null && result.data.venue_name !== ''
+        ? result.data.venue_name
+        : await findVenueName(geocodeResult.latitude, geocodeResult.longitude);
 
     newMeetup.utc_offset = await getUtcOffset(
       geocodeResult.latitude,
