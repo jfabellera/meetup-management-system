@@ -115,7 +115,7 @@ const NewMeetupPage = (): ReactNode => {
           description: data.message,
         });
       } else {
-        void navigate('/organizer');
+        void navigate(`/meetup/${formik.values.slug}`);
       }
     },
     validationSchema: MeetupFormSchema,

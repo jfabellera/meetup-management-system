@@ -26,8 +26,8 @@ import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import GroupCombobox from '../components/Meetups/GroupCombobox';
-import TagCombobox from '../components/Meetups/TagCombobox';
 import MeetupImageField from '../components/Meetups/MeetupImageField';
+import TagCombobox from '../components/Meetups/TagCombobox';
 import {
   UNLISTED_GROUPS_DESCRIPTION,
   UNLISTED_SLUG_NOTE,
@@ -88,7 +88,7 @@ const NewArchiveMeetupPage = (): ReactNode => {
           description: data.message,
         });
       } else {
-        void navigate('/organizer');
+        void navigate(`/meetup/${values.slug}`);
       }
     },
     validationSchema: ArchiveMeetupFormSchema,
