@@ -9,6 +9,7 @@ const MeetupFormSchema = Yup.object().shape({
   name: Yup.string()
     .min(3, 'Name must be at least 3 characters')
     .required('Required'),
+  slug: Yup.string().required('Required'),
   date: Yup.date()
     .min(new Date(), 'Date must be in the future')
     .required('Required'),

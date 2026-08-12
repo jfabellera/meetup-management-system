@@ -8,7 +8,8 @@ import {
   FieldError,
   FieldLabel,
 } from '@/components/ui/field';
-import { FormField } from '@/components/ui/form-field';
+import { FormErrorSummary } from '@/components/ui/form-error-summary';
+import { FormField, isFieldInvalid } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -45,6 +46,18 @@ import {
   useCreateMeetupMutation,
 } from '../store/meetupSlice';
 import MeetupFormSchema from '../util/schemas/MeetupFormSchema';
+
+const FIELD_LABELS = {
+  name: 'Meetup name',
+  slug: 'URL slug',
+  date: 'Date',
+  startTime: 'Start time',
+  address: 'Address',
+  duration: 'Duration',
+  capacity: 'Capacity',
+  price: 'Ticket price',
+  defaultRaffleEntries: 'Default raffle entries',
+};
 
 const NewMeetupPage = (): ReactNode => {
   const [createMeetup, { isLoading }] = useCreateMeetupMutation();
@@ -119,7 +132,9 @@ const NewMeetupPage = (): ReactNode => {
       }
     },
     validationSchema: MeetupFormSchema,
-    validateOnMount: true,
+    // The slug is checked against the server, so it validates outside the schema.
+    validate: (): Record<string, string> =>
+      slugError != null ? { slug: slugError } : {},
   });
 
   // Auto-fill the slug from the name until the user edits it directly.
@@ -142,13 +157,12 @@ const NewMeetupPage = (): ReactNode => {
       : slugTaken
         ? 'That URL is already taken'
         : undefined;
+  // Shown as typed for a bad slug; the empty case waits for a touch or submit.
+  const slugMessage =
+    slugError ??
+    (isFieldInvalid(formik, 'slug') ? formik.errors.slug : undefined);
 
-  const submitDisabled =
-    !formik.isValid ||
-    isLoading ||
-    isUploading ||
-    slugError != null ||
-    formik.values.slug === '';
+  const submitDisabled = isLoading || isUploading;
 
   const onDescriptionChange = (
     event: ChangeEvent<HTMLTextAreaElement>
@@ -189,7 +203,7 @@ const NewMeetupPage = (): ReactNode => {
                 className="min-w-0"
               />
               <Field
-                data-invalid={slugError != null}
+                data-invalid={slugMessage != null}
                 className="min-w-0 gap-1.5"
               >
                 <FieldLabel htmlFor="slug">URL slug</FieldLabel>
@@ -197,15 +211,18 @@ const NewMeetupPage = (): ReactNode => {
                   id="slug"
                   name="slug"
                   value={formik.values.slug}
-                  aria-invalid={slugError != null}
+                  aria-invalid={slugMessage != null}
+                  aria-describedby={
+                    slugMessage != null ? 'slug-error' : undefined
+                  }
                   onChange={(event) => {
                     setSlugEdited(true);
                     formik.handleChange(event);
                   }}
                   onBlur={formik.handleBlur}
                 />
-                {slugError != null ? (
-                  <FieldError>{slugError}</FieldError>
+                {slugMessage != null ? (
+                  <FieldError id="slug-error">{slugMessage}</FieldError>
                 ) : null}
               </Field>
               <Field className="min-w-0">
@@ -274,24 +291,20 @@ const NewMeetupPage = (): ReactNode => {
             </MeetupFormSection>
             <MeetupFormSection title="Schedule & location">
               <Field
-                data-invalid={
-                  formik.errors.date != null && formik.touched.date === true
-                }
+                data-invalid={isFieldInvalid(formik, 'date')}
                 className="min-w-0 gap-1.5"
               >
                 <FieldLabel htmlFor="date">Date</FieldLabel>
                 <DatePicker
                   id="date"
                   value={formik.values.date}
-                  invalid={
-                    formik.errors.date != null && formik.touched.date === true
-                  }
+                  invalid={isFieldInvalid(formik, 'date')}
                   onChange={(date) => void formik.setFieldValue('date', date)}
                   onBlur={() =>
                     void formik.setFieldTouched('date', true, false)
                   }
                 />
-                {formik.errors.date != null && formik.touched.date === true ? (
+                {isFieldInvalid(formik, 'date') ? (
                   <FieldError>{formik.errors.date}</FieldError>
                 ) : null}
               </Field>
@@ -303,10 +316,7 @@ const NewMeetupPage = (): ReactNode => {
                 className="min-w-0"
               />
               <Field
-                data-invalid={
-                  formik.errors.address != null &&
-                  formik.touched.address === true
-                }
+                data-invalid={isFieldInvalid(formik, 'address')}
                 className="min-w-0 gap-1.5"
               >
                 <FieldLabel htmlFor="address">Address</FieldLabel>
@@ -324,13 +334,9 @@ const NewMeetupPage = (): ReactNode => {
                   onBlur={() => {
                     void formik.setFieldTouched('address', true);
                   }}
-                  invalid={
-                    formik.errors.address != null &&
-                    formik.touched.address === true
-                  }
+                  invalid={isFieldInvalid(formik, 'address')}
                 />
-                {formik.errors.address != null &&
-                formik.touched.address === true ? (
+                {isFieldInvalid(formik, 'address') ? (
                   <FieldError>{formik.errors.address}</FieldError>
                 ) : null}
               </Field>
@@ -445,6 +451,7 @@ const NewMeetupPage = (): ReactNode => {
                 </p>
               </Field>
             </MeetupFormSection>
+            <FormErrorSummary formik={formik} labels={FIELD_LABELS} />
             <div className="flex flex-wrap justify-end gap-2">
               <Button
                 type="submit"

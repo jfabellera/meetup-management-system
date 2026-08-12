@@ -7,7 +7,8 @@ import {
   FieldError,
   FieldLabel,
 } from '@/components/ui/field';
-import { FormField } from '@/components/ui/form-field';
+import { FormErrorSummary } from '@/components/ui/form-error-summary';
+import { FormField, isFieldInvalid } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -42,6 +43,15 @@ import {
   useCreateArchiveMeetupMutation,
 } from '../store/meetupSlice';
 import ArchiveMeetupFormSchema from '../util/schemas/ArchiveMeetupFormSchema';
+
+const FIELD_LABELS = {
+  organizerType: 'Organizer',
+  organizerName: 'Organizer name',
+  name: 'Meetup name',
+  slug: 'URL slug',
+  date: 'Date',
+  address: 'Address',
+};
 
 const NewArchiveMeetupPage = (): ReactNode => {
   const [createArchiveMeetup, { isLoading }] = useCreateArchiveMeetupMutation();
@@ -96,7 +106,9 @@ const NewArchiveMeetupPage = (): ReactNode => {
       }
     },
     validationSchema: ArchiveMeetupFormSchema,
-    validateOnMount: true,
+    // The slug is checked against the server, so it validates outside the schema.
+    validate: (): Record<string, string> =>
+      slugError != null ? { slug: slugError } : {},
   });
 
   // Auto-fill the slug from the name until the user edits it directly.
@@ -119,6 +131,10 @@ const NewArchiveMeetupPage = (): ReactNode => {
       : slugTaken
         ? 'That URL is already taken'
         : undefined;
+  // Shown as typed for a bad slug; the empty case waits for a touch or submit.
+  const slugMessage =
+    slugError ??
+    (isFieldInvalid(formik, 'slug') ? formik.errors.slug : undefined);
 
   const onDescriptionChange = (
     event: ChangeEvent<HTMLTextAreaElement>
@@ -145,7 +161,10 @@ const NewArchiveMeetupPage = (): ReactNode => {
           <div className="bg-card text-card-foreground rounded-lg p-8 shadow-lg">
             <form onSubmit={formik.handleSubmit} noValidate>
               <div className="flex flex-col gap-4">
-                <Field>
+                <Field
+                  data-invalid={isFieldInvalid(formik, 'organizerType')}
+                  className="gap-1.5"
+                >
                   <FieldLabel htmlFor="organizerType">Organizer</FieldLabel>
                   <Select
                     value={formik.values.organizerType}
@@ -157,7 +176,11 @@ const NewArchiveMeetupPage = (): ReactNode => {
                       }
                     }}
                   >
-                    <SelectTrigger id="organizerType" className="w-full">
+                    <SelectTrigger
+                      id="organizerType"
+                      className="w-full"
+                      aria-invalid={isFieldInvalid(formik, 'organizerType')}
+                    >
                       <SelectValue placeholder="Who organized this meetup?" />
                     </SelectTrigger>
                     <SelectContent>
@@ -167,6 +190,9 @@ const NewArchiveMeetupPage = (): ReactNode => {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  {isFieldInvalid(formik, 'organizerType') ? (
+                    <FieldError>{formik.errors.organizerType}</FieldError>
+                  ) : null}
                 </Field>
 
                 {formik.values.organizerType === 'other' && (
@@ -179,21 +205,24 @@ const NewArchiveMeetupPage = (): ReactNode => {
 
                 <FormField formik={formik} name="name" label="Meetup Name" />
 
-                <Field data-invalid={slugError != null} className="gap-1.5">
+                <Field data-invalid={slugMessage != null} className="gap-1.5">
                   <FieldLabel htmlFor="slug">URL slug</FieldLabel>
                   <Input
                     id="slug"
                     name="slug"
                     value={formik.values.slug}
-                    aria-invalid={slugError != null}
+                    aria-invalid={slugMessage != null}
+                    aria-describedby={
+                      slugMessage != null ? 'slug-error' : undefined
+                    }
                     onChange={(event) => {
                       setSlugEdited(true);
                       formik.handleChange(event);
                     }}
                     onBlur={formik.handleBlur}
                   />
-                  {slugError != null ? (
-                    <FieldError>{slugError}</FieldError>
+                  {slugMessage != null ? (
+                    <FieldError id="slug-error">{slugMessage}</FieldError>
                   ) : null}
                 </Field>
 
@@ -250,34 +279,26 @@ const NewArchiveMeetupPage = (): ReactNode => {
                 </Field>
 
                 <Field
-                  data-invalid={
-                    formik.errors.date != null && formik.touched.date === true
-                  }
+                  data-invalid={isFieldInvalid(formik, 'date')}
                   className="gap-1.5"
                 >
                   <FieldLabel htmlFor="date">Date</FieldLabel>
                   <DatePicker
                     id="date"
                     value={formik.values.date}
-                    invalid={
-                      formik.errors.date != null && formik.touched.date === true
-                    }
+                    invalid={isFieldInvalid(formik, 'date')}
                     onChange={(date) => void formik.setFieldValue('date', date)}
                     onBlur={() =>
                       void formik.setFieldTouched('date', true, false)
                     }
                   />
-                  {formik.errors.date != null &&
-                  formik.touched.date === true ? (
+                  {isFieldInvalid(formik, 'date') ? (
                     <FieldError>{formik.errors.date}</FieldError>
                   ) : null}
                 </Field>
 
                 <Field
-                  data-invalid={
-                    formik.errors.address != null &&
-                    formik.touched.address === true
-                  }
+                  data-invalid={isFieldInvalid(formik, 'address')}
                   className="gap-1.5"
                 >
                   <FieldLabel htmlFor="address">Address</FieldLabel>
@@ -293,13 +314,9 @@ const NewArchiveMeetupPage = (): ReactNode => {
                       void formik.setFieldValue('venueName', venueName);
                     }}
                     onBlur={() => void formik.setFieldTouched('address', true)}
-                    invalid={
-                      formik.errors.address != null &&
-                      formik.touched.address === true
-                    }
+                    invalid={isFieldInvalid(formik, 'address')}
                   />
-                  {formik.errors.address != null &&
-                  formik.touched.address === true ? (
+                  {isFieldInvalid(formik, 'address') ? (
                     <FieldError>{formik.errors.address}</FieldError>
                   ) : null}
                 </Field>
@@ -340,15 +357,11 @@ const NewArchiveMeetupPage = (): ReactNode => {
                   </p>
                 </Field>
 
+                <FormErrorSummary formik={formik} labels={FIELD_LABELS} />
+
                 <Button
                   type="submit"
-                  disabled={
-                    !formik.isValid ||
-                    isLoading ||
-                    isUploading ||
-                    slugError != null ||
-                    formik.values.slug === ''
-                  }
+                  disabled={isLoading || isUploading}
                   size="lg"
                 >
                   Archive

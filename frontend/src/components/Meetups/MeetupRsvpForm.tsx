@@ -8,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { FieldError } from '@/components/ui/field';
+import { FormErrorSummary } from '@/components/ui/form-error-summary';
 import { FormField } from '@/components/ui/form-field';
 import { Spinner } from '@/components/ui/spinner';
 import { type MeetupInfo, type SimpleTicketInfo } from '@keebmeet/shared';
@@ -84,6 +86,14 @@ const TicketHolderSchema = Yup.object().shape({
   lastName: Yup.string().required('Required'),
   email: Yup.string().email('Invalid email').required('Required'),
 });
+
+const FIELD_LABELS = {
+  displayName: 'Display name',
+  firstName: 'First name',
+  lastName: 'Last name',
+  email: 'Email',
+  turnstileToken: 'Captcha',
+};
 
 interface MeetupRsvpFormProps {
   meetup: MeetupInfo;
@@ -177,6 +187,11 @@ export const MeetupRsvpForm = ({
   const guestResuming =
     !isLoggedIn && isPendingHold && clientSecret == null && !hasEnded;
 
+  const captchaError =
+    !isLoggedIn && !isManaging && turnstileToken === ''
+      ? 'Complete the captcha to continue'
+      : undefined;
+
   const formik = useFormik({
     // When managing, prefill from the existing ticket; otherwise from the
     // fetched user. Reinitialised once either loads. Editable so the user can
@@ -205,6 +220,9 @@ export const MeetupRsvpForm = ({
     },
     enableReinitialize: true,
     validationSchema: TicketHolderSchema,
+    // The captcha lives outside the form values, but still has to block a submit.
+    validate: () =>
+      captchaError != null ? { turnstileToken: captchaError } : {},
     onSubmit: (values) => {
       void (async () => {
         const ticketHolder = {
@@ -506,7 +524,11 @@ export const MeetupRsvpForm = ({
         ) : null}
 
         {!isLoggedIn && !isPaymentStep && !hasEnded ? (
-          <div className="flex justify-center">
+          <div
+            id="turnstileToken"
+            tabIndex={-1}
+            className="flex flex-col items-center gap-2 outline-none"
+          >
             <Turnstile
               ref={turnstileRef}
               siteKey="0x4AAAAAADvKnjEaFlmjd5Yq"
@@ -514,11 +536,17 @@ export const MeetupRsvpForm = ({
               onExpire={() => setTurnstileToken('')}
               onError={() => setTurnstileToken('')}
             />
+            {captchaError != null && formik.submitCount > 0 ? (
+              <FieldError>{captchaError}</FieldError>
+            ) : null}
           </div>
         ) : null}
       </div>
 
       <div className="flex shrink-0 flex-col gap-2 p-4">
+        {!isPaymentStep ? (
+          <FormErrorSummary formik={formik} labels={FIELD_LABELS} />
+        ) : null}
         {isPaymentStep && priceLabel != null ? (
           <PayButton
             amountLabel={priceLabel}
@@ -530,13 +558,7 @@ export const MeetupRsvpForm = ({
           <Button
             type="submit"
             size="lg"
-            disabled={
-              hasEnded ||
-              isBusy ||
-              guestResuming ||
-              !formik.isValid ||
-              (!isLoggedIn && !isManaging && turnstileToken === '')
-            }
+            disabled={hasEnded || isBusy || guestResuming}
           >
             <FiUserCheck />
             {isManaging
