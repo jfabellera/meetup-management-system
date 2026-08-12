@@ -1,8 +1,15 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { FormErrorSummary } from '@/components/ui/form-error-summary';
-import { FormField, isFieldInvalid } from '@/components/ui/form-field';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -12,16 +19,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { useFormik } from 'formik';
-import { type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import {
   type EventbriteEvent,
   type EventbriteOrganization,
   type EventbriteQuestion,
   type EventbriteTicket,
 } from '@keebmeet/shared';
+import { type ReactNode } from 'react';
+import { useForm, useWatch, type Control } from 'react-hook-form';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import Page from '../components/Page/Page';
 import BackButton from '../components/shared/BackButton';
 import {
@@ -33,12 +40,10 @@ import {
 import { useAppSelector } from '../store/hooks';
 import { useCreateMeetupFromEventbriteMutation } from '../store/meetupSlice';
 import { useGetUserQuery } from '../store/userSlice';
-import { toFormikValidate } from '../util/formikValidate';
 import MeetupFromEventbriteFormSchema from '../util/schemas/MeetupFromEventbriteFormSchema';
+import { zodFormResolver } from '../util/zodFormResolver';
 
-const validateMeetupFromEventbrite = toFormikValidate(
-  MeetupFromEventbriteFormSchema
-);
+const DEFAULT_RAFFLE_ENTRIES = 1;
 
 const FIELD_LABELS = {
   organizationId: 'Organization',
@@ -48,6 +53,71 @@ const FIELD_LABELS = {
   defaultRaffleEntries: 'Default raffle entries',
 };
 
+interface FormValues {
+  organizationId: string;
+  eventId: string;
+  ticketClassId: string;
+  customQuestionId: string;
+  hasRaffle: boolean;
+  defaultRaffleEntries: number;
+}
+
+type SelectFieldName =
+  | 'organizationId'
+  | 'eventId'
+  | 'ticketClassId'
+  | 'customQuestionId';
+
+interface FormSelectProps {
+  control: Control<FormValues>;
+  name: SelectFieldName;
+  label: string;
+  options:
+    | EventbriteOrganization[]
+    | EventbriteEvent[]
+    | EventbriteTicket[]
+    | EventbriteQuestion[]
+    | undefined;
+  disabled?: boolean;
+}
+
+const FormSelect = ({
+  control,
+  name,
+  label,
+  options,
+  disabled,
+}: FormSelectProps): ReactNode => (
+  <FormField
+    control={control}
+    name={name}
+    render={({ field }) => (
+      <FormItem className="w-full">
+        <FormLabel>{label}</FormLabel>
+        <Select
+          value={field.value}
+          onValueChange={field.onChange}
+          disabled={disabled}
+        >
+          <FormControl>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select" />
+            </SelectTrigger>
+          </FormControl>
+          <SelectContent>
+            {options?.map((option) => (
+              <SelectItem key={option.id} value={option.id}>
+                {option.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FormMessage />
+      </FormItem>
+    )}
+  />
+);
+
 const NewMeetupFromEventbritePage = (): ReactNode => {
   const navigate = useNavigate();
   const { user: localUser } = useAppSelector((state) => state.user);
@@ -55,113 +125,66 @@ const NewMeetupFromEventbritePage = (): ReactNode => {
     skip: localUser == null,
   });
   const isEventbriteLinked = user?.is_eventbrite_linked === true;
-  const formik = useFormik({
-    initialValues: {
+  const [createMeetupFromEventbrite, { isLoading }] =
+    useCreateMeetupFromEventbriteMutation();
+
+  const form = useForm<FormValues>({
+    resolver: zodFormResolver<FormValues>(MeetupFromEventbriteFormSchema),
+    defaultValues: {
       organizationId: '',
       eventId: '',
       ticketClassId: '',
       customQuestionId: '',
       hasRaffle: true,
-      defaultRaffleEntries: 1,
+      defaultRaffleEntries: DEFAULT_RAFFLE_ENTRIES,
     },
-    onSubmit: async (values) => {
-      const response = await createMeetupFromEventbrite({
-        eventbrite_event_id: values.eventId,
-        eventbrite_ticket_id: values.ticketClassId,
-        eventbrite_question_id: values.customQuestionId,
-        has_raffle: values.hasRaffle,
-        default_raffle_entries: values.hasRaffle
-          ? values.defaultRaffleEntries
-          : formik.initialValues.defaultRaffleEntries,
-      });
-
-      if ('error' in response) {
-        const data =
-          response.error != null && 'data' in response.error
-            ? (response.error.data as { message?: string } | undefined)
-            : undefined;
-        toast.error('Error', {
-          description: data?.message ?? 'Unable to create meetup',
-        });
-      } else {
-        toast.success('Success', {
-          description: 'Meetup created successfully',
-        });
-        void navigate('/organizer');
-      }
-    },
-    validate: validateMeetupFromEventbrite,
   });
+
+  const organizationId = useWatch({
+    control: form.control,
+    name: 'organizationId',
+  });
+  const eventId = useWatch({ control: form.control, name: 'eventId' });
+  const hasRaffle = useWatch({ control: form.control, name: 'hasRaffle' });
 
   const { data: organizations } = useGetOrganizationsQuery(undefined, {
     skip: !isEventbriteLinked,
   });
-  const { data: events } = useGetEventsQuery(formik.values.organizationId, {
-    skip: formik.values.organizationId === '',
+  const { data: events } = useGetEventsQuery(organizationId, {
+    skip: organizationId === '',
   });
-  const { data: ticketClasses } = useGetTicketClassesQuery(
-    formik.values.eventId,
-    {
-      skip: formik.values.eventId === '',
+  const { data: ticketClasses } = useGetTicketClassesQuery(eventId, {
+    skip: eventId === '',
+  });
+  const { data: customQuestions } = useGetCustomQuestionsQuery(eventId, {
+    skip: eventId === '',
+  });
+
+  const onSubmit = async (values: FormValues): Promise<void> => {
+    const response = await createMeetupFromEventbrite({
+      eventbrite_event_id: values.eventId,
+      eventbrite_ticket_id: values.ticketClassId,
+      eventbrite_question_id: values.customQuestionId,
+      has_raffle: values.hasRaffle,
+      default_raffle_entries: values.hasRaffle
+        ? values.defaultRaffleEntries
+        : DEFAULT_RAFFLE_ENTRIES,
+    });
+
+    if ('error' in response) {
+      const data =
+        response.error != null && 'data' in response.error
+          ? (response.error.data as { message?: string } | undefined)
+          : undefined;
+      toast.error('Error', {
+        description: data?.message ?? 'Unable to create meetup',
+      });
+    } else {
+      toast.success('Success', {
+        description: 'Meetup created successfully',
+      });
+      void navigate('/organizer');
     }
-  );
-  const { data: customQuestions } = useGetCustomQuestionsQuery(
-    formik.values.eventId,
-    {
-      skip: formik.values.eventId === '',
-    }
-  );
-  const [createMeetupFromEventbrite, { isLoading }] =
-    useCreateMeetupFromEventbriteMutation();
-
-  interface FormSelectProps {
-    name: string;
-    id: 'organizationId' | 'eventId' | 'ticketClassId' | 'customQuestionId';
-    options:
-      | EventbriteOrganization[]
-      | EventbriteEvent[]
-      | EventbriteTicket[]
-      | EventbriteQuestion[]
-      | undefined;
-    value: string;
-    disabled?: boolean;
-  }
-
-  const FormSelect = ({
-    name,
-    id,
-    options,
-    value,
-    disabled,
-  }: FormSelectProps): ReactNode => {
-    const invalid = isFieldInvalid(formik, id);
-
-    return (
-      <Field className="w-full gap-1.5" data-invalid={invalid}>
-        <FieldLabel htmlFor={id}>{name}</FieldLabel>
-        <Select
-          value={value}
-          onValueChange={(selected) => {
-            void formik.setFieldValue(id, selected);
-          }}
-          disabled={disabled}
-        >
-          <SelectTrigger id={id} className="w-full" aria-invalid={invalid}>
-            <SelectValue placeholder="Select" />
-          </SelectTrigger>
-          <SelectContent>
-            {options != null
-              ? options.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.name}
-                  </SelectItem>
-                ))
-              : null}
-          </SelectContent>
-        </Select>
-        {invalid ? <FieldError>{formik.errors[id]}</FieldError> : null}
-      </Field>
-    );
   };
 
   return (
@@ -179,96 +202,120 @@ const NewMeetupFromEventbritePage = (): ReactNode => {
           </div>
         </div>
         <div className="bg-card text-card-foreground w-full max-w-md rounded-lg p-8 shadow-lg">
-          <form onSubmit={formik.handleSubmit} noValidate>
-            <div className="flex flex-col items-center gap-4">
-              <span
-                role="button"
-                tabIndex={0}
-                className="cursor-pointer self-end underline"
-                onClick={() => {
-                  void navigate('/new-meetup');
-                }}
-              >
-                Use native
-              </span>
-              {!isEventbriteLinked ? (
-                <p>
-                  Please connect your Eventbrite account in your{' '}
-                  <Link to="/account" className="text-primary underline">
-                    account settings
-                  </Link>{' '}
-                  to create a meetup from an Eventbrite event.
-                </p>
-              ) : (
-                <>
-                  <FormSelect
-                    name={'Organization'}
-                    id={'organizationId'}
-                    options={organizations}
-                    value={formik.values.organizationId}
-                  />
-                  <FormSelect
-                    name={'Event'}
-                    id={'eventId'}
-                    options={events}
-                    value={formik.values.eventId}
-                    disabled={events == null}
-                  />
-                  <FormSelect
-                    name={'Ticket Class'}
-                    id={'ticketClassId'}
-                    options={ticketClasses}
-                    value={formik.values.ticketClassId}
-                    disabled={ticketClasses == null}
-                  />
-                  <FormSelect
-                    name={'Custom Question'}
-                    id={'customQuestionId'}
-                    options={customQuestions}
-                    value={formik.values.customQuestionId}
-                    disabled={customQuestions == null}
-                  />
-
-                  <div className="flex w-full items-center gap-2">
-                    <Label htmlFor="hasRaffle" className="pr-4">
-                      Will this meetup have raffles?
-                    </Label>
-                    <Checkbox
-                      id="hasRaffle"
-                      name="hasRaffle"
-                      checked={formik.values.hasRaffle}
-                      onCheckedChange={(checked) => {
-                        void formik.setFieldValue(
-                          'hasRaffle',
-                          checked === true
-                        );
-                      }}
+          <Form {...form}>
+            <form
+              onSubmit={(event) => void form.handleSubmit(onSubmit)(event)}
+              noValidate
+            >
+              <div className="flex flex-col items-center gap-4">
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="cursor-pointer self-end underline"
+                  onClick={() => {
+                    void navigate('/new-meetup');
+                  }}
+                >
+                  Use native
+                </span>
+                {!isEventbriteLinked ? (
+                  <p>
+                    Please connect your Eventbrite account in your{' '}
+                    <Link to="/account" className="text-primary underline">
+                      account settings
+                    </Link>{' '}
+                    to create a meetup from an Eventbrite event.
+                  </p>
+                ) : (
+                  <>
+                    <FormSelect
+                      control={form.control}
+                      name="organizationId"
+                      label="Organization"
+                      options={organizations}
                     />
-                    <span>Yes</span>
-                  </div>
+                    <FormSelect
+                      control={form.control}
+                      name="eventId"
+                      label="Event"
+                      options={events}
+                      disabled={events == null}
+                    />
+                    <FormSelect
+                      control={form.control}
+                      name="ticketClassId"
+                      label="Ticket Class"
+                      options={ticketClasses}
+                      disabled={ticketClasses == null}
+                    />
+                    <FormSelect
+                      control={form.control}
+                      name="customQuestionId"
+                      label="Custom Question"
+                      options={customQuestions}
+                      disabled={customQuestions == null}
+                    />
 
-                  <FormField
-                    formik={formik}
-                    name="defaultRaffleEntries"
-                    label="Default raffle entries per attendee"
-                    type="number"
-                    disabled={!formik.values.hasRaffle}
-                    value={formik.values.defaultRaffleEntries}
-                    className="w-full"
-                  />
-                  <FormErrorSummary
-                    formik={formik}
-                    labels={FIELD_LABELS}
-                    className="w-full"
-                  />
-                  <Button type={'submit'} disabled={isLoading}>
-                    Submit
-                    {isLoading && <Spinner />}
-                  </Button>
-                </>
-              )}
-            </div>
-          </form>
+                    <FormField
+                      control={form.control}
+                      name="hasRaffle"
+                      render={({ field }) => (
+                        <div className="flex w-full items-center gap-2">
+                          <Label htmlFor="hasRaffle" className="pr-4">
+                            Will this meetup have raffles?
+                          </Label>
+                          <Checkbox
+                            id="hasRaffle"
+                            name={field.name}
+                            checked={field.value}
+                            onCheckedChange={(checked) =>
+                              field.onChange(checked === true)
+                            }
+                          />
+                          <span>Yes</span>
+                        </div>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="defaultRaffleEntries"
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormLabel>
+                            Default raffle entries per attendee
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              disabled={!hasRaffle}
+                              {...field}
+                              onChange={(event) =>
+                                field.onChange(
+                                  event.target.value === ''
+                                    ? ''
+                                    : event.target.valueAsNumber
+                                )
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormErrorSummary<FormValues>
+                      labels={FIELD_LABELS}
+                      className="w-full"
+                    />
+                    <Button type={'submit'} disabled={isLoading}>
+                      Submit
+                      {isLoading && <Spinner />}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </form>
+          </Form>
         </div>
       </div>
     </Page>

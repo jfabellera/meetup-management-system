@@ -1,15 +1,23 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FieldError } from '@/components/ui/field';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { FormErrorSummary } from '@/components/ui/form-error-summary';
-import { FormField, isFieldInvalid } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { USERNAME_REGEX, usernameField } from '@keebmeet/shared';
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
-import { useFormik } from 'formik';
 import { Loader2 } from 'lucide-react';
-import { type ReactNode, useRef } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -23,7 +31,7 @@ import {
   useCheckUsernameAvailableQuery,
   useUploadUserImageMutation,
 } from '../store/userSlice';
-import { toFormikValidate } from '../util/formikValidate';
+import { zodFormResolver } from '../util/zodFormResolver';
 
 const RegisterSchema = z
   .object({
@@ -53,8 +61,6 @@ const RegisterSchema = z
     message: 'Passwords must match',
   });
 
-const validateRegister = toFormikValidate(RegisterSchema);
-
 const FIELD_LABELS = {
   nickName: 'Display name',
   username: 'Username',
@@ -66,14 +72,33 @@ const FIELD_LABELS = {
   turnstileToken: 'Captcha',
 };
 
+interface FormValues {
+  email: string;
+  firstName: string;
+  lastName: string;
+  nickName: string;
+  username: string;
+  password: string;
+  confirmPassword: string;
+  requestOrganizer: boolean;
+  turnstileToken: string;
+  profilePhotoKey: string;
+  profilePhotoUrl: string;
+}
+
 const RegisterPage = (): ReactNode => {
   const dispatch = useAppDispatch();
   const { loading, error } = useAppSelector((state) => state.user);
   const navigate = useNavigate();
   const turnstileRef = useRef<TurnstileInstance>(null);
   const { isUploading, onUploadingChange } = usePendingUploads();
-  const formik = useFormik({
-    initialValues: {
+  // Availability is checked against the server, so it validates outside the schema.
+  const [extraErrors, setExtraErrors] = useState<Record<string, string>>({});
+
+  const form = useForm<FormValues>({
+    mode: 'onTouched',
+    resolver: zodFormResolver<FormValues>(RegisterSchema, extraErrors),
+    defaultValues: {
       email: '',
       firstName: '',
       lastName: '',
@@ -87,41 +112,45 @@ const RegisterPage = (): ReactNode => {
       profilePhotoKey: '',
       profilePhotoUrl: '',
     },
-    onSubmit: (values) => {
-      dispatch(register(values))
-        .then((action) => {
-          // Get status of register
-          if (register.fulfilled.match(action)) {
-            // Successfully registered, prompt the user to verify their email.
-            toast.success('Account created', {
-              description:
-                'Check your email for a link to verify your account.',
-            });
-            void navigate('/login');
-          } else if (register.rejected.match(action)) {
-            // Failed to register, show an error message
-            // TODO(jan)
-            // Turnstile tokens are single-use, so reset the widget to let the
-            // user try again with a fresh one.
-            turnstileRef.current?.reset();
-            void formik.setFieldValue('turnstileToken', '');
-          }
-        })
-        .catch(() => {});
-    },
-    // Availability is checked against the server, so it validates outside the schema.
-    validate: (values): Record<string, string> => ({
-      ...validateRegister(values),
-      ...(usernameTaken ? { username: 'Username is taken' } : {}),
-    }),
   });
 
-  const usernameValid = USERNAME_REGEX.test(formik.values.username);
+  const username = useWatch({ control: form.control, name: 'username' });
+  const profilePhotoUrl = useWatch({
+    control: form.control,
+    name: 'profilePhotoUrl',
+  });
+
+  const usernameValid = USERNAME_REGEX.test(username);
   const { data: usernameCheck } = useCheckUsernameAvailableQuery(
-    { username: formik.values.username },
+    { username },
     { skip: !usernameValid }
   );
   const usernameTaken = usernameValid && usernameCheck?.available === false;
+  useEffect(() => {
+    setExtraErrors(usernameTaken ? { username: 'Username is taken' } : {});
+  }, [usernameTaken]);
+
+  const onSubmit = (values: FormValues): void => {
+    dispatch(register(values))
+      .then((action) => {
+        // Get status of register
+        if (register.fulfilled.match(action)) {
+          // Successfully registered, prompt the user to verify their email.
+          toast.success('Account created', {
+            description: 'Check your email for a link to verify your account.',
+          });
+          void navigate('/login');
+        } else if (register.rejected.match(action)) {
+          // Failed to register, show an error message
+          // TODO(jan)
+          // Turnstile tokens are single-use, so reset the widget to let the
+          // user try again with a fresh one.
+          turnstileRef.current?.reset();
+          form.setValue('turnstileToken', '');
+        }
+      })
+      .catch(() => {});
+  };
 
   return (
     <Page>
@@ -131,169 +160,236 @@ const RegisterPage = (): ReactNode => {
             <h1 className="text-center text-4xl font-bold">Sign up</h1>
           </div>
           <div className="bg-card text-card-foreground rounded-lg p-8 shadow-lg">
-            <form onSubmit={formik.handleSubmit} noValidate>
-              <div className="flex flex-col gap-4">
-                <div className="flex justify-center">
-                  <ImageUploadField
-                    className="w-40"
-                    label="Profile Photo (optional)"
-                    aspectRatio={1}
-                    rounded
-                    useUploadMutation={useUploadUserImageMutation}
-                    previewUrl={formik.values.profilePhotoUrl}
-                    onUploaded={(imageKey, imageUrl) => {
-                      void formik.setFieldValue('profilePhotoKey', imageKey);
-                      void formik.setFieldValue('profilePhotoUrl', imageUrl);
-                    }}
-                    onUploadingChange={onUploadingChange}
-                    onRemove={() => {
-                      void formik.setFieldValue('profilePhotoKey', '');
-                      void formik.setFieldValue('profilePhotoUrl', '');
-                    }}
-                  />
-                </div>
-                <div className="mt-4 flex flex-col gap-4">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
-                      Public · shown on your profile
-                    </h2>
-                    <Separator className="flex-1" />
-                  </div>
-                  <FormField
-                    formik={formik}
-                    name="nickName"
-                    label="Display Name"
-                  />
-                  <FormField
-                    formik={formik}
-                    name="username"
-                    label="Username"
-                    invalid={
-                      usernameTaken || isFieldInvalid(formik, 'username')
-                    }
-                  />
-                </div>
-                <div className="mt-4 flex flex-col gap-4">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
-                      Private · only visible to you
-                    </h2>
-                    <Separator className="flex-1" />
-                  </div>
-                  <FormField
-                    formik={formik}
-                    name="email"
-                    label="Email address"
-                    type="email"
-                    invalid={error === 409 || isFieldInvalid(formik, 'email')}
-                    message={
-                      error === 409 ? 'Email is already in use' : undefined
-                    }
-                  />
-                  <div className="flex flex-row gap-2">
-                    <FormField
-                      formik={formik}
-                      name="firstName"
-                      label="First Name"
-                      className="flex-1"
-                    />
-                    <FormField
-                      formik={formik}
-                      name="lastName"
-                      label="Last Name"
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-col gap-4">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
-                      Password
-                    </h2>
-                    <Separator className="flex-1" />
-                  </div>
-                  <FormField
-                    formik={formik}
-                    name="password"
-                    label="Password"
-                    type="password"
-                  />
-                  <FormField
-                    formik={formik}
-                    name="confirmPassword"
-                    label="Confirm Password"
-                    type="password"
-                  />
-                </div>
-                <div className="mt-2 flex items-center justify-center gap-2">
-                  <Label htmlFor="requestOrganizer" className="pr-4">
-                    Are you an organizer?
-                  </Label>
-                  <Checkbox
-                    id="requestOrganizer"
-                    checked={formik.values.requestOrganizer}
-                    onCheckedChange={(checked) =>
-                      formik.setFieldValue('requestOrganizer', checked === true)
-                    }
-                  />
-                  <span>Yes</span>
-                </div>
-                <div
-                  id="turnstileToken"
-                  tabIndex={-1}
-                  className="flex flex-col items-center gap-2 pt-2 outline-none"
-                >
-                  <Turnstile
-                    ref={turnstileRef}
-                    siteKey="0x4AAAAAADvKnjEaFlmjd5Yq"
-                    onSuccess={(token) => {
-                      void formik.setFieldValue('turnstileToken', token);
-                    }}
-                    onExpire={() => {
-                      void formik.setFieldValue('turnstileToken', '');
-                    }}
-                    onError={() => {
-                      void formik.setFieldValue('turnstileToken', '');
-                    }}
-                  />
-                  {isFieldInvalid(formik, 'turnstileToken') ? (
-                    <FieldError>{formik.errors.turnstileToken}</FieldError>
-                  ) : null}
-                </div>
-                <FormErrorSummary formik={formik} labels={FIELD_LABELS} />
-                <div className="flex flex-col gap-10 pt-2">
-                  <Button
-                    type="submit"
-                    disabled={loading || isUploading}
-                    size="lg"
-                  >
-                    Sign up
-                    {loading ? <Loader2 className="animate-spin" /> : null}
-                  </Button>
-                  <DiscordLoginButton />
-                </div>
-                {error != null ? (
-                  <p className="text-destructive text-center text-sm">
-                    Registration failed
-                  </p>
-                ) : null}
-                <div className="pt-2">
-                  <p className="text-center">
-                    Already a user?{' '}
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className="cursor-pointer text-blue-500"
-                      onClick={() => {
-                        void navigate('/login');
+            <Form {...form}>
+              <form
+                onSubmit={(event) => void form.handleSubmit(onSubmit)(event)}
+                noValidate
+              >
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-center">
+                    <ImageUploadField
+                      className="w-40"
+                      label="Profile Photo (optional)"
+                      aspectRatio={1}
+                      rounded
+                      useUploadMutation={useUploadUserImageMutation}
+                      previewUrl={profilePhotoUrl}
+                      onUploaded={(imageKey, imageUrl) => {
+                        form.setValue('profilePhotoKey', imageKey);
+                        form.setValue('profilePhotoUrl', imageUrl);
                       }}
+                      onUploadingChange={onUploadingChange}
+                      onRemove={() => {
+                        form.setValue('profilePhotoKey', '');
+                        form.setValue('profilePhotoUrl', '');
+                      }}
+                    />
+                  </div>
+                  <div className="mt-4 flex flex-col gap-4">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
+                        Public · shown on your profile
+                      </h2>
+                      <Separator className="flex-1" />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="nickName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Display Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      render={({ field, fieldState }) => (
+                        <FormItem
+                          data-invalid={usernameTaken || fieldState.invalid}
+                        >
+                          <FormLabel>Username</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="mt-4 flex flex-col gap-4">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
+                        Private · only visible to you
+                      </h2>
+                      <Separator className="flex-1" />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field, fieldState }) => (
+                        <FormItem
+                          data-invalid={error === 409 || fieldState.invalid}
+                        >
+                          <FormLabel>Email address</FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} />
+                          </FormControl>
+                          {error === 409 ? (
+                            <FieldError>Email is already in use</FieldError>
+                          ) : (
+                            <FormMessage />
+                          )}
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex flex-row gap-2">
+                      <FormField
+                        control={form.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel>First Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel>Last Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-col gap-4">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
+                        Password
+                      </h2>
+                      <Separator className="flex-1" />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirm Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="requestOrganizer"
+                    render={({ field }) => (
+                      <div className="mt-2 flex items-center justify-center gap-2">
+                        <Label htmlFor="requestOrganizer" className="pr-4">
+                          Are you an organizer?
+                        </Label>
+                        <Checkbox
+                          id="requestOrganizer"
+                          checked={field.value}
+                          onCheckedChange={(checked) =>
+                            field.onChange(checked === true)
+                          }
+                        />
+                        <span>Yes</span>
+                      </div>
+                    )}
+                  />
+                  <div
+                    id="turnstileToken"
+                    tabIndex={-1}
+                    className="flex flex-col items-center gap-2 pt-2 outline-none"
+                  >
+                    <Turnstile
+                      ref={turnstileRef}
+                      siteKey="0x4AAAAAADvKnjEaFlmjd5Yq"
+                      onSuccess={(token) => {
+                        form.setValue('turnstileToken', token, {
+                          shouldValidate: true,
+                        });
+                      }}
+                      onExpire={() => {
+                        form.setValue('turnstileToken', '');
+                      }}
+                      onError={() => {
+                        form.setValue('turnstileToken', '');
+                      }}
+                    />
+                    {form.formState.errors.turnstileToken != null ? (
+                      <FieldError>
+                        {form.formState.errors.turnstileToken.message}
+                      </FieldError>
+                    ) : null}
+                  </div>
+                  <FormErrorSummary<FormValues> labels={FIELD_LABELS} />
+                  <div className="flex flex-col gap-10 pt-2">
+                    <Button
+                      type="submit"
+                      disabled={loading || isUploading}
+                      size="lg"
                     >
-                      Login
-                    </span>
-                  </p>
+                      Sign up
+                      {loading ? <Loader2 className="animate-spin" /> : null}
+                    </Button>
+                    <DiscordLoginButton />
+                  </div>
+                  {error != null ? (
+                    <p className="text-destructive text-center text-sm">
+                      Registration failed
+                    </p>
+                  ) : null}
+                  <div className="pt-2">
+                    <p className="text-center">
+                      Already a user?{' '}
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        className="cursor-pointer text-blue-500"
+                        onClick={() => {
+                          void navigate('/login');
+                        }}
+                      >
+                        Login
+                      </span>
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </form>
+              </form>
+            </Form>
           </div>
         </div>
       </div>

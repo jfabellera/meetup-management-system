@@ -9,8 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { FormErrorSummary } from '@/components/ui/form-error-summary';
-import { FormField, isFieldInvalid } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
@@ -20,9 +28,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { USERNAME_REGEX, usernameField } from '@keebmeet/shared';
-import { useFormik } from 'formik';
 import { Loader2 } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { FaDiscord } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -50,7 +58,7 @@ import {
   useUploadUserImageMutation,
 } from '../store/userSlice';
 import { redirectToDiscordLink } from '../util/discord';
-import { toFormikValidate } from '../util/formikValidate';
+import { zodFormResolver } from '../util/zodFormResolver';
 
 const PASSWORD_REGEX =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/;
@@ -75,8 +83,6 @@ const ProfileSchema = z
     message: 'Passwords must match',
   });
 
-const validateProfile = toFormikValidate(ProfileSchema);
-
 const FIELD_LABELS = {
   displayName: 'Display name',
   username: 'Username',
@@ -85,6 +91,18 @@ const FIELD_LABELS = {
   password: 'New password',
   confirmPassword: 'Confirm new password',
 };
+
+interface FormValues {
+  email: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  username: string;
+  password: string;
+  confirmPassword: string;
+  photoUrl: string;
+  photoKey: string;
+}
 
 const AccountPage = (): ReactNode => {
   const dispatch = useAppDispatch();
@@ -173,88 +191,85 @@ const AccountPage = (): ReactNode => {
     })();
   };
 
-  const formik = useFormik({
+  // Availability is checked against the server, so it validates outside the schema.
+  const [extraErrors, setExtraErrors] = useState<Record<string, string>>({});
+  const initialPhotoUrl = user?.photo_url ?? '';
+  const initialUsername = user?.username ?? '';
+
+  const form = useForm<FormValues>({
+    mode: 'onTouched',
+    resolver: zodFormResolver<FormValues>(ProfileSchema, extraErrors),
     // Prefilled from the fetched user; reinitialised once it loads.
-    initialValues: {
+    values: {
       email: user?.email ?? '',
       firstName: user?.first_name ?? '',
       lastName: user?.last_name ?? '',
       displayName: user?.display_name ?? '',
-      username: user?.username ?? '',
+      username: initialUsername,
       password: '',
       confirmPassword: '',
       // photoUrl is the preview; photoKey is only set on a new upload.
-      photoUrl: user?.photo_url ?? '',
+      photoUrl: initialPhotoUrl,
       photoKey: '',
-    },
-    enableReinitialize: true,
-    // Availability is checked against the server, so it validates outside the schema.
-    validate: (values): Record<string, string> => ({
-      ...validateProfile(values),
-      ...(usernameTaken ? { username: 'Username is taken' } : {}),
-    }),
-    onSubmit: (values) => {
-      if (localUser == null) return;
-
-      // A new upload sets photoKey; clearing an existing photo empties photoUrl;
-      // otherwise leave it unchanged (undefined).
-      let photoKey: string | undefined;
-      if (values.photoKey !== '') {
-        photoKey = values.photoKey;
-      } else if (
-        values.photoUrl === '' &&
-        formik.initialValues.photoUrl !== ''
-      ) {
-        photoKey = '';
-      }
-
-      void dispatch(
-        updateProfile({
-          userId: localUser.id,
-          firstName: values.firstName,
-          lastName: values.lastName,
-          displayName: values.displayName,
-          username: values.username,
-          password: values.password,
-          photoKey,
-        })
-      )
-        .then((action) => {
-          if (updateProfile.fulfilled.match(action)) {
-            void refetch();
-            // Reset to the saved values with the password fields cleared. This
-            // also clears touched/errors so no stale validation messages show.
-            formik.resetForm({
-              values: {
-                email: values.email,
-                firstName: values.firstName,
-                lastName: values.lastName,
-                displayName: values.displayName,
-                username: values.username,
-                password: '',
-                confirmPassword: '',
-                photoUrl: values.photoUrl,
-                photoKey: '',
-              },
-            });
-            toast.success('Profile updated');
-          } else {
-            toast.error('Failed to update profile');
-          }
-        })
-        .catch(() => {});
     },
   });
 
-  const usernameChanged =
-    formik.values.username !== formik.initialValues.username;
-  const usernameValid = USERNAME_REGEX.test(formik.values.username);
+  const username = useWatch({ control: form.control, name: 'username' });
+  const photoUrl = useWatch({ control: form.control, name: 'photoUrl' });
+
+  const usernameChanged = username !== initialUsername;
+  const usernameValid = USERNAME_REGEX.test(username);
   const { data: usernameCheck } = useCheckUsernameAvailableQuery(
-    { username: formik.values.username, excludeId: user?.id },
+    { username, excludeId: user?.id },
     { skip: !usernameChanged || !usernameValid }
   );
   const usernameTaken =
     usernameChanged && usernameValid && usernameCheck?.available === false;
+  useEffect(() => {
+    setExtraErrors(usernameTaken ? { username: 'Username is taken' } : {});
+  }, [usernameTaken]);
+
+  const onSubmit = (values: FormValues): void => {
+    if (localUser == null) return;
+
+    // A new upload sets photoKey; clearing an existing photo empties photoUrl;
+    // otherwise leave it unchanged (undefined).
+    let photoKey: string | undefined;
+    if (values.photoKey !== '') {
+      photoKey = values.photoKey;
+    } else if (values.photoUrl === '' && initialPhotoUrl !== '') {
+      photoKey = '';
+    }
+
+    void dispatch(
+      updateProfile({
+        userId: localUser.id,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        displayName: values.displayName,
+        username: values.username,
+        password: values.password,
+        photoKey,
+      })
+    )
+      .then((action) => {
+        if (updateProfile.fulfilled.match(action)) {
+          void refetch();
+          // Reset to the saved values with the password fields cleared. This
+          // also clears touched/errors so no stale validation messages show.
+          form.reset({
+            ...values,
+            password: '',
+            confirmPassword: '',
+            photoKey: '',
+          });
+          toast.success('Profile updated');
+        } else {
+          toast.error('Failed to update profile');
+        }
+      })
+      .catch(() => {});
+  };
 
   return (
     <Page>
@@ -264,114 +279,170 @@ const AccountPage = (): ReactNode => {
           <h1 className="text-2xl font-bold">Account</h1>
         </div>
         <div className="bg-card text-card-foreground rounded-lg p-8 shadow-lg">
-          <form onSubmit={formik.handleSubmit} noValidate>
-            <div className="flex flex-col gap-4">
+          <Form {...form}>
+            <form
+              onSubmit={(event) => void form.handleSubmit(onSubmit)(event)}
+              noValidate
+            >
               <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
-                    Public · shown on your profile
-                  </h2>
-                  <Separator className="flex-1" />
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
+                      Public · shown on your profile
+                    </h2>
+                    <Separator className="flex-1" />
+                  </div>
+                  <div className="flex flex-col items-center gap-x-6 gap-y-4 sm:flex-row sm:items-start">
+                    <ImageUploadField
+                      className="w-28 shrink-0 py-0"
+                      label="Profile Photo"
+                      aspectRatio={1}
+                      rounded
+                      useUploadMutation={useUploadUserImageMutation}
+                      previewUrl={photoUrl}
+                      onUploaded={(imageKey, imageUrl) => {
+                        form.setValue('photoKey', imageKey, {
+                          shouldDirty: true,
+                        });
+                        form.setValue('photoUrl', imageUrl, {
+                          shouldDirty: true,
+                        });
+                      }}
+                      onUploadingChange={onUploadingChange}
+                      onRemove={() => {
+                        form.setValue('photoKey', '', { shouldDirty: true });
+                        form.setValue('photoUrl', '', { shouldDirty: true });
+                      }}
+                    />
+                    <div className="flex w-full min-w-0 flex-1 flex-col gap-4">
+                      <FormField
+                        control={form.control}
+                        name="displayName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Display Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="username"
+                        render={({ field, fieldState }) => (
+                          <FormItem
+                            data-invalid={usernameTaken || fieldState.invalid}
+                          >
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col items-center gap-x-6 gap-y-4 sm:flex-row sm:items-start">
-                  <ImageUploadField
-                    className="w-28 shrink-0 py-0"
-                    label="Profile Photo"
-                    aspectRatio={1}
-                    rounded
-                    useUploadMutation={useUploadUserImageMutation}
-                    previewUrl={formik.values.photoUrl}
-                    onUploaded={(imageKey, imageUrl) => {
-                      void formik.setFieldValue('photoKey', imageKey);
-                      void formik.setFieldValue('photoUrl', imageUrl);
-                    }}
-                    onUploadingChange={onUploadingChange}
-                    onRemove={() => {
-                      void formik.setFieldValue('photoKey', '');
-                      void formik.setFieldValue('photoUrl', '');
-                    }}
+                <div className="mt-4 flex flex-col gap-4">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
+                      Private · visible to organizers
+                    </h2>
+                    <Separator className="flex-1" />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email address</FormLabel>
+                        <FormControl>
+                          <Input type="email" disabled {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  <div className="flex w-full min-w-0 flex-1 flex-col gap-4">
+                  <div className="flex flex-row gap-2">
                     <FormField
-                      formik={formik}
-                      name="displayName"
-                      label="Display Name"
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                     <FormField
-                      formik={formik}
-                      name="username"
-                      label="Username"
-                      invalid={
-                        usernameTaken || isFieldInvalid(formik, 'username')
-                      }
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
                 </div>
+                <div className="mt-4 flex flex-col gap-4">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
+                      Change password
+                    </h2>
+                    <Separator className="flex-1" />
+                  </div>
+                  <div className="flex flex-row gap-2">
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>New Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Confirm New Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                <FormErrorSummary<FormValues> labels={FIELD_LABELS} />
+                <Button
+                  type="submit"
+                  className="self-end"
+                  disabled={loading || !form.formState.isDirty || isUploading}
+                >
+                  Save changes
+                  {loading ? <Spinner /> : null}
+                </Button>
               </div>
-              <div className="mt-4 flex flex-col gap-4">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
-                    Private · visible to organizers
-                  </h2>
-                  <Separator className="flex-1" />
-                </div>
-                <FormField
-                  formik={formik}
-                  name="email"
-                  label="Email address"
-                  type="email"
-                  disabled
-                />
-                <div className="flex flex-row gap-2">
-                  <FormField
-                    formik={formik}
-                    name="firstName"
-                    label="First Name"
-                    className="flex-1"
-                  />
-                  <FormField
-                    formik={formik}
-                    name="lastName"
-                    label="Last Name"
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-              <div className="mt-4 flex flex-col gap-4">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-muted-foreground shrink-0 text-xs font-semibold tracking-[0.14em] uppercase">
-                    Change password
-                  </h2>
-                  <Separator className="flex-1" />
-                </div>
-                <div className="flex flex-row gap-2">
-                  <FormField
-                    formik={formik}
-                    name="password"
-                    label="New Password"
-                    type="password"
-                    className="flex-1"
-                  />
-                  <FormField
-                    formik={formik}
-                    name="confirmPassword"
-                    label="Confirm New Password"
-                    type="password"
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-              <FormErrorSummary formik={formik} labels={FIELD_LABELS} />
-              <Button
-                type="submit"
-                className="self-end"
-                disabled={loading || !formik.dirty || isUploading}
-              >
-                Save changes
-                {loading ? <Spinner /> : null}
-              </Button>
-            </div>
-          </form>
+            </form>
+          </Form>
         </div>
         <GroupsCard />
         <div className="bg-card text-card-foreground flex flex-col gap-4 rounded-lg p-8 shadow-lg">
