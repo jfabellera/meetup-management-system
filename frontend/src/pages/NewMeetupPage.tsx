@@ -45,7 +45,10 @@ import {
   useCheckSlugAvailableQuery,
   useCreateMeetupMutation,
 } from '../store/meetupSlice';
+import { toFormikValidate } from '../util/formikValidate';
 import MeetupFormSchema from '../util/schemas/MeetupFormSchema';
+
+const validateMeetup = toFormikValidate(MeetupFormSchema);
 
 const FIELD_LABELS = {
   name: 'Meetup name',
@@ -131,10 +134,11 @@ const NewMeetupPage = (): ReactNode => {
         void navigate(`/meetup/${formik.values.slug}`);
       }
     },
-    validationSchema: MeetupFormSchema,
     // The slug is checked against the server, so it validates outside the schema.
-    validate: (): Record<string, string> =>
-      slugError != null ? { slug: slugError } : {},
+    validate: (values): Record<string, string> => ({
+      ...validateMeetup(values),
+      ...(slugError != null ? { slug: slugError } : {}),
+    }),
   });
 
   // Auto-fill the slug from the name until the user edits it directly.

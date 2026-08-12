@@ -1,13 +1,12 @@
-import * as Yup from 'yup';
+import { z } from 'zod';
+import { nonNegativeNumber } from './fields';
 
-const MeetupFromEventbriteFormSchema = Yup.object().shape({
-  organizationId: Yup.string().required('Select an organization'),
-  eventId: Yup.string().required('Select an event'),
-  ticketClassId: Yup.string().required('Select a ticket class'),
-  customQuestionId: Yup.string().required('Select a custom question'),
-  defaultRaffleEntries: Yup.number()
-    .min(0, 'Must be non-negative')
-    .required('Required'),
+const MeetupFromEventbriteFormSchema = z.object({
+  organizationId: z.string().min(1, 'Select an organization'),
+  eventId: z.string().min(1, 'Select an event'),
+  ticketClassId: z.string().min(1, 'Select a ticket class'),
+  customQuestionId: z.string().min(1, 'Select a custom question'),
+  defaultRaffleEntries: nonNegativeNumber,
 });
 
 export default MeetupFromEventbriteFormSchema;

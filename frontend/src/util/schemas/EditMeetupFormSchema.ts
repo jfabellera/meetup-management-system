@@ -1,26 +1,29 @@
 import { z } from 'zod';
 import {
-  futureDate,
-  nonNegativeNumber,
   optionalNumber,
   positiveNumber,
   priceError,
+  requiredDate,
   requiredText,
 } from './fields';
 
-const MeetupFormSchema = z
+const sharedShape = {
+  name: requiredText.min(3, 'Name must be at least 3 characters'),
+  slug: requiredText,
+  date: requiredDate,
+  address: requiredText,
+};
+
+const ArchiveEditSchema = z.object(sharedShape);
+
+const LiveEditSchema = z
   .object({
-    name: requiredText.min(3, 'Name must be at least 3 characters'),
-    slug: requiredText,
-    date: futureDate,
+    ...sharedShape,
     startTime: requiredText,
-    address: requiredText,
     duration: positiveNumber,
     capacity: positiveNumber,
     isPaid: z.boolean(),
     price: optionalNumber,
-    imageKey: z.string().optional(),
-    defaultRaffleEntries: nonNegativeNumber,
   })
   .superRefine((values, ctx) => {
     const message = priceError(values);
@@ -29,4 +32,5 @@ const MeetupFormSchema = z
     }
   });
 
-export default MeetupFormSchema;
+export const editMeetupFormSchema = (isArchive: boolean): z.ZodType =>
+  isArchive ? ArchiveEditSchema : LiveEditSchema;

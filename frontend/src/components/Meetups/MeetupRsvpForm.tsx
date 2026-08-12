@@ -22,7 +22,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FaStripe } from 'react-icons/fa';
 import { FiArrowLeft, FiLock, FiUserCheck, FiUserX } from 'react-icons/fi';
 import { toast } from 'sonner';
-import * as Yup from 'yup';
+import { z } from 'zod';
 import { useHoldCountdown } from '../../hooks/useHoldCountdown';
 import { useWaitForPaidTicket } from '../../hooks/useWaitForPaidTicket';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -36,6 +36,7 @@ import {
   useUpdateTicketMutation,
 } from '../../store/ticketSlice';
 import { useGetUserQuery } from '../../store/userSlice';
+import { toFormikValidate } from '../../util/formikValidate';
 import {
   clearGuestHold,
   readGuestHold,
@@ -80,12 +81,14 @@ const stripeAppearance = (dark: boolean): Appearance => ({
   },
 });
 
-const TicketHolderSchema = Yup.object().shape({
-  displayName: Yup.string().required('Required'),
-  firstName: Yup.string().required('Required'),
-  lastName: Yup.string().required('Required'),
-  email: Yup.string().email('Invalid email').required('Required'),
+const TicketHolderSchema = z.object({
+  displayName: z.string().min(1, 'Required'),
+  firstName: z.string().min(1, 'Required'),
+  lastName: z.string().min(1, 'Required'),
+  email: z.string().min(1, 'Required').pipe(z.email('Invalid email')),
 });
+
+const validateTicketHolder = toFormikValidate(TicketHolderSchema);
 
 const FIELD_LABELS = {
   displayName: 'Display name',
@@ -219,10 +222,11 @@ export const MeetupRsvpForm = ({
         '',
     },
     enableReinitialize: true,
-    validationSchema: TicketHolderSchema,
     // The captcha lives outside the form values, but still has to block a submit.
-    validate: () =>
-      captchaError != null ? { turnstileToken: captchaError } : {},
+    validate: (values): Record<string, string> => ({
+      ...validateTicketHolder(values),
+      ...(captchaError != null ? { turnstileToken: captchaError } : {}),
+    }),
     onSubmit: (values) => {
       void (async () => {
         const ticketHolder = {

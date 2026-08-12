@@ -22,8 +22,10 @@ import { useAppSelector } from '@/store/hooks';
 import { SLUG_REGEX, type EditMeetupPayload } from '@keebmeet/shared';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { toFormikValidate } from '@/util/formikValidate';
+import { editMeetupFormSchema } from '@/util/schemas/EditMeetupFormSchema';
 import { useFormik } from 'formik';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -60,6 +62,10 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
   const [editMeetup, { isLoading: isSaving }] = useEditMeetupMutation();
   const { isUploading, onUploadingChange } = usePendingUploads();
   const isArchive = meetup?.is_archive === true;
+  const validateEditMeetup = useMemo(
+    () => toFormikValidate(editMeetupFormSchema(isArchive)),
+    [isArchive]
+  );
   const formik = useFormik({
     initialValues: {
       name: '',
@@ -159,8 +165,7 @@ const MeetupDetailsSettingsCard = ({ meetupId }: Props): ReactNode => {
         setIsEditable.off();
       }
     },
-    // TODO(jan): fix validation. Yup is giving silent fails and is making submitForm not work
-    // validationSchema: MeetupFormSchema,
+    validate: validateEditMeetup,
     validateOnMount: true,
   });
 

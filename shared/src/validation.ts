@@ -22,10 +22,11 @@ const hexColorField = z
   .regex(HEX_COLOR_REGEX, 'Invalid hex color (expected #rrggbb)');
 
 const slugField = z.string().max(120).regex(SLUG_REGEX, 'Invalid URL slug');
-const usernameField = z
+export const usernameField = z
   .string()
-  .min(3)
-  .max(30)
+  .min(1, 'Required')
+  .min(3, 'Username must be at least 3 characters')
+  .max(30, 'Username must be at most 30 characters')
   .regex(
     USERNAME_REGEX,
     'Lowercase letters, numbers, and underscores only, and cannot start or end with an underscore'

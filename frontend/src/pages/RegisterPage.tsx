@@ -5,14 +5,14 @@ import { FormErrorSummary } from '@/components/ui/form-error-summary';
 import { FormField, isFieldInvalid } from '@/components/ui/form-field';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { USERNAME_REGEX } from '@keebmeet/shared';
+import { USERNAME_REGEX, usernameField } from '@keebmeet/shared';
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { useFormik } from 'formik';
 import { Loader2 } from 'lucide-react';
 import { type ReactNode, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import * as Yup from 'yup';
+import { z } from 'zod';
 import { DiscordLoginButton } from '../components/Auth/DiscordLoginButton';
 import Page from '../components/Page/Page';
 import ImageUploadField from '../components/shared/ImageUploadField';
@@ -23,35 +23,37 @@ import {
   useCheckUsernameAvailableQuery,
   useUploadUserImageMutation,
 } from '../store/userSlice';
+import { toFormikValidate } from '../util/formikValidate';
 
-const RegisterSchema = Yup.object().shape({
-  // Because Yup.string().email() sucks
-  email: Yup.string()
-    .matches(
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
-      'Invalid email'
-    )
-    .required('Required'),
-  firstName: Yup.string().required('Required'),
-  lastName: Yup.string().required('Required'),
-  nickName: Yup.string().required('Required'),
-  username: Yup.string()
-    .required('Required')
-    .matches(
-      USERNAME_REGEX,
-      'Lowercase letters, numbers, and underscores only, and cannot start or end with an underscore'
-    ),
-  password: Yup.string()
-    .required('Required')
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/,
-      'Must contain 8 characters, one uppercase, one lowercase, one number, and one special character'
-    ),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref('password')], 'Passwords must match')
-    .required('Required'),
-  turnstileToken: Yup.string().required('Captcha verification is required'),
-});
+const RegisterSchema = z
+  .object({
+    email: z
+      .string()
+      .min(1, 'Required')
+      .regex(
+        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+        'Invalid email'
+      ),
+    firstName: z.string().min(1, 'Required'),
+    lastName: z.string().min(1, 'Required'),
+    nickName: z.string().min(1, 'Required'),
+    username: usernameField,
+    password: z
+      .string()
+      .min(1, 'Required')
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/,
+        'Must contain 8 characters, one uppercase, one lowercase, one number, and one special character'
+      ),
+    confirmPassword: z.string().min(1, 'Required'),
+    turnstileToken: z.string().min(1, 'Captcha verification is required'),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Passwords must match',
+  });
+
+const validateRegister = toFormikValidate(RegisterSchema);
 
 const FIELD_LABELS = {
   nickName: 'Display name',
@@ -107,10 +109,11 @@ const RegisterPage = (): ReactNode => {
         })
         .catch(() => {});
     },
-    validationSchema: RegisterSchema,
     // Availability is checked against the server, so it validates outside the schema.
-    validate: (): Record<string, string> =>
-      usernameTaken ? { username: 'Username is taken' } : {},
+    validate: (values): Record<string, string> => ({
+      ...validateRegister(values),
+      ...(usernameTaken ? { username: 'Username is taken' } : {}),
+    }),
   });
 
   const usernameValid = USERNAME_REGEX.test(formik.values.username);

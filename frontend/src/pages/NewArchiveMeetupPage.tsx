@@ -42,7 +42,10 @@ import {
   useCheckSlugAvailableQuery,
   useCreateArchiveMeetupMutation,
 } from '../store/meetupSlice';
+import { toFormikValidate } from '../util/formikValidate';
 import ArchiveMeetupFormSchema from '../util/schemas/ArchiveMeetupFormSchema';
+
+const validateArchiveMeetup = toFormikValidate(ArchiveMeetupFormSchema);
 
 const FIELD_LABELS = {
   organizerType: 'Organizer',
@@ -105,10 +108,11 @@ const NewArchiveMeetupPage = (): ReactNode => {
         void navigate(`/meetup/${values.slug}`);
       }
     },
-    validationSchema: ArchiveMeetupFormSchema,
     // The slug is checked against the server, so it validates outside the schema.
-    validate: (): Record<string, string> =>
-      slugError != null ? { slug: slugError } : {},
+    validate: (values): Record<string, string> => ({
+      ...validateArchiveMeetup(values),
+      ...(slugError != null ? { slug: slugError } : {}),
+    }),
   });
 
   // Auto-fill the slug from the name until the user edits it directly.

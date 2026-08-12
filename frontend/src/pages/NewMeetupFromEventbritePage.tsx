@@ -33,7 +33,12 @@ import {
 import { useAppSelector } from '../store/hooks';
 import { useCreateMeetupFromEventbriteMutation } from '../store/meetupSlice';
 import { useGetUserQuery } from '../store/userSlice';
+import { toFormikValidate } from '../util/formikValidate';
 import MeetupFromEventbriteFormSchema from '../util/schemas/MeetupFromEventbriteFormSchema';
+
+const validateMeetupFromEventbrite = toFormikValidate(
+  MeetupFromEventbriteFormSchema
+);
 
 const FIELD_LABELS = {
   organizationId: 'Organization',
@@ -85,7 +90,7 @@ const NewMeetupFromEventbritePage = (): ReactNode => {
         void navigate('/organizer');
       }
     },
-    validationSchema: MeetupFromEventbriteFormSchema,
+    validate: validateMeetupFromEventbrite,
   });
 
   const { data: organizations } = useGetOrganizationsQuery(undefined, {

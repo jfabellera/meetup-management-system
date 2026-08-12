@@ -19,14 +19,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { USERNAME_REGEX } from '@keebmeet/shared';
+import { USERNAME_REGEX, usernameField } from '@keebmeet/shared';
 import { useFormik } from 'formik';
 import { Loader2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { FaDiscord } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import * as Yup from 'yup';
+import { z } from 'zod';
 import GroupsCard from '../components/Account/GroupsCard';
 import OrganizerPaymentTerms from '../components/Account/OrganizerPaymentTerms';
 import Page from '../components/Page/Page';
@@ -50,32 +50,32 @@ import {
   useUploadUserImageMutation,
 } from '../store/userSlice';
 import { redirectToDiscordLink } from '../util/discord';
+import { toFormikValidate } from '../util/formikValidate';
 
 const PASSWORD_REGEX =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/;
 
-const ProfileSchema = Yup.object().shape({
-  firstName: Yup.string().required('Required'),
-  lastName: Yup.string().required('Required'),
-  displayName: Yup.string().required('Required'),
-  username: Yup.string()
-    .required('Required')
-    .matches(
-      USERNAME_REGEX,
-      'Lowercase letters, numbers, and underscores only, and cannot start or end with an underscore'
-    ),
-  // Password is optional; only validated when the user types a new one.
-  password: Yup.string().test(
-    'password-strength',
-    'Must contain 8 characters, one uppercase, one lowercase, one number, and one special character',
-    (value) => value == null || value === '' || PASSWORD_REGEX.test(value)
-  ),
-  confirmPassword: Yup.string().test(
-    'passwords-match',
-    'Passwords must match',
-    (value, ctx) => ((ctx.parent.password as string) ?? '') === (value ?? '')
-  ),
-});
+const ProfileSchema = z
+  .object({
+    firstName: z.string().min(1, 'Required'),
+    lastName: z.string().min(1, 'Required'),
+    displayName: z.string().min(1, 'Required'),
+    username: usernameField,
+    // Password is optional; only validated when the user types a new one.
+    password: z
+      .string()
+      .refine(
+        (value) => value === '' || PASSWORD_REGEX.test(value),
+        'Must contain 8 characters, one uppercase, one lowercase, one number, and one special character'
+      ),
+    confirmPassword: z.string(),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Passwords must match',
+  });
+
+const validateProfile = toFormikValidate(ProfileSchema);
 
 const FIELD_LABELS = {
   displayName: 'Display name',
@@ -188,10 +188,11 @@ const AccountPage = (): ReactNode => {
       photoKey: '',
     },
     enableReinitialize: true,
-    validationSchema: ProfileSchema,
     // Availability is checked against the server, so it validates outside the schema.
-    validate: (): Record<string, string> =>
-      usernameTaken ? { username: 'Username is taken' } : {},
+    validate: (values): Record<string, string> => ({
+      ...validateProfile(values),
+      ...(usernameTaken ? { username: 'Username is taken' } : {}),
+    }),
     onSubmit: (values) => {
       if (localUser == null) return;
 
