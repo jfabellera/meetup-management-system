@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FormField } from '@/components/ui/form-field';
+import { FieldError } from '@/components/ui/field';
+import { FormErrorSummary } from '@/components/ui/form-error-summary';
+import { FormField, isFieldInvalid } from '@/components/ui/form-field';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { USERNAME_REGEX } from '@keebmeet/shared';
@@ -51,6 +53,17 @@ const RegisterSchema = Yup.object().shape({
   turnstileToken: Yup.string().required('Captcha verification is required'),
 });
 
+const FIELD_LABELS = {
+  nickName: 'Display name',
+  username: 'Username',
+  email: 'Email address',
+  firstName: 'First name',
+  lastName: 'Last name',
+  password: 'Password',
+  confirmPassword: 'Confirm password',
+  turnstileToken: 'Captcha',
+};
+
 const RegisterPage = (): ReactNode => {
   const dispatch = useAppDispatch();
   const { loading, error } = useAppSelector((state) => state.user);
@@ -95,7 +108,9 @@ const RegisterPage = (): ReactNode => {
         .catch(() => {});
     },
     validationSchema: RegisterSchema,
-    validateOnMount: true,
+    // Availability is checked against the server, so it validates outside the schema.
+    validate: (): Record<string, string> =>
+      usernameTaken ? { username: 'Username is taken' } : {},
   });
 
   const usernameValid = USERNAME_REGEX.test(formik.values.username);
@@ -151,11 +166,8 @@ const RegisterPage = (): ReactNode => {
                     name="username"
                     label="Username"
                     invalid={
-                      usernameTaken ||
-                      (formik.errors.username != null &&
-                        formik.touched.username)
+                      usernameTaken || isFieldInvalid(formik, 'username')
                     }
-                    message={usernameTaken ? 'Username is taken' : undefined}
                   />
                 </div>
                 <div className="mt-4 flex flex-col gap-4">
@@ -170,10 +182,7 @@ const RegisterPage = (): ReactNode => {
                     name="email"
                     label="Email address"
                     type="email"
-                    invalid={
-                      error === 409 ||
-                      (formik.errors.email != null && formik.touched.email)
-                    }
+                    invalid={error === 409 || isFieldInvalid(formik, 'email')}
                     message={
                       error === 409 ? 'Email is already in use' : undefined
                     }
@@ -226,7 +235,11 @@ const RegisterPage = (): ReactNode => {
                   />
                   <span>Yes</span>
                 </div>
-                <div className="flex items-center justify-center pt-2">
+                <div
+                  id="turnstileToken"
+                  tabIndex={-1}
+                  className="flex flex-col items-center gap-2 pt-2 outline-none"
+                >
                   <Turnstile
                     ref={turnstileRef}
                     siteKey="0x4AAAAAADvKnjEaFlmjd5Yq"
@@ -240,13 +253,15 @@ const RegisterPage = (): ReactNode => {
                       void formik.setFieldValue('turnstileToken', '');
                     }}
                   />
+                  {isFieldInvalid(formik, 'turnstileToken') ? (
+                    <FieldError>{formik.errors.turnstileToken}</FieldError>
+                  ) : null}
                 </div>
+                <FormErrorSummary formik={formik} labels={FIELD_LABELS} />
                 <div className="flex flex-col gap-10 pt-2">
                   <Button
                     type="submit"
-                    disabled={
-                      loading || !formik.isValid || isUploading || usernameTaken
-                    }
+                    disabled={loading || isUploading}
                     size="lg"
                   >
                     Sign up

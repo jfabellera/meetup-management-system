@@ -11,12 +11,15 @@ const ArchiveMeetupFormSchema = Yup.object().shape({
   name: Yup.string()
     .min(3, 'Name must be at least 3 characters')
     .required('Required'),
+  slug: Yup.string().required('Required'),
   date: Yup.date()
     .max(new Date(), 'Date must be in the past')
     .required('Required'),
   address: Yup.string().required('Required'),
   imageKey: Yup.string(),
-  organizerType: Yup.string().oneOf(['me', 'other']).required('Required'),
+  organizerType: Yup.string()
+    .oneOf(['me', 'other'], 'Select who organized this meetup')
+    .required('Select who organized this meetup'),
   organizerName: Yup.string().when('organizerType', {
     is: 'other',
     then: (schema) =>

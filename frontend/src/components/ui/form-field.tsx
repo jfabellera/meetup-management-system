@@ -4,6 +4,13 @@ import { type ReactNode } from 'react';
 import { Field, FieldDescription, FieldError, FieldLabel } from './field';
 import { Input } from './input';
 
+export const isFieldInvalid = <Values,>(
+  formik: FormikProps<Values>,
+  name: keyof Values & string
+): boolean =>
+  formik.errors[name] != null &&
+  (formik.touched[name] === true || formik.submitCount > 0);
+
 interface FormFieldProps<Values> {
   formik: FormikProps<Values>;
   name: keyof Values & string;
@@ -39,8 +46,8 @@ export const FormField = <Values,>({
   message,
   description,
 }: FormFieldProps<Values>): ReactNode => {
-  const show =
-    invalid ?? (formik.errors[name] != null && formik.touched[name] === true);
+  const show = invalid ?? isFieldInvalid(formik, name);
+  const errorId = `${name}-error`;
 
   return (
     <Field data-invalid={show} className={cn(className, 'gap-1.5')}>
@@ -52,11 +59,14 @@ export const FormField = <Values,>({
         disabled={disabled}
         value={value ?? (formik.values[name] as string | number)}
         aria-invalid={show}
+        aria-describedby={show ? errorId : undefined}
         onChange={formik.handleChange}
         onBlur={formik.handleBlur}
       />
       {show ? (
-        <FieldError>{message ?? (formik.errors[name] as ReactNode)}</FieldError>
+        <FieldError id={errorId}>
+          {message ?? (formik.errors[name] as ReactNode)}
+        </FieldError>
       ) : null}
       {description && <FieldDescription>{description}</FieldDescription>}
     </Field>

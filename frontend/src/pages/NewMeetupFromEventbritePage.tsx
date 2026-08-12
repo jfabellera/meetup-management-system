@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { FormField } from '@/components/ui/form-field';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { FormErrorSummary } from '@/components/ui/form-error-summary';
+import { FormField, isFieldInvalid } from '@/components/ui/form-field';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -34,6 +35,14 @@ import { useCreateMeetupFromEventbriteMutation } from '../store/meetupSlice';
 import { useGetUserQuery } from '../store/userSlice';
 import MeetupFromEventbriteFormSchema from '../util/schemas/MeetupFromEventbriteFormSchema';
 
+const FIELD_LABELS = {
+  organizationId: 'Organization',
+  eventId: 'Event',
+  ticketClassId: 'Ticket class',
+  customQuestionId: 'Custom question',
+  defaultRaffleEntries: 'Default raffle entries',
+};
+
 const NewMeetupFromEventbritePage = (): ReactNode => {
   const navigate = useNavigate();
   const { user: localUser } = useAppSelector((state) => state.user);
@@ -51,15 +60,6 @@ const NewMeetupFromEventbritePage = (): ReactNode => {
       defaultRaffleEntries: 1,
     },
     onSubmit: async (values) => {
-      if (
-        values.eventId === '' ||
-        values.ticketClassId === '' ||
-        values.customQuestionId === ''
-      ) {
-        console.log('invalid');
-        return;
-      }
-
       const response = await createMeetupFromEventbrite({
         eventbrite_event_id: values.eventId,
         eventbrite_ticket_id: values.ticketClassId,
@@ -86,7 +86,6 @@ const NewMeetupFromEventbritePage = (): ReactNode => {
       }
     },
     validationSchema: MeetupFromEventbriteFormSchema,
-    validateOnMount: true,
   });
 
   const { data: organizations } = useGetOrganizationsQuery(undefined, {
@@ -112,7 +111,7 @@ const NewMeetupFromEventbritePage = (): ReactNode => {
 
   interface FormSelectProps {
     name: string;
-    id: string;
+    id: 'organizationId' | 'eventId' | 'ticketClassId' | 'customQuestionId';
     options:
       | EventbriteOrganization[]
       | EventbriteEvent[]
@@ -130,8 +129,10 @@ const NewMeetupFromEventbritePage = (): ReactNode => {
     value,
     disabled,
   }: FormSelectProps): ReactNode => {
+    const invalid = isFieldInvalid(formik, id);
+
     return (
-      <Field className="w-full">
+      <Field className="w-full gap-1.5" data-invalid={invalid}>
         <FieldLabel htmlFor={id}>{name}</FieldLabel>
         <Select
           value={value}
@@ -140,7 +141,7 @@ const NewMeetupFromEventbritePage = (): ReactNode => {
           }}
           disabled={disabled}
         >
-          <SelectTrigger id={id} className="w-full">
+          <SelectTrigger id={id} className="w-full" aria-invalid={invalid}>
             <SelectValue placeholder="Select" />
           </SelectTrigger>
           <SelectContent>
@@ -153,6 +154,7 @@ const NewMeetupFromEventbritePage = (): ReactNode => {
               : null}
           </SelectContent>
         </Select>
+        {invalid ? <FieldError>{formik.errors[id]}</FieldError> : null}
       </Field>
     );
   };
@@ -249,10 +251,12 @@ const NewMeetupFromEventbritePage = (): ReactNode => {
                     value={formik.values.defaultRaffleEntries}
                     className="w-full"
                   />
-                  <Button
-                    type={'submit'}
-                    disabled={!formik.isValid || isLoading}
-                  >
+                  <FormErrorSummary
+                    formik={formik}
+                    labels={FIELD_LABELS}
+                    className="w-full"
+                  />
+                  <Button type={'submit'} disabled={isLoading}>
                     Submit
                     {isLoading && <Spinner />}
                   </Button>

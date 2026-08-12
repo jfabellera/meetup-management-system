@@ -9,7 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { FormField } from '@/components/ui/form-field';
+import { FormErrorSummary } from '@/components/ui/form-error-summary';
+import { FormField, isFieldInvalid } from '@/components/ui/form-field';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
@@ -75,6 +76,15 @@ const ProfileSchema = Yup.object().shape({
     (value, ctx) => ((ctx.parent.password as string) ?? '') === (value ?? '')
   ),
 });
+
+const FIELD_LABELS = {
+  displayName: 'Display name',
+  username: 'Username',
+  firstName: 'First name',
+  lastName: 'Last name',
+  password: 'New password',
+  confirmPassword: 'Confirm new password',
+};
 
 const AccountPage = (): ReactNode => {
   const dispatch = useAppDispatch();
@@ -179,6 +189,9 @@ const AccountPage = (): ReactNode => {
     },
     enableReinitialize: true,
     validationSchema: ProfileSchema,
+    // Availability is checked against the server, so it validates outside the schema.
+    validate: (): Record<string, string> =>
+      usernameTaken ? { username: 'Username is taken' } : {},
     onSubmit: (values) => {
       if (localUser == null) return;
 
@@ -288,11 +301,8 @@ const AccountPage = (): ReactNode => {
                       name="username"
                       label="Username"
                       invalid={
-                        usernameTaken ||
-                        (formik.errors.username != null &&
-                          formik.touched.username)
+                        usernameTaken || isFieldInvalid(formik, 'username')
                       }
-                      message={usernameTaken ? 'Username is taken' : undefined}
                     />
                   </div>
                 </div>
@@ -350,16 +360,11 @@ const AccountPage = (): ReactNode => {
                   />
                 </div>
               </div>
+              <FormErrorSummary formik={formik} labels={FIELD_LABELS} />
               <Button
                 type="submit"
                 className="self-end"
-                disabled={
-                  loading ||
-                  !formik.isValid ||
-                  !formik.dirty ||
-                  isUploading ||
-                  usernameTaken
-                }
+                disabled={loading || !formik.dirty || isUploading}
               >
                 Save changes
                 {loading ? <Spinner /> : null}
