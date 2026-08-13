@@ -445,26 +445,6 @@ const NewMeetupPage = (): ReactNode => {
               <MeetupFormSection title="Tickets">
                 <FormField
                   control={form.control}
-                  name="isPaid"
-                  render={({ field }) => (
-                    <div className="flex items-center gap-2 sm:col-span-2">
-                      <Checkbox
-                        id="isPaid"
-                        checked={field.value}
-                        onCheckedChange={(checked) => {
-                          const paid = checked === true;
-                          field.onChange(paid);
-                          if (!paid) {
-                            form.setValue('price', 0);
-                          }
-                        }}
-                      />
-                      <Label htmlFor="isPaid">Charge for tickets</Label>
-                    </div>
-                  )}
-                />
-                <FormField
-                  control={form.control}
                   name="capacity"
                   render={({ field }) => (
                     <FormItem className="min-w-0">
@@ -484,6 +464,41 @@ const NewMeetupPage = (): ReactNode => {
                       </FormControl>
                       <FormMessage />
                     </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="isPaid"
+                  render={({ field }) => (
+                    // Starts a new row so the checkbox sits beside the price.
+                    <Field className="min-w-0 sm:col-start-1">
+                      <FieldLabel htmlFor="isPaid">Ticket sales</FieldLabel>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="isPaid"
+                          checked={field.value}
+                          onCheckedChange={(checked) => {
+                            const paid = checked === true;
+                            field.onChange(paid);
+                            if (!paid) {
+                              form.setValue('price', 0);
+                            }
+                          }}
+                        />
+                        <Label htmlFor="isPaid">Charge for tickets</Label>
+                      </div>
+                      <FieldDescription>
+                        Paid tickets are subject to the{' '}
+                        <Link
+                          to="/legal/organizer-payment-terms"
+                          target="_blank"
+                          className="underline underline-offset-2"
+                        >
+                          Organizer Payment Terms
+                        </Link>
+                        .
+                      </FieldDescription>
+                    </Field>
                   )}
                 />
                 <FormField
@@ -510,17 +525,6 @@ const NewMeetupPage = (): ReactNode => {
                     </FormItem>
                   )}
                 />
-                <p className="text-muted-foreground text-xs sm:col-span-2">
-                  Paid tickets are subject to the{' '}
-                  <Link
-                    to="/legal/organizer-payment-terms"
-                    target="_blank"
-                    className="underline underline-offset-2"
-                  >
-                    Organizer Payment Terms
-                  </Link>
-                  .
-                </p>
               </MeetupFormSection>
               <MeetupFormSection title="Raffle">
                 <FormField
