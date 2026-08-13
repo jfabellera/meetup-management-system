@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { useDisclosure } from '@/hooks/useDisclosure';
 import { cn } from '@/lib/utils';
 import { type RaffleRecordResponse } from '@keebmeet/shared';
-import { useFormik } from 'formik';
+import { useForm, useWatch } from 'react-hook-form';
 import { useEffect, useState, type ReactNode } from 'react';
 import { FiSettings } from 'react-icons/fi';
 import { MdHistory } from 'react-icons/md';
@@ -92,14 +92,29 @@ const RafflePage = (): ReactNode => {
     onOpen: onHistoryOpen,
     onClose: onHistoryClose,
   } = useDisclosure();
-  const formik = useFormik({
-    initialValues: {
+  const form = useForm({
+    defaultValues: {
       rollQuantity: 1,
       displayOnRoll: false,
       clearOnClaim: false,
       includeNotCheckedIn: false,
     },
-    onSubmit: () => {},
+  });
+  const rollQuantity = useWatch({
+    control: form.control,
+    name: 'rollQuantity',
+  });
+  const displayOnRoll = useWatch({
+    control: form.control,
+    name: 'displayOnRoll',
+  });
+  const clearOnClaim = useWatch({
+    control: form.control,
+    name: 'clearOnClaim',
+  });
+  const includeNotCheckedIn = useWatch({
+    control: form.control,
+    name: 'includeNotCheckedIn',
   });
 
   const handleRoll = (): void => {
@@ -107,8 +122,8 @@ const RafflePage = (): ReactNode => {
       await rollRaffleWinner({
         meetupId,
         payload: {
-          quantity: formik.values.rollQuantity,
-          includeNotCheckedIn: formik.values.includeNotCheckedIn,
+          quantity: rollQuantity,
+          includeNotCheckedIn: includeNotCheckedIn,
         },
       });
     })();
@@ -121,7 +136,7 @@ const RafflePage = (): ReactNode => {
         meetupId,
         payload: {
           allIn: true,
-          includeNotCheckedIn: formik.values.includeNotCheckedIn,
+          includeNotCheckedIn: includeNotCheckedIn,
         },
       });
       onClose();
@@ -186,7 +201,7 @@ const RafflePage = (): ReactNode => {
   };
 
   useEffect(() => {
-    if (formik.values.displayOnRoll) {
+    if (form.getValues('displayOnRoll')) {
       handleDisplay();
     }
   }, [raffleRecord]);
@@ -227,7 +242,7 @@ const RafflePage = (): ReactNode => {
         position: 'top-center',
       }); // TODO(jan): Include claimer's name
 
-      if (formik.values.clearOnClaim) {
+      if (form.getValues('clearOnClaim')) {
         handleClear();
       }
 
@@ -349,12 +364,9 @@ const RafflePage = (): ReactNode => {
               disabled={!isRollable || isRollLoading}
             >
               <span className="text-2xl font-medium">
-                Roll{' '}
-                {formik.values.rollQuantity > 1
-                  ? formik.values.rollQuantity
-                  : null}
+                Roll {rollQuantity > 1 ? rollQuantity : null}
               </span>
-              {formik.values.displayOnRoll ? (
+              {displayOnRoll ? (
                 <span className="text-sm">and display</span>
               ) : null}
               {isRollLoading ? <Spinner className="size-6" /> : null}
@@ -442,8 +454,11 @@ const RafflePage = (): ReactNode => {
                 id="rollQuantity"
                 type="number"
                 inputMode="numeric"
-                value={formik.values.rollQuantity}
-                onChange={formik.handleChange}
+                value={rollQuantity}
+                onChange={(event) => {
+                  const next = event.target.valueAsNumber;
+                  form.setValue('rollQuantity', Number.isNaN(next) ? 1 : next);
+                }}
               />
             </Field>
 
@@ -453,9 +468,9 @@ const RafflePage = (): ReactNode => {
               </Label>
               <Switch
                 id="displayOnRoll"
-                checked={formik.values.displayOnRoll}
+                checked={displayOnRoll}
                 onCheckedChange={(checked) => {
-                  void formik.setFieldValue('displayOnRoll', checked);
+                  form.setValue('displayOnRoll', checked);
                 }}
               />
             </div>
@@ -466,9 +481,9 @@ const RafflePage = (): ReactNode => {
               </Label>
               <Switch
                 id="clearOnClaim"
-                checked={formik.values.clearOnClaim}
+                checked={clearOnClaim}
                 onCheckedChange={(checked) => {
-                  void formik.setFieldValue('clearOnClaim', checked);
+                  form.setValue('clearOnClaim', checked);
                 }}
               />
             </div>
@@ -479,9 +494,9 @@ const RafflePage = (): ReactNode => {
               </Label>
               <Switch
                 id="includeNotCheckedIn"
-                checked={formik.values.includeNotCheckedIn}
+                checked={includeNotCheckedIn}
                 onCheckedChange={(checked) => {
-                  void formik.setFieldValue('includeNotCheckedIn', checked);
+                  form.setValue('includeNotCheckedIn', checked);
                 }}
               />
             </div>

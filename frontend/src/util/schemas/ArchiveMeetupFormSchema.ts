@@ -1,4 +1,5 @@
-import * as Yup from 'yup';
+import { z } from 'zod';
+import { pastDate, requiredText } from './fields';
 
 /**
  * Validation for the archive-meetup form. Unlike a live meetup, an archive
@@ -7,26 +8,22 @@ import * as Yup from 'yup';
  * crediting is a deliberate choice rather than a silent self-attribution; when
  * someone else ran it, an organizer name is required.
  */
-const ArchiveMeetupFormSchema = Yup.object().shape({
-  name: Yup.string()
-    .min(3, 'Name must be at least 3 characters')
-    .required('Required'),
-  slug: Yup.string().required('Required'),
-  date: Yup.date()
-    .max(new Date(), 'Date must be in the past')
-    .required('Required'),
-  address: Yup.string().required('Required'),
-  imageKey: Yup.string(),
-  organizerType: Yup.string()
-    .oneOf(['me', 'other'], 'Select who organized this meetup')
-    .required('Select who organized this meetup'),
-  organizerName: Yup.string().when('organizerType', {
-    is: 'other',
-    then: (schema) =>
-      schema
-        .max(30, 'Name must be at most 30 characters')
-        .required('Enter who organized this meetup'),
-  }),
-});
+const ArchiveMeetupFormSchema = z
+  .object({
+    name: requiredText.min(3, 'Name must be at least 3 characters'),
+    slug: requiredText,
+    date: pastDate,
+    address: requiredText,
+    imageKey: z.string().optional(),
+    organizerType: z.enum(['me', 'other'], {
+      error: 'Select who organized this meetup',
+    }),
+    organizerName: z.string().max(30, 'Name must be at most 30 characters'),
+  })
+  .refine(
+    (values) =>
+      values.organizerType !== 'other' || values.organizerName !== '',
+    { path: ['organizerName'], message: 'Enter who organized this meetup' }
+  );
 
 export default ArchiveMeetupFormSchema;

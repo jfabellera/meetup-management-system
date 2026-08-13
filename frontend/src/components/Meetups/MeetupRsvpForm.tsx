@@ -9,20 +9,28 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FieldError } from '@/components/ui/field';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { FormErrorSummary } from '@/components/ui/form-error-summary';
-import { FormField } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { type MeetupInfo, type SimpleTicketInfo } from '@keebmeet/shared';
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { Elements, PaymentElement } from '@stripe/react-stripe-js';
 import type { Appearance } from '@stripe/stripe-js';
-import { useFormik } from 'formik';
 import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useForm } from 'react-hook-form';
 import { FaStripe } from 'react-icons/fa';
 import { FiArrowLeft, FiLock, FiUserCheck, FiUserX } from 'react-icons/fi';
 import { toast } from 'sonner';
-import * as Yup from 'yup';
+import { z } from 'zod';
 import { useHoldCountdown } from '../../hooks/useHoldCountdown';
 import { useWaitForPaidTicket } from '../../hooks/useWaitForPaidTicket';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -36,6 +44,7 @@ import {
   useUpdateTicketMutation,
 } from '../../store/ticketSlice';
 import { useGetUserQuery } from '../../store/userSlice';
+import { zodFormResolver } from '../../util/zodFormResolver';
 import {
   clearGuestHold,
   readGuestHold,
@@ -80,12 +89,19 @@ const stripeAppearance = (dark: boolean): Appearance => ({
   },
 });
 
-const TicketHolderSchema = Yup.object().shape({
-  displayName: Yup.string().required('Required'),
-  firstName: Yup.string().required('Required'),
-  lastName: Yup.string().required('Required'),
-  email: Yup.string().email('Invalid email').required('Required'),
+const TicketHolderSchema = z.object({
+  displayName: z.string().min(1, 'Required'),
+  firstName: z.string().min(1, 'Required'),
+  lastName: z.string().min(1, 'Required'),
+  email: z.string().min(1, 'Required').pipe(z.email('Invalid email')),
 });
+
+interface FormValues {
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
 
 const FIELD_LABELS = {
   displayName: 'Display name',
@@ -192,11 +208,17 @@ export const MeetupRsvpForm = ({
       ? 'Complete the captcha to continue'
       : undefined;
 
-  const formik = useFormik({
+  const form = useForm<FormValues>({
+    mode: 'onTouched',
+    // The captcha lives outside the form values, but still has to block a submit.
+    resolver: zodFormResolver<FormValues>(
+      TicketHolderSchema,
+      captchaError != null ? { turnstileToken: captchaError } : {}
+    ),
     // When managing, prefill from the existing ticket; otherwise from the
     // fetched user. Reinitialised once either loads. Editable so the user can
     // RSVP / manage on someone else's behalf.
-    initialValues: {
+    values: {
       displayName:
         ticketDetails?.ticket_holder_display_name ??
         fullUser?.display_name ??
@@ -218,63 +240,56 @@ export const MeetupRsvpForm = ({
         storedHold?.holder.email ??
         '',
     },
-    enableReinitialize: true,
-    validationSchema: TicketHolderSchema,
-    // The captcha lives outside the form values, but still has to block a submit.
-    validate: () =>
-      captchaError != null ? { turnstileToken: captchaError } : {},
-    onSubmit: (values) => {
-      void (async () => {
-        const ticketHolder = {
-          display_name: values.displayName,
-          first_name: values.firstName,
-          last_name: values.lastName,
-          email: values.email,
-        };
-        try {
-          if (ticket != null && !isPendingHold) {
-            await updateTicket({
-              ticketId: ticket.id,
-              ticketHolder,
-            }).unwrap();
-            toast.success('Your RSVP details were updated.');
-          } else {
-            const result = await rsvp({
-              meetupId: meetup.id,
-              ticketHolder,
-              turnstileToken: isLoggedIn ? undefined : turnstileToken,
-            }).unwrap();
-            if (result.clientSecret != null) {
-              setClientSecret(result.clientSecret);
-              setHoldExpiresAt(result.holdExpiresAt ?? null);
-              setPaidTicketId(result.ticketId ?? null);
-              if (!isLoggedIn && result.ticketId != null) {
-                saveGuestHold(meetup.id, {
-                  ticketId: result.ticketId,
-                  holdExpiresAt: result.holdExpiresAt ?? '',
-                  holder: ticketHolder,
-                });
-              }
-              return;
-            }
-            if (result.requiresEmailConfirmation === true) {
-              toast.success('Almost there! Check your email to confirm.');
-              onCollapse();
-              return;
-            }
-            toast.success(`You're going to ${meetup.name}!`);
-          }
-          onCollapse();
-        } catch (error) {
-          turnstileRef.current?.reset();
-          setTurnstileToken('');
-          const message = (error as { data?: { message?: string } }).data
-            ?.message;
-          toast.error(message ?? 'Something went wrong. Please try again.');
-        }
-      })();
-    },
   });
+
+  const onSubmit = async (values: FormValues): Promise<void> => {
+    const ticketHolder = {
+      display_name: values.displayName,
+      first_name: values.firstName,
+      last_name: values.lastName,
+      email: values.email,
+    };
+    try {
+      if (ticket != null && !isPendingHold) {
+        await updateTicket({
+          ticketId: ticket.id,
+          ticketHolder,
+        }).unwrap();
+        toast.success('Your RSVP details were updated.');
+      } else {
+        const result = await rsvp({
+          meetupId: meetup.id,
+          ticketHolder,
+          turnstileToken: isLoggedIn ? undefined : turnstileToken,
+        }).unwrap();
+        if (result.clientSecret != null) {
+          setClientSecret(result.clientSecret);
+          setHoldExpiresAt(result.holdExpiresAt ?? null);
+          setPaidTicketId(result.ticketId ?? null);
+          if (!isLoggedIn && result.ticketId != null) {
+            saveGuestHold(meetup.id, {
+              ticketId: result.ticketId,
+              holdExpiresAt: result.holdExpiresAt ?? '',
+              holder: ticketHolder,
+            });
+          }
+          return;
+        }
+        if (result.requiresEmailConfirmation === true) {
+          toast.success('Almost there! Check your email to confirm.');
+          onCollapse();
+          return;
+        }
+        toast.success(`You're going to ${meetup.name}!`);
+      }
+      onCollapse();
+    } catch (error) {
+      turnstileRef.current?.reset();
+      setTurnstileToken('');
+      const message = (error as { data?: { message?: string } }).data?.message;
+      toast.error(message ?? 'Something went wrong. Please try again.');
+    }
+  };
 
   const onPaymentSuccessRef = useRef(onPaymentSuccess);
   useEffect(() => {
@@ -460,11 +475,18 @@ export const MeetupRsvpForm = ({
         <div className="flex flex-col gap-4">
           <p className="text-md font-semibold">Ticket holder details</p>
           <FormField
-            formik={formik}
+            control={form.control}
             name="displayName"
-            label="Display Name"
-            // Locked once payment starts — the hold already captured it.
-            disabled={isPaymentStep}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Display Name</FormLabel>
+                <FormControl>
+                  {/* Locked once payment starts — the hold already captured it. */}
+                  <Input disabled={isPaymentStep} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
           <div className="border-border flex flex-col gap-4 rounded-md border border-dashed p-3">
             <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
@@ -475,26 +497,54 @@ export const MeetupRsvpForm = ({
             </p>
             <div className="flex flex-row gap-2">
               <FormField
-                formik={formik}
+                control={form.control}
                 name="firstName"
-                label="First Name"
-                className="flex-1"
-                disabled={isLoggedIn || isPaymentStep}
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        disabled={isLoggedIn || isPaymentStep}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
               <FormField
-                formik={formik}
+                control={form.control}
                 name="lastName"
-                label="Last Name"
-                className="flex-1"
-                disabled={isLoggedIn || isPaymentStep}
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        disabled={isLoggedIn || isPaymentStep}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
             <FormField
-              formik={formik}
+              control={form.control}
               name="email"
-              label="Email"
-              type="email"
-              disabled={isLoggedIn || isPaymentStep}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      disabled={isLoggedIn || isPaymentStep}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
           </div>
         </div>
@@ -536,7 +586,7 @@ export const MeetupRsvpForm = ({
               onExpire={() => setTurnstileToken('')}
               onError={() => setTurnstileToken('')}
             />
-            {captchaError != null && formik.submitCount > 0 ? (
+            {captchaError != null && form.formState.submitCount > 0 ? (
               <FieldError>{captchaError}</FieldError>
             ) : null}
           </div>
@@ -545,7 +595,7 @@ export const MeetupRsvpForm = ({
 
       <div className="flex shrink-0 flex-col gap-2 p-4">
         {!isPaymentStep ? (
-          <FormErrorSummary formik={formik} labels={FIELD_LABELS} />
+          <FormErrorSummary<FormValues> labels={FIELD_LABELS} />
         ) : null}
         {isPaymentStep && priceLabel != null ? (
           <PayButton
@@ -621,26 +671,28 @@ export const MeetupRsvpForm = ({
   );
 
   return (
-    <form
-      onSubmit={formik.handleSubmit}
-      noValidate
-      className="flex h-full flex-col"
-    >
-      {/* One provider so the footer Pay button shares the card's context. */}
-      {isPaymentStep ? (
-        <Elements
-          stripe={stripePromise}
-          options={{
-            clientSecret,
-            fonts: stripeFonts,
-            appearance: stripeAppearance(resolvedTheme === 'dark'),
-          }}
-        >
-          {content}
-        </Elements>
-      ) : (
-        content
-      )}
-    </form>
+    <Form {...form}>
+      <form
+        onSubmit={(event) => void form.handleSubmit(onSubmit)(event)}
+        noValidate
+        className="flex h-full flex-col"
+      >
+        {/* One provider so the footer Pay button shares the card's context. */}
+        {isPaymentStep ? (
+          <Elements
+            stripe={stripePromise}
+            options={{
+              clientSecret,
+              fonts: stripeFonts,
+              appearance: stripeAppearance(resolvedTheme === 'dark'),
+            }}
+          >
+            {content}
+          </Elements>
+        ) : (
+          content
+        )}
+      </form>
+    </Form>
   );
 };

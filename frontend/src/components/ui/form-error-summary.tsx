@@ -1,10 +1,9 @@
 import { cn } from '@/lib/utils';
 import { focusField } from '@/util/focusField';
-import { type FormikProps } from 'formik';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { useFormContext, type FieldValues } from 'react-hook-form';
 
-interface FormErrorSummaryProps<Values> {
-  formik: FormikProps<Values>;
+interface FormErrorSummaryProps<Values extends FieldValues> {
   /** Field labels, in the order the fields appear in the form. */
   labels: Partial<Record<keyof Values & string, string>>;
   className?: string;
@@ -25,7 +24,7 @@ const humanize = (name: string): string => {
 };
 
 const collect = (
-  errors: Record<string, unknown>,
+  errors: Record<string, { message?: unknown } | undefined>,
   labels: Record<string, string | undefined>
 ): SummaryEntry[] => {
   const names = Object.keys(labels).concat(
@@ -33,7 +32,7 @@ const collect = (
   );
 
   return names.flatMap((name) => {
-    const message = errors[name];
+    const message = errors[name]?.message;
     return typeof message === 'string'
       ? [{ name, label: labels[name] ?? humanize(name), message }]
       : [];
@@ -45,12 +44,12 @@ const collect = (
  * never touched can't block them invisibly. Appears only once they try to
  * submit, and takes focus each time so the reason is where they just clicked.
  */
-export const FormErrorSummary = <Values,>({
-  formik,
+export const FormErrorSummary = <Values extends FieldValues>({
   labels,
   className,
 }: FormErrorSummaryProps<Values>): ReactNode => {
-  const { submitCount, isValidating } = formik;
+  const { formState } = useFormContext<Values>();
+  const { errors, submitCount, isValidating } = formState;
   const summaryRef = useRef<HTMLDivElement>(null);
   const announcedFor = useRef(0);
 
@@ -58,7 +57,7 @@ export const FormErrorSummary = <Values,>({
     submitCount === 0
       ? []
       : collect(
-          formik.errors as Record<string, unknown>,
+          errors as Record<string, { message?: unknown } | undefined>,
           labels as Record<string, string | undefined>
         );
   const count = entries.length;
